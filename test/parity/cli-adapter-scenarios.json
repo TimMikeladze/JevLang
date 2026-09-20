@@ -1,0 +1,602 @@
+{
+ "schema": {
+  "type": "object",
+  "properties": {
+   "verdict": {
+    "type": "string"
+   },
+   "note": {
+    "type": "string"
+   },
+   "changed": {
+    "type": "array",
+    "items": {
+     "type": "string"
+    }
+   }
+  },
+  "required": [
+   "verdict"
+  ],
+  "additionalProperties": false
+ },
+ "scenarios": [
+  {
+   "name": "claude structured",
+   "provider": "claude",
+   "model": "claude-opus-5",
+   "effort": "high",
+   "request": {
+    "operation": "review",
+    "mode": "structured",
+    "prompt": "look",
+    "schema": {
+     "type": "object",
+     "properties": {
+      "verdict": {
+       "type": "string"
+      },
+      "note": {
+       "type": "string"
+      },
+      "changed": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       }
+      }
+     },
+     "required": [
+      "verdict"
+     ],
+     "additionalProperties": false
+    },
+    "metadata": {},
+    "limits": {
+     "timeout_seconds": 30,
+     "max_budget_usd": 1.5
+    }
+   },
+   "stdout": "{\"structured_output\": {\"verdict\": \"ok\"}, \"model\": \"claude-opus-5\", \"usage\": {\"input_tokens\": 12}, \"total_cost_usd\": 0.02, \"request_id\": \"req_c1\"}",
+   "status": 0
+  },
+  {
+   "name": "claude workspace with tools and images",
+   "provider": "claude",
+   "model": null,
+   "effort": null,
+   "request": {
+    "operation": "build",
+    "mode": "workspace",
+    "permissions": [
+     "read",
+     "write",
+     "shell"
+    ],
+    "prompt": "fix it",
+    "schema": {
+     "type": "object",
+     "properties": {
+      "verdict": {
+       "type": "string"
+      },
+      "note": {
+       "type": "string"
+      },
+      "changed": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       }
+      }
+     },
+     "required": [
+      "verdict"
+     ],
+     "additionalProperties": false
+    },
+    "directory": ".",
+    "metadata": {
+     "tools": [
+      "WebSearch"
+     ],
+     "disallowed": [
+      "Bash(rm *)"
+     ],
+     "append_system": "be careful"
+    },
+    "limits": {}
+   },
+   "stdout": "{\"structured_output\": {\"verdict\": \"ok\", \"changed\": [\"a.txt\"]}, \"session_id\": \"s1\"}",
+   "status": 0
+  },
+  {
+   "name": "claude subscription call",
+   "provider": "claude",
+   "model": null,
+   "effort": null,
+   "request": {
+    "operation": "review",
+    "mode": "structured",
+    "prompt": "p",
+    "schema": {
+     "type": "object",
+     "properties": {
+      "verdict": {
+       "type": "string"
+      },
+      "note": {
+       "type": "string"
+      },
+      "changed": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       }
+      }
+     },
+     "required": [
+      "verdict"
+     ],
+     "additionalProperties": false
+    },
+    "metadata": {},
+    "limits": {}
+   },
+   "stdout": "{\"structured_output\": {\"verdict\": \"ok\"}}",
+   "status": 0
+  },
+  {
+   "name": "claude failure",
+   "provider": "claude",
+   "model": null,
+   "effort": null,
+   "request": {
+    "operation": "review",
+    "mode": "structured",
+    "prompt": "p",
+    "schema": {
+     "type": "object",
+     "properties": {
+      "verdict": {
+       "type": "string"
+      },
+      "note": {
+       "type": "string"
+      },
+      "changed": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       }
+      }
+     },
+     "required": [
+      "verdict"
+     ],
+     "additionalProperties": false
+    },
+    "metadata": {},
+    "limits": {}
+   },
+   "stdout": "{\"is_error\": true, \"usage\": {\"input_tokens\": 3}, \"total_cost_usd\": 0.01}",
+   "status": 0
+  },
+  {
+   "name": "claude output that breaks the schema",
+   "provider": "claude",
+   "model": null,
+   "effort": null,
+   "request": {
+    "operation": "review",
+    "mode": "structured",
+    "prompt": "p",
+    "schema": {
+     "type": "object",
+     "properties": {
+      "verdict": {
+       "type": "string"
+      },
+      "note": {
+       "type": "string"
+      },
+      "changed": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       }
+      }
+     },
+     "required": [
+      "verdict"
+     ],
+     "additionalProperties": false
+    },
+    "metadata": {},
+    "limits": {}
+   },
+   "stdout": "{\"structured_output\": {\"note\": \"no verdict\"}}",
+   "status": 0
+  },
+  {
+   "name": "codex structured",
+   "provider": "codex",
+   "model": "gpt-6",
+   "effort": "xhigh",
+   "request": {
+    "operation": "review",
+    "mode": "structured",
+    "prompt": "look",
+    "schema": {
+     "type": "object",
+     "properties": {
+      "verdict": {
+       "type": "string"
+      },
+      "note": {
+       "type": "string"
+      },
+      "changed": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       }
+      }
+     },
+     "required": [
+      "verdict"
+     ],
+     "additionalProperties": false
+    },
+    "metadata": {
+     "system": "be brief"
+    },
+    "limits": {
+     "timeout_seconds": 45
+    }
+   },
+   "stdout": "{\"thread_id\": \"t-1\"}\n{\"usage\": {\"input_tokens\": 9}}",
+   "result": {
+    "verdict": "ok",
+    "note": null
+   },
+   "status": 0
+  },
+  {
+   "name": "codex workspace writable",
+   "provider": "codex",
+   "model": null,
+   "effort": null,
+   "request": {
+    "operation": "build",
+    "mode": "workspace",
+    "permissions": [
+     "read",
+     "write",
+     "shell"
+    ],
+    "prompt": "fix",
+    "schema": {
+     "type": "object",
+     "properties": {
+      "verdict": {
+       "type": "string"
+      },
+      "note": {
+       "type": "string"
+      },
+      "changed": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       }
+      }
+     },
+     "required": [
+      "verdict"
+     ],
+     "additionalProperties": false
+    },
+    "directory": ".",
+    "metadata": {},
+    "limits": {}
+   },
+   "stdout": "{\"thread_id\": \"t-2\"}",
+   "result": {
+    "verdict": "ok"
+   },
+   "status": 0
+  },
+  {
+   "name": "codex read-only denies the shell",
+   "provider": "codex",
+   "model": null,
+   "effort": null,
+   "request": {
+    "operation": "review",
+    "mode": "structured",
+    "permissions": [
+     "read"
+    ],
+    "prompt": "p",
+    "schema": {
+     "type": "object",
+     "properties": {
+      "verdict": {
+       "type": "string"
+      },
+      "note": {
+       "type": "string"
+      },
+      "changed": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       }
+      }
+     },
+     "required": [
+      "verdict"
+     ],
+     "additionalProperties": false
+    },
+    "metadata": {},
+    "limits": {}
+   },
+   "stdout": "{}",
+   "result": {
+    "verdict": "ok"
+   },
+   "status": 0
+  },
+  {
+   "name": "codex write without workspace is refused",
+   "provider": "codex",
+   "model": null,
+   "effort": null,
+   "request": {
+    "operation": "build",
+    "mode": "structured",
+    "permissions": [
+     "read",
+     "write",
+     "shell"
+    ],
+    "prompt": "p",
+    "schema": {
+     "type": "object",
+     "properties": {
+      "verdict": {
+       "type": "string"
+      },
+      "note": {
+       "type": "string"
+      },
+      "changed": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       }
+      }
+     },
+     "required": [
+      "verdict"
+     ],
+     "additionalProperties": false
+    },
+    "metadata": {},
+    "limits": {}
+   },
+   "stdout": "{}",
+   "result": {
+    "verdict": "ok"
+   },
+   "status": 0
+  },
+  {
+   "name": "codex failure",
+   "provider": "codex",
+   "model": null,
+   "effort": null,
+   "request": {
+    "operation": "review",
+    "mode": "structured",
+    "prompt": "p",
+    "schema": {
+     "type": "object",
+     "properties": {
+      "verdict": {
+       "type": "string"
+      },
+      "note": {
+       "type": "string"
+      },
+      "changed": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       }
+      }
+     },
+     "required": [
+      "verdict"
+     ],
+     "additionalProperties": false
+    },
+    "metadata": {},
+    "limits": {}
+   },
+   "stdout": "{\"usage\": {\"input_tokens\": 4}}",
+   "result": null,
+   "status": 3
+  },
+  {
+   "name": "fx workspace",
+   "provider": "fx",
+   "model": "grok-4",
+   "effort": null,
+   "request": {
+    "operation": "build",
+    "mode": "workspace",
+    "permissions": [
+     "read",
+     "write",
+     "shell"
+    ],
+    "prompt": "fix",
+    "schema": {
+     "type": "object",
+     "properties": {
+      "verdict": {
+       "type": "string"
+      },
+      "note": {
+       "type": "string"
+      },
+      "changed": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       }
+      }
+     },
+     "required": [
+      "verdict"
+     ],
+     "additionalProperties": false
+    },
+    "directory": ".",
+    "metadata": {
+     "append_system": "careful"
+    },
+    "limits": {}
+   },
+   "stdout": "{\"kind\": \"result\", \"exit_code\": 0, \"model\": \"grok-4\", \"session_id\": \"fx-1\", \"tool_calls\": [{\"name\": \"bash\"}], \"usage\": {\"input_tokens\": 5, \"output_tokens\": 2}, \"steps\": 3, \"final_output\": \"{\\\"verdict\\\": \\\"ok\\\"}\"}",
+   "status": 0
+  },
+  {
+   "name": "fx refuses an effort",
+   "provider": "fx",
+   "model": null,
+   "effort": "high",
+   "request": {
+    "operation": "build",
+    "mode": "workspace",
+    "permissions": [
+     "read",
+     "write",
+     "shell"
+    ],
+    "prompt": "fix",
+    "schema": {
+     "type": "object",
+     "properties": {
+      "verdict": {
+       "type": "string"
+      },
+      "note": {
+       "type": "string"
+      },
+      "changed": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       }
+      }
+     },
+     "required": [
+      "verdict"
+     ],
+     "additionalProperties": false
+    },
+    "directory": ".",
+    "metadata": {},
+    "limits": {}
+   },
+   "stdout": "{}",
+   "status": 0
+  },
+  {
+   "name": "fx refuses read-only",
+   "provider": "fx",
+   "model": null,
+   "effort": null,
+   "request": {
+    "operation": "build",
+    "mode": "workspace",
+    "permissions": [
+     "read"
+    ],
+    "prompt": "fix",
+    "schema": {
+     "type": "object",
+     "properties": {
+      "verdict": {
+       "type": "string"
+      },
+      "note": {
+       "type": "string"
+      },
+      "changed": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       }
+      }
+     },
+     "required": [
+      "verdict"
+     ],
+     "additionalProperties": false
+    },
+    "directory": ".",
+    "metadata": {},
+    "limits": {}
+   },
+   "stdout": "{}",
+   "status": 0
+  },
+  {
+   "name": "fx exit codes that disagree",
+   "provider": "fx",
+   "model": null,
+   "effort": null,
+   "request": {
+    "operation": "build",
+    "mode": "workspace",
+    "permissions": [
+     "read",
+     "write",
+     "shell"
+    ],
+    "prompt": "fix",
+    "schema": {
+     "type": "object",
+     "properties": {
+      "verdict": {
+       "type": "string"
+      },
+      "note": {
+       "type": "string"
+      },
+      "changed": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       }
+      }
+     },
+     "required": [
+      "verdict"
+     ],
+     "additionalProperties": false
+    },
+    "directory": ".",
+    "metadata": {},
+    "limits": {}
+   },
+   "stdout": "{\"kind\": \"result\", \"exit_code\": 2, \"tool_calls\": [], \"usage\": {}, \"final_output\": \"{\\\"verdict\\\": \\\"ok\\\"}\", \"error\": \"FX_BAD_STATE\"}",
+   "status": 0
+  }
+ ]
+}

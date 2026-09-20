@@ -1,0 +1,700 @@
+{
+ "tools": [
+  {
+   "name": "lock-door",
+   "description": "Lock a door",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "door": {
+      "type": "string",
+      "enum": [
+       "front",
+       "back"
+      ]
+     },
+     "seconds": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 10
+     }
+    },
+    "required": [
+     "door"
+    ]
+   },
+   "annotations": {
+    "destructiveHint": true
+   },
+   "_meta": {
+    "jev/cooldown_seconds": 30,
+    "jev/min_confidence": 0.9,
+    "jev/allow": [
+     "owner",
+     "resident"
+    ],
+    "jev/timeout_seconds": 10,
+    "jev/undo": {
+     "name": "unlock-door",
+     "args": {
+      "door": [
+       "param",
+       "door"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "name": "unlock-door",
+   "description": "Unlock a door",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "door": {
+      "type": "string",
+      "enum": [
+       "front",
+       "back"
+      ]
+     }
+    },
+    "required": [
+     "door"
+    ]
+   },
+   "annotations": {
+    "destructiveHint": true
+   }
+  },
+  {
+   "name": "read-sensor",
+   "description": "Read a sensor",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "raw": {
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "id"
+    ]
+   },
+   "annotations": {
+    "readOnlyHint": true
+   }
+  },
+  {
+   "name": "lights-on",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "room": {
+      "description": "one of the values in the facts' rooms list, known only at run time",
+      "x-jev-member-of": "rooms"
+     }
+    },
+    "required": [
+     "room"
+    ]
+   }
+  },
+  {
+   "name": "send-many",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "rooms": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "levels": {
+      "type": "array",
+      "items": {
+       "type": "number",
+       "minimum": 0,
+       "maximum": 100
+      }
+     },
+     "payload": {
+      "type": "object"
+     }
+    },
+    "required": []
+   }
+  },
+  {
+   "name": "unbounded",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "n": {
+      "type": "integer",
+      "minimum": 0
+     }
+    },
+    "required": [
+     "n"
+    ]
+   }
+  },
+  {
+   "name": "hold",
+   "inputSchema": {
+    "type": "object",
+    "properties": {}
+   }
+  },
+  {
+   "name": "bad name!",
+   "inputSchema": {
+    "type": "object",
+    "properties": {}
+   }
+  },
+  {
+   "name": "bad-params",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "not an ident": {
+      "type": "string"
+     }
+    }
+   }
+  },
+  {
+   "name": "clashing",
+   "inputSchema": {
+    "type": "object",
+    "properties": {
+     "reason": {
+      "type": "string"
+     }
+    }
+   }
+  },
+  {
+   "name": "no-schema"
+  }
+ ],
+ "drift": [
+  [
+   [
+    {
+     "name": "lock-door",
+     "description": "Lock a door",
+     "inputSchema": {
+      "type": "object",
+      "properties": {
+       "door": {
+        "type": "string",
+        "enum": [
+         "front",
+         "back"
+        ]
+       },
+       "seconds": {
+        "type": "number",
+        "minimum": 1,
+        "maximum": 10
+       }
+      },
+      "required": [
+       "door"
+      ]
+     },
+     "annotations": {
+      "destructiveHint": true
+     },
+     "_meta": {
+      "jev/cooldown_seconds": 30,
+      "jev/min_confidence": 0.9,
+      "jev/allow": [
+       "owner",
+       "resident"
+      ],
+      "jev/timeout_seconds": 10,
+      "jev/undo": {
+       "name": "unlock-door",
+       "args": {
+        "door": [
+         "param",
+         "door"
+        ]
+       }
+      }
+     }
+    }
+   ],
+   [
+    {
+     "name": "lock-door",
+     "description": "Lock a door",
+     "inputSchema": {
+      "type": "object",
+      "properties": {
+       "door": {
+        "type": "string",
+        "enum": [
+         "front",
+         "back"
+        ]
+       },
+       "seconds": {
+        "type": "number",
+        "minimum": 1,
+        "maximum": 10
+       }
+      },
+      "required": [
+       "door"
+      ]
+     },
+     "annotations": {
+      "destructiveHint": true
+     },
+     "_meta": {
+      "jev/cooldown_seconds": 30,
+      "jev/min_confidence": 0.9,
+      "jev/allow": [
+       "owner",
+       "resident"
+      ],
+      "jev/timeout_seconds": 10,
+      "jev/undo": {
+       "name": "unlock-door",
+       "args": {
+        "door": [
+         "param",
+         "door"
+        ]
+       }
+      }
+     }
+    }
+   ]
+  ],
+  [
+   [
+    {
+     "name": "lock-door",
+     "description": "Lock a door",
+     "inputSchema": {
+      "type": "object",
+      "properties": {
+       "door": {
+        "type": "string",
+        "enum": [
+         "front",
+         "back"
+        ]
+       },
+       "seconds": {
+        "type": "number",
+        "minimum": 1,
+        "maximum": 10
+       }
+      },
+      "required": [
+       "door"
+      ]
+     },
+     "annotations": {
+      "destructiveHint": true
+     },
+     "_meta": {
+      "jev/cooldown_seconds": 30,
+      "jev/min_confidence": 0.9,
+      "jev/allow": [
+       "owner",
+       "resident"
+      ],
+      "jev/timeout_seconds": 10,
+      "jev/undo": {
+       "name": "unlock-door",
+       "args": {
+        "door": [
+         "param",
+         "door"
+        ]
+       }
+      }
+     }
+    }
+   ],
+   []
+  ],
+  [
+   [],
+   [
+    {
+     "name": "read-sensor",
+     "description": "Read a sensor",
+     "inputSchema": {
+      "type": "object",
+      "properties": {
+       "id": {
+        "type": "string"
+       },
+       "raw": {
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "id"
+      ]
+     },
+     "annotations": {
+      "readOnlyHint": true
+     }
+    }
+   ]
+  ],
+  [
+   [
+    {
+     "name": "lock-door",
+     "description": "Lock a door",
+     "inputSchema": {
+      "type": "object",
+      "properties": {
+       "door": {
+        "type": "string",
+        "enum": [
+         "front",
+         "back"
+        ]
+       },
+       "seconds": {
+        "type": "number",
+        "minimum": 1,
+        "maximum": 10
+       }
+      },
+      "required": [
+       "door"
+      ]
+     },
+     "annotations": {
+      "destructiveHint": true
+     },
+     "_meta": {
+      "jev/cooldown_seconds": 30,
+      "jev/min_confidence": 0.9,
+      "jev/allow": [
+       "owner",
+       "resident"
+      ],
+      "jev/timeout_seconds": 10,
+      "jev/undo": {
+       "name": "unlock-door",
+       "args": {
+        "door": [
+         "param",
+         "door"
+        ]
+       }
+      }
+     }
+    }
+   ],
+   [
+    {
+     "name": "lock-door",
+     "description": "Lock a door",
+     "inputSchema": {
+      "type": "object",
+      "properties": {
+       "door": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "door"
+      ]
+     },
+     "annotations": {
+      "destructiveHint": true
+     },
+     "_meta": {
+      "jev/cooldown_seconds": 30,
+      "jev/min_confidence": 0.9,
+      "jev/allow": [
+       "owner",
+       "resident"
+      ],
+      "jev/timeout_seconds": 10,
+      "jev/undo": {
+       "name": "unlock-door",
+       "args": {
+        "door": [
+         "param",
+         "door"
+        ]
+       }
+      }
+     }
+    }
+   ]
+  ],
+  [
+   [
+    {
+     "name": "lock-door",
+     "description": "Lock a door",
+     "inputSchema": {
+      "type": "object",
+      "properties": {
+       "door": {
+        "type": "string",
+        "enum": [
+         "front",
+         "back"
+        ]
+       },
+       "seconds": {
+        "type": "number",
+        "minimum": 1,
+        "maximum": 10
+       }
+      },
+      "required": [
+       "door"
+      ]
+     },
+     "annotations": {
+      "destructiveHint": true
+     },
+     "_meta": {
+      "jev/cooldown_seconds": 30,
+      "jev/min_confidence": 0.9,
+      "jev/allow": [
+       "owner",
+       "resident"
+      ],
+      "jev/timeout_seconds": 10,
+      "jev/undo": {
+       "name": "unlock-door",
+       "args": {
+        "door": [
+         "param",
+         "door"
+        ]
+       }
+      }
+     }
+    }
+   ],
+   [
+    {
+     "name": "lock-door",
+     "description": "Lock a door",
+     "inputSchema": {
+      "type": "object",
+      "properties": {
+       "door": {
+        "type": "string",
+        "enum": [
+         "front",
+         "back"
+        ]
+       },
+       "seconds": {
+        "type": "number",
+        "minimum": 1,
+        "maximum": 10
+       }
+      },
+      "required": [
+       "door"
+      ]
+     },
+     "annotations": {
+      "destructiveHint": false
+     },
+     "_meta": {
+      "jev/cooldown_seconds": 30,
+      "jev/min_confidence": 0.9,
+      "jev/allow": [
+       "owner",
+       "resident"
+      ],
+      "jev/timeout_seconds": 10,
+      "jev/undo": {
+       "name": "unlock-door",
+       "args": {
+        "door": [
+         "param",
+         "door"
+        ]
+       }
+      }
+     }
+    }
+   ]
+  ],
+  [
+   [
+    {
+     "name": "read-sensor",
+     "description": "Read a sensor",
+     "inputSchema": {
+      "type": "object",
+      "properties": {
+       "id": {
+        "type": "string"
+       },
+       "raw": {
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "id"
+      ]
+     },
+     "annotations": {
+      "readOnlyHint": true
+     }
+    }
+   ],
+   [
+    {
+     "name": "read-sensor",
+     "description": "Read a sensor, carefully",
+     "inputSchema": {
+      "type": "object",
+      "properties": {
+       "id": {
+        "type": "string"
+       },
+       "raw": {
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "id"
+      ]
+     },
+     "annotations": {
+      "readOnlyHint": true
+     }
+    }
+   ]
+  ],
+  [
+   [
+    {
+     "name": "lock-door",
+     "description": "Lock a door",
+     "inputSchema": {
+      "type": "object",
+      "properties": {
+       "door": {
+        "type": "string",
+        "enum": [
+         "front",
+         "back"
+        ]
+       },
+       "seconds": {
+        "type": "number",
+        "minimum": 1,
+        "maximum": 10
+       }
+      },
+      "required": [
+       "door"
+      ]
+     },
+     "annotations": {
+      "destructiveHint": true
+     },
+     "_meta": {
+      "jev/cooldown_seconds": 30,
+      "jev/min_confidence": 0.9,
+      "jev/allow": [
+       "owner",
+       "resident"
+      ],
+      "jev/timeout_seconds": 10,
+      "jev/undo": {
+       "name": "unlock-door",
+       "args": {
+        "door": [
+         "param",
+         "door"
+        ]
+       }
+      }
+     }
+    },
+    {
+     "name": "read-sensor",
+     "description": "Read a sensor",
+     "inputSchema": {
+      "type": "object",
+      "properties": {
+       "id": {
+        "type": "string"
+       },
+       "raw": {
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "id"
+      ]
+     },
+     "annotations": {
+      "readOnlyHint": true
+     }
+    }
+   ],
+   [
+    {
+     "name": "read-sensor",
+     "description": "Read a sensor",
+     "inputSchema": {
+      "type": "object",
+      "properties": {
+       "id": {
+        "type": "string"
+       },
+       "raw": {
+        "type": "boolean"
+       }
+      },
+      "required": [
+       "id"
+      ]
+     },
+     "annotations": {
+      "readOnlyHint": true
+     }
+    },
+    {
+     "name": "lights-on",
+     "inputSchema": {
+      "type": "object",
+      "properties": {
+       "room": {
+        "description": "one of the values in the facts' rooms list, known only at run time",
+        "x-jev-member-of": "rooms"
+       }
+      },
+      "required": [
+       "room"
+      ]
+     }
+    }
+   ]
+  ]
+ ]
+}

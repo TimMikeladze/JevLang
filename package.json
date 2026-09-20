@@ -1,0 +1,96 @@
+{
+  "name": "jevlang",
+  "version": "0.1.0-dev.1",
+  "description": "Portable Jev policy validator and local execution engine: one package, multiple entrypoints",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.mjs"
+    },
+    "./provider": {
+      "types": "./src/provider/index.d.ts",
+      "default": "./src/provider/index.mjs"
+    },
+    "./dispatch": {
+      "types": "./src/dispatch.d.ts",
+      "default": "./src/dispatch.mjs"
+    },
+    "./journal": {
+      "types": "./src/journal.d.ts",
+      "default": "./src/journal.mjs"
+    },
+    "./journal-db": {
+      "types": "./src/journal.d.ts",
+      "default": "./src/journal-db.mjs"
+    },
+    "./handlers": {
+      "types": "./src/handlers.d.ts",
+      "default": "./src/handlers.mjs"
+    },
+    "./loop": {
+      "types": "./src/loop.d.ts",
+      "default": "./src/loop.mjs"
+    },
+    "./session": {
+      "types": "./src/loop.d.ts",
+      "default": "./src/session.mjs"
+    },
+    "./mcp": {
+      "types": "./src/mcp.d.ts",
+      "default": "./src/mcp.mjs"
+    },
+    "./mcp-client": {
+      "types": "./src/mcp-client.d.ts",
+      "default": "./src/mcp-client.mjs"
+    },
+    "./mcp-import": {
+      "types": "./src/mcp-client.d.ts",
+      "default": "./src/mcp-import.mjs"
+    },
+    "./gate": {
+      "types": "./src/gate.d.ts",
+      "default": "./src/gate.mjs"
+    },
+    "./explain": {
+      "types": "./src/gate.d.ts",
+      "default": "./src/explain.mjs"
+    },
+    "./webhooks": {
+      "types": "./src/webhooks.d.ts",
+      "default": "./src/webhooks.mjs"
+    },
+    "./harvest": {
+      "types": "./src/webhooks.d.ts",
+      "default": "./src/harvest.mjs"
+    },
+    "./wiring": {
+      "types": "./src/webhooks.d.ts",
+      "default": "./src/wiring.mjs"
+    },
+    "./serve": {
+      "types": "./src/serve.d.ts",
+      "default": "./src/serve.mjs"
+    }
+  },
+  "bin": {
+    "jev": "./src/cli.mjs"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "COMPATIBILITY.md"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "test:types": "tsc -p test/tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/node": "^22.0.0"
+  },
+  "license": "UNLICENSED"
+}

@@ -1,0 +1,207 @@
+{
+ "names": [
+  "ticket-42",
+  "ticket/42",
+  ".hidden",
+  "\u00dcn\u00efcode",
+  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "a b c",
+  "UPPER",
+  "dots.are.fine"
+ ],
+ "labels": [
+  "assign:billing-queue",
+  "hold",
+  " page : retention-oncall ",
+  {
+   "action": "escalate",
+   "target": "human-triage"
+  },
+  {
+   "action": "hold"
+  },
+  {
+   "action": "assign",
+   "target": null
+  }
+ ],
+ "badLabels": [
+  "nonsense:x",
+  "",
+  {
+   "target": "q"
+  },
+  {
+   "action": "assign",
+   "target": 5
+  }
+ ],
+ "escalated": [
+  {
+   "action": "assign",
+   "target": "q",
+   "rule": "route"
+  },
+  {
+   "action": "assign",
+   "target": "q",
+   "rule": "gate"
+  },
+  {
+   "action": "escalate",
+   "target": "human",
+   "rule": "route"
+  },
+  {
+   "action": "hold",
+   "target": null,
+   "rule": "route"
+  },
+  {
+   "action": "confirm",
+   "target": "unlock",
+   "rule": "route"
+  },
+  {
+   "action": "assign",
+   "target": "q",
+   "rule": "band"
+  }
+ ],
+ "histories": [
+  {
+   "escalated": false,
+   "expect": {
+    "action": "assign",
+    "target": "q"
+   },
+   "outcomes": []
+  },
+  {
+   "escalated": false,
+   "expect": {
+    "action": "assign",
+    "target": "q"
+   },
+   "outcomes": [
+    {
+     "kind": "close",
+     "label": null
+    }
+   ]
+  },
+  {
+   "escalated": true,
+   "expect": {
+    "action": "escalate",
+    "target": "human"
+   },
+   "outcomes": [
+    {
+     "kind": "close",
+     "label": null
+    }
+   ]
+  },
+  {
+   "escalated": false,
+   "expect": {
+    "action": "assign",
+    "target": "q"
+   },
+   "outcomes": [
+    {
+     "kind": "close",
+     "label": {
+      "action": "page",
+      "target": "oncall"
+     }
+    }
+   ]
+  },
+  {
+   "escalated": false,
+   "expect": {
+    "action": "assign",
+    "target": "q"
+   },
+   "outcomes": [
+    {
+     "kind": "correction",
+     "label": {
+      "action": "assign",
+      "target": "other"
+     }
+    },
+    {
+     "kind": "close",
+     "label": null
+    }
+   ]
+  },
+  {
+   "escalated": false,
+   "expect": {
+    "action": "assign",
+    "target": "q"
+   },
+   "outcomes": [
+    {
+     "kind": "correction",
+     "label": {
+      "action": "assign",
+      "target": "first"
+     }
+    },
+    {
+     "kind": "correction",
+     "label": {
+      "action": "assign",
+      "target": "second"
+     }
+    }
+   ]
+  },
+  {
+   "escalated": false,
+   "expect": {
+    "action": "assign",
+    "target": "q"
+   },
+   "outcomes": [
+    {
+     "kind": "timeout",
+     "label": null
+    }
+   ]
+  },
+  {
+   "escalated": true,
+   "expect": {
+    "action": "hold"
+   },
+   "outcomes": [
+    {
+     "kind": "timeout",
+     "label": null
+    }
+   ]
+  },
+  {
+   "escalated": false,
+   "expect": null,
+   "outcomes": [
+    {
+     "kind": "close",
+     "label": null
+    }
+   ]
+  }
+ ],
+ "times": [
+  "2026-09-18T12:00:00Z",
+  "2026-09-18T12:00:00.500Z",
+  "not a time",
+  "2026-09-18 12:00:00"
+ ]
+}

@@ -1,0 +1,11 @@
+// The smallest useful policy: the portable mirror of jev-lang/examples/hello.rkt.
+// One question, one branch.
+import { noul, definePolicy, rule, assign, hold } from '../src/index.mjs';
+
+const spam = noul('spam?', 'Is this message spam?');
+
+export const policy = definePolicy({
+  name: 'hello',
+  questions: [spam],
+  route: { clauses: [rule(spam.yes(0.9), hold({ reason: 'almost certainly spam' }))], otherwise: assign('inbox') },
+});

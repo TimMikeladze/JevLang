@@ -1,0 +1,527 @@
+[
+ {
+  "name": "a hold with no handler passes through",
+  "handlers": {},
+  "decision": {
+   "action": "hold",
+   "target": null,
+   "reason": "nothing to do",
+   "data": null,
+   "proposed": null,
+   "steps": []
+  }
+ },
+ {
+  "name": "an act runs its handler",
+  "handlers": {
+   "lights-on": "ok"
+  },
+  "facts": {
+   "rooms": [
+    "kitchen",
+    "bedroom"
+   ]
+  },
+  "decision": {
+   "action": "act",
+   "target": "lights-on",
+   "reason": null,
+   "data": {
+    "room": "kitchen"
+   },
+   "proposed": null,
+   "steps": []
+  },
+  "key": "req-1"
+ },
+ {
+  "name": "a handler that re-decides is re-dispatched",
+  "handlers": {
+   "ask-user": {
+    "decide": {
+     "action": "act",
+     "target": "lights-on",
+     "reason": null,
+     "data": {
+      "room": "kitchen"
+     },
+     "proposed": null,
+     "steps": []
+    }
+   },
+   "lights-on": "ok"
+  },
+  "facts": {
+   "rooms": [
+    "kitchen"
+   ]
+  },
+  "decision": {
+   "action": "escalate",
+   "target": "ask-user",
+   "reason": "which room?",
+   "data": null,
+   "proposed": null,
+   "steps": []
+  },
+  "key": "req-2"
+ },
+ {
+  "name": "a declining chain link passes the case on",
+  "handlers": {
+   "ask-user": {
+    "chain": [
+     "decline",
+     "ok"
+    ]
+   }
+  },
+  "decision": {
+   "action": "escalate",
+   "target": "ask-user",
+   "reason": null,
+   "data": null,
+   "proposed": null,
+   "steps": []
+  },
+  "key": "req-3"
+ },
+ {
+  "name": "a chain that runs out raises",
+  "handlers": {
+   "ask-user": {
+    "chain": [
+     "decline",
+     {
+      "raise": "the pager is down"
+     }
+    ]
+   }
+  },
+  "decision": {
+   "action": "escalate",
+   "target": "ask-user",
+   "reason": null,
+   "data": null,
+   "proposed": null,
+   "steps": []
+  },
+  "key": "req-4",
+  "expect_error": true
+ },
+ {
+  "name": "confirm approves and the proposed action runs",
+  "handlers": {
+   "unlock-door": "ok"
+  },
+  "confirm": true,
+  "principal": {
+   "roles": [
+    "owner"
+   ]
+  },
+  "facts": {
+   "doors": [
+    "front",
+    "back"
+   ]
+  },
+  "decision": {
+   "action": "confirm",
+   "target": "unlock-door",
+   "reason": null,
+   "data": {
+    "door": "back"
+   },
+   "proposed": {
+    "action": "act",
+    "target": "unlock-door",
+    "reason": null,
+    "data": {
+     "door": "back"
+    },
+    "proposed": null,
+    "steps": []
+   },
+   "steps": []
+  },
+  "key": "req-5"
+ },
+ {
+  "name": "confirm declines and the confirm decision stands",
+  "handlers": {
+   "unlock-door": "ok"
+  },
+  "confirm": false,
+  "principal": {
+   "roles": [
+    "owner"
+   ]
+  },
+  "facts": {
+   "doors": [
+    "front",
+    "back"
+   ]
+  },
+  "decision": {
+   "action": "confirm",
+   "target": "unlock-door",
+   "reason": null,
+   "data": {
+    "door": "back"
+   },
+   "proposed": {
+    "action": "act",
+    "target": "unlock-door",
+    "reason": null,
+    "data": {
+     "door": "back"
+    },
+    "proposed": null,
+    "steps": []
+   },
+   "steps": []
+  },
+  "key": "req-6"
+ },
+ {
+  "name": "a principal without the role is forbidden",
+  "handlers": {
+   "unlock-door": "ok"
+  },
+  "confirm": true,
+  "principal": {
+   "roles": [
+    "guest"
+   ]
+  },
+  "facts": {
+   "doors": [
+    "front"
+   ]
+  },
+  "decision": {
+   "action": "confirm",
+   "target": "unlock-door",
+   "reason": null,
+   "data": {
+    "door": "front"
+   },
+   "proposed": {
+    "action": "act",
+    "target": "unlock-door",
+    "reason": null,
+    "data": {
+     "door": "front"
+    },
+    "proposed": null,
+    "steps": []
+   },
+   "steps": []
+  },
+  "key": "req-7"
+ },
+ {
+  "name": "a guard that fails skips the handler",
+  "handlers": {
+   "lights-on": "ok"
+  },
+  "guards": {
+   "lights-on": false
+  },
+  "facts": {
+   "rooms": [
+    "kitchen"
+   ]
+  },
+  "decision": {
+   "action": "act",
+   "target": "lights-on",
+   "reason": null,
+   "data": {
+    "room": "kitchen"
+   },
+   "proposed": null,
+   "steps": []
+  },
+  "key": "req-8"
+ },
+ {
+  "name": "a dry run reports what would run",
+  "handlers": {
+   "lights-on": "ok"
+  },
+  "dry_run": true,
+  "facts": {
+   "rooms": [
+    "kitchen"
+   ]
+  },
+  "decision": {
+   "action": "act",
+   "target": "lights-on",
+   "reason": null,
+   "data": {
+    "room": "kitchen"
+   },
+   "proposed": null,
+   "steps": []
+  },
+  "key": "req-9"
+ },
+ {
+  "name": "a budget that is used up skips the action",
+  "handlers": {
+   "lights-on": "ok"
+  },
+  "facts": {
+   "rooms": [
+    "kitchen"
+   ]
+  },
+  "budgets": [
+   {
+    "name": "calls",
+    "max": 0,
+    "per": 60
+   }
+  ],
+  "decision": {
+   "action": "act",
+   "target": "lights-on",
+   "reason": null,
+   "data": {
+    "room": "kitchen"
+   },
+   "proposed": null,
+   "steps": []
+  },
+  "key": "req-10"
+ },
+ {
+  "name": "a plan runs every step",
+  "handlers": {
+   "lights-on": "ok",
+   "lights-off": "ok"
+  },
+  "facts": {
+   "rooms": [
+    "kitchen",
+    "bedroom"
+   ]
+  },
+  "decision": {
+   "action": "plan",
+   "target": null,
+   "reason": "2 steps",
+   "data": null,
+   "proposed": null,
+   "steps": [
+    {
+     "action": "act",
+     "target": "lights-on",
+     "reason": null,
+     "data": {
+      "room": "bedroom"
+     },
+     "proposed": null,
+     "steps": []
+    },
+    {
+     "action": "act",
+     "target": "lights-off",
+     "reason": null,
+     "data": {
+      "room": "kitchen"
+     },
+     "proposed": null,
+     "steps": []
+    }
+   ]
+  },
+  "key": "req-11"
+ },
+ {
+  "name": "a plan stops at the first step that raises",
+  "handlers": {
+   "lights-on": "ok",
+   "lock-door": {
+    "raise": "the lock is jammed"
+   },
+   "lights-off": "ok"
+  },
+  "facts": {
+   "rooms": [
+    "kitchen"
+   ],
+   "doors": [
+    "front"
+   ]
+  },
+  "decision": {
+   "action": "plan",
+   "target": null,
+   "reason": "3 steps",
+   "data": null,
+   "proposed": null,
+   "steps": [
+    {
+     "action": "act",
+     "target": "lights-on",
+     "reason": null,
+     "data": {
+      "room": "kitchen"
+     },
+     "proposed": null,
+     "steps": []
+    },
+    {
+     "action": "act",
+     "target": "lock-door",
+     "reason": null,
+     "data": {
+      "door": "front"
+     },
+     "proposed": null,
+     "steps": []
+    },
+    {
+     "action": "act",
+     "target": "lights-off",
+     "reason": null,
+     "data": {
+      "room": "kitchen"
+     },
+     "proposed": null,
+     "steps": []
+    }
+   ]
+  },
+  "key": "req-12"
+ },
+ {
+  "name": "a plan that continues runs the rest",
+  "handlers": {
+   "lights-on": "ok",
+   "lock-door": {
+    "raise": "the lock is jammed"
+   },
+   "lights-off": "ok"
+  },
+  "plan_failure": "continue",
+  "facts": {
+   "rooms": [
+    "kitchen"
+   ],
+   "doors": [
+    "front"
+   ]
+  },
+  "decision": {
+   "action": "plan",
+   "target": null,
+   "reason": "3 steps",
+   "data": null,
+   "proposed": null,
+   "steps": [
+    {
+     "action": "act",
+     "target": "lights-on",
+     "reason": null,
+     "data": {
+      "room": "kitchen"
+     },
+     "proposed": null,
+     "steps": []
+    },
+    {
+     "action": "act",
+     "target": "lock-door",
+     "reason": null,
+     "data": {
+      "door": "front"
+     },
+     "proposed": null,
+     "steps": []
+    },
+    {
+     "action": "act",
+     "target": "lights-off",
+     "reason": null,
+     "data": {
+      "room": "kitchen"
+     },
+     "proposed": null,
+     "steps": []
+    }
+   ]
+  },
+  "key": "req-13"
+ },
+ {
+  "name": "a plan that rolls back undoes the steps that ran",
+  "handlers": {
+   "lights-on": "ok",
+   "lights-off": "ok",
+   "lock-door": {
+    "raise": "the lock is jammed"
+   }
+  },
+  "plan_failure": "rollback",
+  "facts": {
+   "rooms": [
+    "kitchen"
+   ],
+   "doors": [
+    "front"
+   ]
+  },
+  "decision": {
+   "action": "plan",
+   "target": null,
+   "reason": "2 steps",
+   "data": null,
+   "proposed": null,
+   "steps": [
+    {
+     "action": "act",
+     "target": "lights-on",
+     "reason": null,
+     "data": {
+      "room": "kitchen"
+     },
+     "proposed": null,
+     "steps": []
+    },
+    {
+     "action": "act",
+     "target": "lock-door",
+     "reason": null,
+     "data": {
+      "door": "front"
+     },
+     "proposed": null,
+     "steps": []
+    }
+   ]
+  },
+  "key": "req-14"
+ },
+ {
+  "name": "an unknown target raises rather than being dropped",
+  "handlers": {
+   "lights-on": "ok"
+  },
+  "decision": {
+   "action": "assign",
+   "target": "nowhere",
+   "reason": null,
+   "data": null,
+   "proposed": null,
+   "steps": []
+  },
+  "key": "req-15",
+  "expect_error": true
+ }
+]
