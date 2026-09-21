@@ -143,6 +143,7 @@ export const links = [
 export const nav = [
   { label: 'Home', href: '/' },
   { label: 'Reference', href: '/reference' },
+  { label: 'Cloud', href: 'https://cloud.jevlang.sh', external: true },
 ];
 
 export const footerColumns = [
