@@ -15,6 +15,7 @@ import { toolToAction, toolConfirm, snapshotDrift, snapshotToActions, writeMcpIm
 import { policyActions } from '../src/json-schema.mjs';
 import { makeDispatcher, dispatch } from '../src/dispatch.mjs';
 import { definePolicy, choice, gate, rule, act, confirm, hold } from '../src/index.mjs';
+import { skipUnlessInMonorepo } from './monorepo.mjs';
 
 const serverPath = fileURLToPath(new URL('../examples/mcp-policy-server.mjs', import.meta.url));
 const answers = {
@@ -184,7 +185,8 @@ test("another server's tools become dispatcher handlers", async t => {
   await assert.rejects(mcpHandlers(client, { only: ['nope'] }), /has no tool named nope[\s\S]*its tools: decide/);
 });
 
-test('Racket oracle: a tool list imports to the same action declarations, and drift reads the same', async () => {
+test('Racket oracle: a tool list imports to the same action declarations, and drift reads the same', async t => {
+  if (skipUnlessInMonorepo(t)) return;
   const oracle = fileURLToPath(new URL('./mcp-import-oracle.rkt', import.meta.url));
   const run = spawnSync('racket', [oracle], { encoding: 'utf8', env: { ...process.env, TYPESAFE_API_KEY: '', ANTHROPIC_API_KEY: '', OPENAI_API_KEY: '' } });
   assert.equal(run.status, 0, run.stderr);

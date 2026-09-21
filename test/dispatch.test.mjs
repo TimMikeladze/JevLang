@@ -15,6 +15,7 @@ import { policy as home } from '../examples/smart-home.mjs';
 import { readFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { skipUnlessInMonorepo } from './monorepo.mjs';
 
 const decision = (action, target, extra = {}) => ({
   action, target, reason: null, data: null, rule: 'route', clause: 0, source: null, line: null, file: null,
@@ -308,7 +309,8 @@ const scenarioDecision = j => ({
   rule: null, clause: null,
 });
 
-test('Racket oracle: cascade dispatch over the shared scenarios', async () => {
+test('Racket oracle: cascade dispatch over the shared scenarios', async t => {
+  if (skipUnlessInMonorepo(t)) return;
   const oracle = fileURLToPath(new URL('./dispatch-oracle.rkt', import.meta.url));
   const run = spawnSync('racket', [oracle], { encoding: 'utf8', env: { ...process.env, TYPESAFE_API_KEY: '', ANTHROPIC_API_KEY: '', OPENAI_API_KEY: '' } });
   assert.equal(run.status, 0, run.stderr);

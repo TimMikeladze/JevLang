@@ -12,6 +12,7 @@ import { ProviderRegistry, mergeProviderConfig, capabilities, commandProvider, c
 import { replay } from '../src/fixtures.mjs';
 import { policy as ticket } from '../examples/ticket-router.mjs';
 import { policy as home } from '../examples/smart-home.mjs';
+import { skipUnlessInMonorepo } from './monorepo.mjs';
 
 const answers = {
   department: { type: 'choice', choice: 'billing', confidence: 0.93, probabilities: { billing: 0.93, technical: 0.05, sales: 0.02 } },
@@ -24,7 +25,8 @@ const restore = () => {
   client.environment = name => ({ TYPESAFE_API_KEY: 'test-key' })[name];
 };
 
-test('Racket oracle: the answer schema and the prompt that carries the questions', () => {
+test('Racket oracle: the answer schema and the prompt that carries the questions', t => {
+  if (skipUnlessInMonorepo(t)) return;
   const oracle = fileURLToPath(new URL('./evaluate-oracle.rkt', import.meta.url));
   const run = spawnSync('racket', [oracle], { encoding: 'utf8', env: { ...process.env, TYPESAFE_API_KEY: '', ANTHROPIC_API_KEY: '', OPENAI_API_KEY: '', JEV_PROVIDER: '', JEV_MODEL: '', JEV_EFFORT: '' } });
   assert.equal(run.status, 0, run.stderr);

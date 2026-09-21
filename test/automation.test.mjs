@@ -12,6 +12,7 @@ import { loadHandlers, handlerFromSpec, confirmHandler, fillTemplate, registerHa
 import { makeLoop, loopStart, loopStop, loopPost, loopIdle, makeEvent, runEvents, timerSource, iterableSource, lineSource } from '../src/loop.mjs';
 import { makeSessions, sessionMessage, sessionPending, sessionForget, defaultMerge } from '../src/session.mjs';
 import { makeDispatcher, dispatch } from '../src/dispatch.mjs';
+import { skipUnlessInMonorepo } from './monorepo.mjs';
 
 const decision = (action, target, data = null, extra = {}) => ({
   action, target, reason: null, data, rule: 'route', clause: 0, source: null, line: null, file: null,
@@ -19,7 +20,8 @@ const decision = (action, target, data = null, extra = {}) => ({
   request_id: null, stage: null, proposed: null, evidence: [], steps: [], readings: [], ...extra,
 });
 
-test('Racket oracle: the template grammar and the clarify merge', () => {
+test('Racket oracle: the template grammar and the clarify merge', t => {
+  if (skipUnlessInMonorepo(t)) return;
   const oracle = fileURLToPath(new URL('./automation-oracle.rkt', import.meta.url));
   const run = spawnSync('racket', [oracle], { encoding: 'utf8', env: { ...process.env, TYPESAFE_API_KEY: '', ANTHROPIC_API_KEY: '', OPENAI_API_KEY: '' } });
   assert.equal(run.status, 0, run.stderr);

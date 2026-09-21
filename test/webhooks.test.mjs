@@ -10,6 +10,7 @@ import {
   webhookHandler, webhookHandlerFromSpec, webhookSource, caseEvent, outcomeEvent, isCaseEvent, isOutcomeEvent,
 } from '../src/webhooks.mjs';
 import { loadHandlers } from '../src/handlers.mjs';
+import { skipUnlessInMonorepo } from './monorepo.mjs';
 
 const decision = (action, target, reason = null) => ({
   action, target, reason, data: null, rule: 'route', clause: 0, source: null, line: null, file: null,
@@ -18,7 +19,8 @@ const decision = (action, target, reason = null) => ({
 });
 const casesPath = new URL('./parity/webhook-cases.json', import.meta.url);
 
-test('Racket oracle: the same signature, and the same verdict from every verifier', async () => {
+test('Racket oracle: the same signature, and the same verdict from every verifier', async t => {
+  if (skipUnlessInMonorepo(t)) return;
   const oracle = fileURLToPath(new URL('./webhooks-oracle.rkt', import.meta.url));
   const run = spawnSync('racket', [oracle], { encoding: 'utf8', env: { ...process.env, JEV_NO_SUCH_SECRET: '' } });
   assert.equal(run.status, 0, run.stderr);

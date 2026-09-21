@@ -10,6 +10,7 @@ import {
   mergeProviderConfig, resolveProvider, runProviderRequest, commandProvider, makeDefaultRegistry,
   clearProviderDiscoveryCache, jsonSchemaValid, runner, environmentReader,
 } from '../src/provider/index.mjs';
+import { skipUnlessInMonorepo } from './monorepo.mjs';
 
 const scenarioPath = new URL('./parity/routing-scenarios.json', import.meta.url);
 const stub = entry => provider({
@@ -39,7 +40,8 @@ const projectTarget = t => ({
 });
 const projectRejection = r => ({ provider: String(r.provider), kind: String(r.kind), detail: typeof r.detail === 'string' ? r.detail : null });
 
-test('Racket oracle: provider resolution over the shared routing scenarios', async () => {
+test('Racket oracle: provider resolution over the shared routing scenarios', async t => {
+  if (skipUnlessInMonorepo(t)) return;
   const oracle = fileURLToPath(new URL('./routing-oracle.rkt', import.meta.url));
   const run = spawnSync('racket', [oracle], { encoding: 'utf8', env: { ...process.env, TYPESAFE_API_KEY: '', ANTHROPIC_API_KEY: '', OPENAI_API_KEY: '', JEV_PROVIDER: '', JEV_MODEL: '', JEV_EFFORT: '' } });
   assert.equal(run.status, 0, run.stderr);
@@ -241,7 +243,8 @@ test('the JSON Schema subset checks types, enums, closed objects and bounds', ()
   assert.ok(!jsonSchemaValid({ type: 'number', maximum: 1 }, 2));
 });
 
-test('Racket oracle: the custom executable sees the same jev-provider/1 request', async () => {
+test('Racket oracle: the custom executable sees the same jev-provider/1 request', async t => {
+  if (skipUnlessInMonorepo(t)) return;
   const echo = await script(`
     let input = '';
     process.stdin.on('data', c => { input += c; });

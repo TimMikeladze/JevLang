@@ -10,6 +10,7 @@ import {
   serveStdio, modernVersion, legacyVersions, supportedVersions, metaProtocolVersion, metaClientCapabilities, metaServerInfo, policyToJson,
 } from '../src/mcp.mjs';
 import { policy as ticket } from '../examples/ticket-router.mjs';
+import { skipUnlessInMonorepo } from './monorepo.mjs';
 
 const modernMeta = { [metaProtocolVersion]: modernVersion, [metaClientCapabilities]: {} };
 const answers = {
@@ -18,7 +19,8 @@ const answers = {
   'refund-requested?': { type: 'noul', noul: 0.1 },
 };
 
-test('Racket oracle: the same MCP messages get the same replies', async () => {
+test('Racket oracle: the same MCP messages get the same replies', async t => {
+  if (skipUnlessInMonorepo(t)) return;
   const oracle = fileURLToPath(new URL('./mcp-oracle.rkt', import.meta.url));
   const run = spawnSync('racket', [oracle], { encoding: 'utf8', env: { ...process.env, TYPESAFE_API_KEY: '', ANTHROPIC_API_KEY: '', OPENAI_API_KEY: '' } });
   assert.equal(run.status, 0, run.stderr);

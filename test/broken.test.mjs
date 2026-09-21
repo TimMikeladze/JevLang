@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import {
   definePolicy, choice, score, noul, gate, band, rule, all, any, assign, page, hold, escalate, act, confirm, fact, threshold,
 } from '../src/index.mjs';
+import { skipUnlessInMonorepo } from './monorepo.mjs';
 
 const brokenDir = new URL('../../jev-lang/examples/broken/', import.meta.url);
 const refuse = build => {
@@ -142,7 +143,8 @@ test('every broken example is refused here too, with the fix named', () => {
   }
 });
 
-test('Racket refuses exactly these examples, and dead-action cannot be written here', () => {
+test('Racket refuses exactly these examples, and dead-action cannot be written here', t => {
+  if (skipUnlessInMonorepo(t)) return;
   // The Racket compiler is the oracle: every file in broken/ must fail to compile.
   const files = spawnSync('ls', [fileURLToPath(brokenDir)], { encoding: 'utf8' }).stdout.split('\n').filter(f => f.endsWith('.rkt'));
   assert.deepEqual(files.sort(), [...cases.map(c => c.file), 'dead-action.rkt'].sort());

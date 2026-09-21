@@ -4,8 +4,10 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { redact, redactString, redactorNames, capValue, redactQuestions, restoreAnswerKeys, checkTokenBudget } from '../src/state.mjs';
 import { definePolicy, rule, hold, fact, eq } from '../src/index.mjs';
+import { skipUnlessInMonorepo } from './monorepo.mjs';
 
-test('redaction and state cap oracle over all strings in existing Racket regression tests', () => {
+test('redaction and state cap oracle over all strings in existing Racket regression tests', t => {
+  if (skipUnlessInMonorepo(t)) return;
   const run = spawnSync('racket', [fileURLToPath(new URL('./state-oracle.rkt', import.meta.url))], { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
   assert.equal(run.status, 0, run.stderr);
   const cases = JSON.parse(run.stdout);

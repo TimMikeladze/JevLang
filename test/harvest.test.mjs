@@ -12,6 +12,7 @@ import {
 import { fixtureFromRun } from '../src/evaluate.mjs';
 import { replay, tune } from '../src/fixtures.mjs';
 import { policy as ticket } from '../examples/ticket-router.mjs';
+import { skipUnlessInMonorepo } from './monorepo.mjs';
 
 const answers = {
   department: { type: 'choice', choice: 'billing', confidence: 0.93, probabilities: { billing: 0.93 } },
@@ -32,7 +33,8 @@ const decidedCase = () => {
 };
 const fixed = () => 1_800_000_000;
 
-test('Racket oracle: the same file names, labels, settle rules and store lifecycle', async () => {
+test('Racket oracle: the same file names, labels, settle rules and store lifecycle', async t => {
+  if (skipUnlessInMonorepo(t)) return;
   const store = await mkdtemp(join(tmpdir(), 'jev-harvest-racket-'));
   const oracle = fileURLToPath(new URL('./harvest-oracle.rkt', import.meta.url));
   const run = spawnSync('racket', [oracle, store], { encoding: 'utf8', env: { ...process.env, TYPESAFE_API_KEY: '', ANTHROPIC_API_KEY: '', OPENAI_API_KEY: '' } });

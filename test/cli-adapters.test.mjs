@@ -10,6 +10,7 @@ import {
   codexProvider, codexCliRunner, codexOutputSchema, restoreOptionalFields, catalogToSettings,
   fxProvider, fxCliRunner, providerRequest, targetSpec, runner, ProviderError, makeDefaultRegistry,
 } from '../src/provider/index.mjs';
+import { skipUnlessInMonorepo } from './monorepo.mjs';
 
 const casesPath = new URL('./parity/cli-adapter-scenarios.json', import.meta.url);
 const here = fileURLToPath(new URL('..', import.meta.url)).replace(/\/$/, '');
@@ -60,7 +61,8 @@ const scrub = (args, directory) => args.map(a => {
   return canonical(a);
 });
 
-test('Racket oracle: each CLI adapter builds the same command line and reads the same answer', async () => {
+test('Racket oracle: each CLI adapter builds the same command line and reads the same answer', async t => {
+  if (skipUnlessInMonorepo(t)) return;
   const oracle = fileURLToPath(new URL('./cli-adapters-oracle.rkt', import.meta.url));
   const run = spawnSync('racket', [oracle, here], { encoding: 'utf8', env: { ...process.env, TYPESAFE_API_KEY: '', ANTHROPIC_API_KEY: '', OPENAI_API_KEY: '' } });
   assert.equal(run.status, 0, run.stderr);

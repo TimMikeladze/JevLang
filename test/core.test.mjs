@@ -14,6 +14,7 @@ import { policy as dispute } from '../examples/dispute-review.mjs';
 import { policy as fanout } from '../examples/triage-fanout.mjs';
 import { policy as guardrails } from '../examples/guardrails.mjs';
 import { policy as home } from '../examples/smart-home.mjs';
+import { skipUnlessInMonorepo } from './monorepo.mjs';
 
 // Source spelling and line numbers naturally differ between implementations.
 const semantic = d => d && ({ ...d, source: null, line: null, file: null, proposed: semantic(d.proposed), steps: d.steps.map(semantic) });
@@ -28,7 +29,8 @@ const q = choice('q', 'Which?', ['a', 'b']);
 const simple = overrides => definePolicy({ name: 'simple', questions: [q], gates: [gate(q, 0.8, hold())], route: { clauses: [rule(q.is('a'), assign('a'))], otherwise: assign('b') }, ...overrides });
 const fixtureDir = new URL('../../jev-lang/examples/fixtures/', import.meta.url);
 
-test('reference ticket fixtures retain fingerprints and expected decisions', async () => {
+test('reference ticket fixtures retain fingerprints and expected decisions', async t => {
+  if (skipUnlessInMonorepo(t)) return;
   const fixtures = await Promise.all((await readdir(fixtureDir)).filter(f => f.endsWith('.json')).map(async f => JSON.parse(await readFile(new URL(f, fixtureDir), 'utf8'))));
   const rows = replay(ticket, fixtures);
   assert.equal(rows.length, 5);
@@ -37,6 +39,7 @@ test('reference ticket fixtures retain fingerprints and expected decisions', asy
 });
 
 test('Racket oracle: all synthetic and real ticket fixtures match semantic decisions and reads', async t => {
+  if (skipUnlessInMonorepo(t)) return;
   // Racket is a development oracle only; the installed product never imports it.
   const rows = racket('./oracle.rkt');
   assert.ok(rows.length >= 11);
@@ -49,7 +52,8 @@ test('Racket oracle: all synthetic and real ticket fixtures match semantic decis
   }
 });
 
-test('Racket oracle: option code names and wire keys, named levels, raw questions', () => {
+test('Racket oracle: option code names and wire keys, named levels, raw questions', t => {
+  if (skipUnlessInMonorepo(t)) return;
   const { questions, cases } = racket('./names-oracle.rkt');
   assert.deepEqual(names.policy.questions({ request: 'the request text' }), questions);
   for (const row of cases) {
@@ -59,7 +63,8 @@ test('Racket oracle: option code names and wire keys, named levels, raw question
   }
 });
 
-test('the real recorded smart-home answers replay, with the questions verified exactly', async () => {
+test('the real recorded smart-home answers replay, with the questions verified exactly', async t => {
+  if (skipUnlessInMonorepo(t)) return;
   const dir = new URL('../../jev-lang/examples/recorded/smart-home/', import.meta.url);
   const fixtures = await Promise.all((await readdir(dir)).filter(f => f.endsWith('.json')).sort()
     .map(async f => JSON.parse(await readFile(new URL(f, dir), 'utf8'))));
@@ -73,7 +78,8 @@ test('the real recorded smart-home answers replay, with the questions verified e
   assert.deepEqual(rows.map(r => r.decision.action), ['act', 'schedule', 'clarify', 'plan', 'hold', 'plan', 'confirm']);
 });
 
-test('Racket oracle: the reference policies decide, gate, flag and build state alike', async () => {
+test('Racket oracle: the reference policies decide, gate, flag and build state alike', async t => {
+  if (skipUnlessInMonorepo(t)) return;
   const oracle = racket('./reference-oracle.rkt');
   const homeDir = new URL('../../jev-lang/examples/recorded/smart-home/', import.meta.url);
   const homeFixtures = await Promise.all((await readdir(homeDir)).filter(f => f.endsWith('.json')).sort()
@@ -107,7 +113,8 @@ test('Racket oracle: the reference policies decide, gate, flag and build state a
   }
 });
 
-test('Racket oracle: the monitoring summary and the calibration table', async () => {
+test('Racket oracle: the monitoring summary and the calibration table', async t => {
+  if (skipUnlessInMonorepo(t)) return;
   const oracle = racket('./monitor-oracle.rkt');
   const dirs = ['fixtures', 'recorded', 'labeled'];
   const loaded = (await Promise.all(dirs.map(async folder => {
@@ -268,7 +275,8 @@ test('fixtures reject legacy format, detect stale questions, diff routing and tu
   assert.equal(report.warnings.length, 2); assert.equal(report.results[0].correct, 1);
 });
 
-test('Racket oracle: the two-window comparison and every text report', async () => {
+test('Racket oracle: the two-window comparison and every text report', async t => {
+  if (skipUnlessInMonorepo(t)) return;
   const oracle = racket('./monitor-text-oracle.rkt');
   const dirs = ['fixtures', 'recorded', 'labeled'];
   const loaded = (await Promise.all(dirs.map(async folder => {

@@ -7,6 +7,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { memoryJournal } from '../src/journal.mjs';
 import { sqliteJournal } from '../src/journal-db.mjs';
+import { skipUnlessInMonorepo } from './monorepo.mjs';
 
 const opsPath = new URL('./parity/journal-ops.json', import.meta.url);
 async function runOps(journal, ops) {
@@ -18,7 +19,8 @@ async function runOps(journal, ops) {
   return out;
 }
 
-test('Racket oracle: the in-memory and SQLite journals answer the same script', async () => {
+test('Racket oracle: the in-memory and SQLite journals answer the same script', async t => {
+  if (skipUnlessInMonorepo(t)) return;
   const ops = JSON.parse(await readFile(opsPath, 'utf8'));
   const dir = await mkdtemp(join(tmpdir(), 'jev-journal-'));
   const oracle = fileURLToPath(new URL('./journal-oracle.rkt', import.meta.url));

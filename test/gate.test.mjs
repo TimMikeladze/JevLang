@@ -17,6 +17,7 @@ import { settings as client } from '../src/client.mjs';
 import { ProviderRegistry, mergeProviderConfig, clearProviderDiscoveryCache } from '../src/provider/index.mjs';
 import { handleMessage, makeMcpConn, modernVersion, metaProtocolVersion, metaClientCapabilities, inputRequired, McpError } from '../src/mcp.mjs';
 import { mcpConnect, mcpClose } from '../src/mcp-client.mjs';
+import { skipUnlessInMonorepo } from './monorepo.mjs';
 
 const fixtureDir = new URL('../../jev-lang/examples/gate-fixtures/', import.meta.url);
 const loadFixtures = async () => {
@@ -54,6 +55,7 @@ const decision = (action, target, reason) => ({
 });
 
 test('Racket oracle: the same tool calls get the same verdicts and hook answers', async t => {
+  if (skipUnlessInMonorepo(t)) return;
   const approvals = await mkdtemp(join(tmpdir(), 'jev-approvals-'));
   const oracle = fileURLToPath(new URL('./gate-oracle.rkt', import.meta.url));
   const run = spawnSync('racket', [oracle, approvals], { encoding: 'utf8', cwd: fileURLToPath(new URL('..', import.meta.url)), env: { ...process.env, TYPESAFE_API_KEY: '', ANTHROPIC_API_KEY: '', OPENAI_API_KEY: '' } });
@@ -151,6 +153,7 @@ test('the gate fails closed: no key, a bad load, or an odd decision all deny or 
 });
 
 test('a one-shot approval is signed, consumed, and cannot be reused', async t => {
+  if (skipUnlessInMonorepo(t)) return;
   const approvals = await mkdtemp(join(tmpdir(), 'jev-approvals-'));
   const previous = approvalSettings.directory;
   approvalSettings.directory = approvals;
@@ -198,6 +201,7 @@ test('a requestState is signed, expiring, and bound to one call', () => {
 });
 
 test('the proxy gates another server: allow forwards, deny blocks, ask asks a person', async t => {
+  if (skipUnlessInMonorepo(t)) return;
   const upstreamPath = fileURLToPath(new URL('../examples/mcp-policy-server.mjs', import.meta.url));
   const upstream = await mcpConnect([process.execPath, upstreamPath]);
   t.after(() => mcpClose(upstream));
@@ -254,7 +258,8 @@ test('the proxy gates another server: allow forwards, deny blocks, ask asks a pe
   assert.match(plain.result.content[0].text, /this client can't ask one/);
 });
 
-test('every verdict is logged, with the arguments summarized by a digest', async () => {
+test('every verdict is logged, with the arguments summarized by a digest', async t => {
+  if (skipUnlessInMonorepo(t)) return;
   const dir = await mkdtemp(join(tmpdir(), 'jev-gate-log-'));
   const path = join(dir, 'verdicts.jsonl');
   const fixtures = await loadFixtures();
