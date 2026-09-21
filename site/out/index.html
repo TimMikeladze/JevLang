@@ -119,15 +119,17 @@ details.menu a:hover,details.menu button:hover{background:var(--band);color:var(
 .diagram{border:1px solid var(--line);border-radius:.7rem;background:var(--paper);padding:1.4rem 1.2rem 1rem;margin-inline:0;overflow-x:auto}
 .diagram svg{display:block;width:100%;height:auto;min-width:640px}
 .diagram figcaption{margin-top:.7rem;font:.72rem/1.5 var(--mono);color:var(--soft);letter-spacing:.02em}
-.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1}
-.dg-node text{font-family:var(--mono);fill:var(--ink);font-size:15px;font-weight:600}
-.dg-sub{font-family:var(--mono);fill:var(--soft);font-size:11.5px;font-weight:400}
-.dg-note{font-family:var(--mono);fill:var(--soft);font-size:11.5px}
-.dg-edge{stroke:var(--line);stroke-width:1.4;fill:none}
-.dg-arrow{fill:var(--soft)}
+.dg-box{fill:var(--raise);stroke:color-mix(in oklab,var(--body) 38%,transparent);stroke-width:1}
+text.dg-node{font-family:var(--mono);fill:var(--ink);font-size:15px;font-weight:600}
+.dg-sub{font-family:var(--mono);fill:var(--body);font-size:11.5px;font-weight:400}
+.dg-note{font-family:var(--mono);fill:var(--body);font-size:11.5px}
+.dg-edge{stroke:color-mix(in oklab,var(--body) 48%,transparent);stroke-width:1.4;fill:none}
+.dg-arrow{fill:color-mix(in oklab,var(--body) 58%,transparent)}
+.dg-axis{stroke:color-mix(in oklab,var(--body) 60%,transparent)}
+.dg-tick{stroke:color-mix(in oklab,var(--body) 48%,transparent)}
 .dg-accent{stroke:var(--accent)}.dg-add{stroke:var(--add)}.dg-warn{stroke:var(--warn)}.dg-del{stroke:var(--del)}
-.dg-tint-add{fill:color-mix(in oklab,var(--add) 9%,transparent)}
-.dg-tint-del{fill:color-mix(in oklab,var(--del) 9%,transparent)}
+.dg-tint-add{fill:color-mix(in oklab,var(--add) 13%,transparent)}
+.dg-tint-del{fill:color-mix(in oklab,var(--del) 14%,transparent)}
 .dg-lane{stroke:var(--accent);stroke-dasharray:3 5;stroke-width:1.2}
 /* figures */
 .figures{display:flex;gap:2rem;flex-wrap:wrap;margin:0 0 .8rem}
@@ -206,7 +208,7 @@ h1{font-size:2.6rem}
 <h1>Decide once, trust everywhere</h1>
 <p class="lede"><code>jevlang</code> is an open source policy engine for the decisions that used to live inside a prompt — routing, triage, approvals, guarding an agent's tools. Built on plain <a href="https://github.com/TimMikeladze/JevLang">TypeScript or Python</a>, no runtime dependencies. Made by <a href="https://x.com/linesofcode">linesofcode</a>.</p>
 <div class="actions">
-<button class="control" data-copy="npm install github:TimMikeladze/JevLang" aria-label="Copy install command"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 9h-9a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2zM5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> <code>npm install github:TimMikeladze/JevLang</code> <span class="copy-state" aria-live="polite"></span></button>
+<button class="control" data-copy="npm install jevlang" aria-label="Copy install command"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 9h-9a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2zM5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> <code>npm install jevlang</code> <span class="copy-state" aria-live="polite"></span></button>
 <details class="control">
 <summary><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg> For agents</summary>
 <div class="menu">
@@ -217,7 +219,7 @@ h1{font-size:2.6rem}
 </details>
 <a class="control control--solid" href="/reference"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 1 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/></svg> Documentation</a>
 </div>
-<p class="muted">Currently v0.1.0-dev.1 · MIT license · nothing published to npm yet, install from the repo</p>
+<p class="muted">Currently v0.1.0-dev.1 · MIT license</p>
 </div></section>
 <section id="write-the-policy" class="section section--band" aria-labelledby="write-the-policy-h">
 <div class="shell">
@@ -274,8 +276,8 @@ h1{font-size:2.6rem}
 <rect class="dg-tint-add" x="800" y="86" width="180" height="28"/>
 <text x="440" y="80" text-anchor="middle" class="dg-note" fill="var(--del)">escalate</text>
 <text x="890" y="80" text-anchor="middle" class="dg-note" fill="var(--add)">route</text>
-<line x1="80" y1="100" x2="980" y2="100" stroke="var(--soft)" stroke-width="1.4"/>
-<line x1="80" y1="96" x2="80" y2="104" stroke="var(--soft)"/><text x="80" y="126" text-anchor="middle" class="dg-note">0</text><line x1="305" y1="96" x2="305" y2="104" stroke="var(--soft)"/><text x="305" y="126" text-anchor="middle" class="dg-note">0.25</text><line x1="530" y1="96" x2="530" y2="104" stroke="var(--soft)"/><text x="530" y="126" text-anchor="middle" class="dg-note">0.5</text><line x1="755" y1="96" x2="755" y2="104" stroke="var(--soft)"/><text x="755" y="126" text-anchor="middle" class="dg-note">0.75</text><line x1="980" y1="96" x2="980" y2="104" stroke="var(--soft)"/><text x="980" y="126" text-anchor="middle" class="dg-note">1</text>
+<line class="dg-axis" x1="80" y1="100" x2="980" y2="100" stroke-width="1.4"/>
+<line class="dg-tick" x1="80" y1="96" x2="80" y2="104"/><text x="80" y="126" text-anchor="middle" class="dg-note">0</text><line class="dg-tick" x1="305" y1="96" x2="305" y2="104"/><text x="305" y="126" text-anchor="middle" class="dg-note">0.25</text><line class="dg-tick" x1="530" y1="96" x2="530" y2="104"/><text x="530" y="126" text-anchor="middle" class="dg-note">0.5</text><line class="dg-tick" x1="755" y1="96" x2="755" y2="104"/><text x="755" y="126" text-anchor="middle" class="dg-note">0.75</text><line class="dg-tick" x1="980" y1="96" x2="980" y2="104"/><text x="980" y="126" text-anchor="middle" class="dg-note">1</text>
 <line x1="800" y1="58" x2="800" y2="114" class="dg-accent" stroke="var(--accent)" stroke-width="2"/>
 <text x="800" y="44" text-anchor="middle" class="dg-note" fill="var(--accent)">gate(department, 0.80, escalate('human-triage'))</text>
 <circle cx="908" cy="100" r="6" fill="var(--add)"/>
@@ -396,7 +398,7 @@ h1{font-size:2.6rem}
 <h2 id="boundaries-h">Boundaries</h2>
 <p class="expl">What is proven, what is a judgement, and what is not here yet — the same honesty the engine ships with.</p>
 <div class="boundaries">
-<div class="boundary"><h3>Holds</h3><ul><li>Decisions, wire questions, built state and reports match the Racket <code>jev</code> engine byte-for-byte, pinned by differential oracles.</li><li><code>bun test</code>: 97 tests, 0 failures, offline — the number is read out of the captured run below.</li><li>Pure decisions, validation and replay work fully offline: no account, no network, no Racket.</li></ul></div><div class="boundary"><h3>Judgement</h3><ul><li>Cost estimates are fitted to your recorded usage, or a stated ~4-chars-per-token estimate when you have none.</li><li><code>calibrate</code> reports ECE and a reliability table, and tells you when you don't have enough labels to trust them.</li></ul></div><div class="boundary"><h3>Not here yet</h3><ul><li>Code lookup (<code>jev/code</code>), which needs an SGX executable.</li><li>Compile-time conveniences: <code>include-questions</code>, <code>#:options-file</code>, <code>#:options</code>.</li><li>Nothing published to npm yet — install from this repo. The names are settled and recorded.</li></ul></div>
+<div class="boundary"><h3>Holds</h3><ul><li>Decisions, wire questions, built state and reports are pinned by differential oracles, and recorded runs replay byte-for-byte.</li><li><code>bun test</code>: 97 tests, 0 failures, offline — the number is read out of the captured run below.</li><li>Pure decisions, validation and replay work fully offline: no account, no network.</li></ul></div><div class="boundary"><h3>Judgement</h3><ul><li>Cost estimates are fitted to your recorded usage, or a stated ~4-chars-per-token estimate when you have none.</li><li><code>calibrate</code> reports ECE and a reliability table, and tells you when you don't have enough labels to trust them.</li></ul></div><div class="boundary"><h3>Not here yet</h3><ul><li>A hosted dashboard — <code>@jev/cloud</code> runs the engine over HTTP; the dashboard surface is still growing.</li><li>Semantic-versioning guarantees before 1.0 — option shapes may still change.</li></ul></div>
 </div>
 </div>
 </section>
@@ -409,7 +411,7 @@ h1{font-size:2.6rem}
 <div class="figures"><div class="figure"><b>97</b><span>Tests passing</span></div><div class="figure"><b>0</b><span>Failures</span></div></div>
 <figure class="frame frame--stacked demo">
 <div class="frame-bar"><span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span><span>shell</span><span class="chip">source</span></div>
-<pre class="frame-body">$ npm install github:TimMikeladze/JevLang</pre>
+<pre class="frame-body">$ npm install jevlang</pre>
 </figure>
 <figure class="frame frame--stacked demo">
 <div class="frame-bar"><span>$ bun install</span><span class="chip chip--captured">captured output</span></div>

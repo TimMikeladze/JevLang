@@ -256,15 +256,17 @@ details.menu a:hover,details.menu button:hover{background:var(--band);color:var(
 .diagram{border:1px solid var(--line);border-radius:.7rem;background:var(--paper);padding:1.4rem 1.2rem 1rem;margin-inline:0;overflow-x:auto}
 .diagram svg{display:block;width:100%;height:auto;min-width:640px}
 .diagram figcaption{margin-top:.7rem;font:.72rem/1.5 var(--mono);color:var(--soft);letter-spacing:.02em}
-.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1}
-.dg-node text{font-family:var(--mono);fill:var(--ink);font-size:15px;font-weight:600}
-.dg-sub{font-family:var(--mono);fill:var(--soft);font-size:11.5px;font-weight:400}
-.dg-note{font-family:var(--mono);fill:var(--soft);font-size:11.5px}
-.dg-edge{stroke:var(--line);stroke-width:1.4;fill:none}
-.dg-arrow{fill:var(--soft)}
+.dg-box{fill:var(--raise);stroke:color-mix(in oklab,var(--body) 38%,transparent);stroke-width:1}
+text.dg-node{font-family:var(--mono);fill:var(--ink);font-size:15px;font-weight:600}
+.dg-sub{font-family:var(--mono);fill:var(--body);font-size:11.5px;font-weight:400}
+.dg-note{font-family:var(--mono);fill:var(--body);font-size:11.5px}
+.dg-edge{stroke:color-mix(in oklab,var(--body) 48%,transparent);stroke-width:1.4;fill:none}
+.dg-arrow{fill:color-mix(in oklab,var(--body) 58%,transparent)}
+.dg-axis{stroke:color-mix(in oklab,var(--body) 60%,transparent)}
+.dg-tick{stroke:color-mix(in oklab,var(--body) 48%,transparent)}
 .dg-accent{stroke:var(--accent)}.dg-add{stroke:var(--add)}.dg-warn{stroke:var(--warn)}.dg-del{stroke:var(--del)}
-.dg-tint-add{fill:color-mix(in oklab,var(--add) 9%,transparent)}
-.dg-tint-del{fill:color-mix(in oklab,var(--del) 9%,transparent)}
+.dg-tint-add{fill:color-mix(in oklab,var(--add) 13%,transparent)}
+.dg-tint-del{fill:color-mix(in oklab,var(--del) 14%,transparent)}
 .dg-lane{stroke:var(--accent);stroke-dasharray:3 5;stroke-width:1.2}
 /* figures */
 .figures{display:flex;gap:2rem;flex-wrap:wrap;margin:0 0 .8rem}
@@ -500,8 +502,8 @@ ${DG_DEFS('dg')}
 <rect class="dg-tint-add" x="${X(bar)}" y="86" width="${980 - X(bar)}" height="28"/>
 <text x="${(80 + X(bar)) / 2}" y="80" text-anchor="middle" class="dg-note" fill="var(--del)">escalate</text>
 <text x="${(X(bar) + 980) / 2}" y="80" text-anchor="middle" class="dg-note" fill="var(--add)">route</text>
-<line x1="80" y1="100" x2="980" y2="100" stroke="var(--soft)" stroke-width="1.4"/>
-${[0, 0.25, 0.5, 0.75, 1].map((t) => `<line x1="${X(t)}" y1="96" x2="${X(t)}" y2="104" stroke="var(--soft)"/><text x="${X(t)}" y="126" text-anchor="middle" class="dg-note">${t}</text>`).join('')}
+<line class="dg-axis" x1="80" y1="100" x2="980" y2="100" stroke-width="1.4"/>
+${[0, 0.25, 0.5, 0.75, 1].map((t) => `<line class="dg-tick" x1="${X(t)}" y1="96" x2="${X(t)}" y2="104"/><text x="${X(t)}" y="126" text-anchor="middle" class="dg-note">${t}</text>`).join('')}
 <line x1="${X(bar)}" y1="58" x2="${X(bar)}" y2="114" class="dg-accent" stroke="var(--accent)" stroke-width="2"/>
 <text x="${X(bar)}" y="44" text-anchor="middle" class="dg-note" fill="var(--accent)">gate(department, ${bar}, escalate('human-triage'))</text>
 <circle cx="${X(passes)}" cy="100" r="6" fill="var(--add)"/>
@@ -676,7 +678,7 @@ ${terminalFrame(start.panels[1].ref.cmd, resolve.terminal(start.panels[1].ref.cm
 <h1>${esc(meta.h1)}</h1>
 <p class="lede">${inlineMd(meta.lede)}</p>
 ${actions}
-<p class="muted">Currently v${esc(version)} · MIT license · nothing published to npm yet, install from the repo</p>
+<p class="muted">Currently v${esc(version)} · MIT license</p>
 </div></section>`;
 
   return `<!doctype html>
@@ -745,7 +747,7 @@ export function agentsMd({ readme }) {
   const snippetHello = resolve.snippet("const spam = noul('spam?'");
   return `# AGENTS.md — using ${meta.name} from an agent
 
-Install: \`npm install github:TimMikeladze/JevLang\` (nothing on npm yet). Node 22+,
+Install: \`npm install jevlang\`. Node 22+,
 no runtime dependencies. Pure decisions, validation and replay work offline.
 
 Minimal working policy (from the README, verified by the captured runs there):

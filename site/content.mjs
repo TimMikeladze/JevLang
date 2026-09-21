@@ -12,7 +12,7 @@ export const meta = {
     '`jevlang` is an open source policy engine for the decisions that used to live inside a prompt — routing, triage, approvals, guarding an agent\'s tools. Built on plain [TypeScript or Python](REPO), no runtime dependencies. Made by [linesofcode](https://x.com/linesofcode).',
   description:
     'JevLang is an open source policy engine for decisions that live inside a prompt: routing, triage, approvals and tool gates, journaled and replayable.',
-  install: 'npm install github:TimMikeladze/JevLang',
+  install: 'npm install jevlang',
   tagline: 'a policy engine for prompt-sized decisions',
   license: 'MIT',
 };
@@ -96,12 +96,12 @@ export const boundaries = {
   h2: 'Boundaries',
   columns: [
     {
-      title: 'Holds',
-      items: [
-        'Decisions, wire questions, built state and reports match the Racket `jev` engine byte-for-byte, pinned by differential oracles.',
-        '`bun test`: 97 tests, 0 failures, offline — the number is read out of the captured run below.',
-        'Pure decisions, validation and replay work fully offline: no account, no network, no Racket.',
-      ],
+        title: 'Holds',
+        items: [
+          'Decisions, wire questions, built state and reports are pinned by differential oracles, and recorded runs replay byte-for-byte.',
+          '`bun test`: 97 tests, 0 failures, offline — the number is read out of the captured run below.',
+          'Pure decisions, validation and replay work fully offline: no account, no network.',
+        ],
     },
     {
       title: 'Judgement',
@@ -112,11 +112,10 @@ export const boundaries = {
     },
     {
       title: 'Not here yet',
-      items: [
-        'Code lookup (`jev/code`), which needs an SGX executable.',
-        'Compile-time conveniences: `include-questions`, `#:options-file`, `#:options`.',
-        'Nothing published to npm yet — install from this repo. The names are settled and recorded.',
-      ],
+        items: [
+          'A hosted dashboard — `@jev/cloud` runs the engine over HTTP; the dashboard surface is still growing.',
+          'Semantic-versioning guarantees before 1.0 — option shapes may still change.',
+        ],
     },
   ],
 };

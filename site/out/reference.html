@@ -119,15 +119,17 @@ details.menu a:hover,details.menu button:hover{background:var(--band);color:var(
 .diagram{border:1px solid var(--line);border-radius:.7rem;background:var(--paper);padding:1.4rem 1.2rem 1rem;margin-inline:0;overflow-x:auto}
 .diagram svg{display:block;width:100%;height:auto;min-width:640px}
 .diagram figcaption{margin-top:.7rem;font:.72rem/1.5 var(--mono);color:var(--soft);letter-spacing:.02em}
-.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1}
-.dg-node text{font-family:var(--mono);fill:var(--ink);font-size:15px;font-weight:600}
-.dg-sub{font-family:var(--mono);fill:var(--soft);font-size:11.5px;font-weight:400}
-.dg-note{font-family:var(--mono);fill:var(--soft);font-size:11.5px}
-.dg-edge{stroke:var(--line);stroke-width:1.4;fill:none}
-.dg-arrow{fill:var(--soft)}
+.dg-box{fill:var(--raise);stroke:color-mix(in oklab,var(--body) 38%,transparent);stroke-width:1}
+text.dg-node{font-family:var(--mono);fill:var(--ink);font-size:15px;font-weight:600}
+.dg-sub{font-family:var(--mono);fill:var(--body);font-size:11.5px;font-weight:400}
+.dg-note{font-family:var(--mono);fill:var(--body);font-size:11.5px}
+.dg-edge{stroke:color-mix(in oklab,var(--body) 48%,transparent);stroke-width:1.4;fill:none}
+.dg-arrow{fill:color-mix(in oklab,var(--body) 58%,transparent)}
+.dg-axis{stroke:color-mix(in oklab,var(--body) 60%,transparent)}
+.dg-tick{stroke:color-mix(in oklab,var(--body) 48%,transparent)}
 .dg-accent{stroke:var(--accent)}.dg-add{stroke:var(--add)}.dg-warn{stroke:var(--warn)}.dg-del{stroke:var(--del)}
-.dg-tint-add{fill:color-mix(in oklab,var(--add) 9%,transparent)}
-.dg-tint-del{fill:color-mix(in oklab,var(--del) 9%,transparent)}
+.dg-tint-add{fill:color-mix(in oklab,var(--add) 13%,transparent)}
+.dg-tint-del{fill:color-mix(in oklab,var(--del) 14%,transparent)}
 .dg-lane{stroke:var(--accent);stroke-dasharray:3 5;stroke-width:1.2}
 /* figures */
 .figures{display:flex;gap:2rem;flex-wrap:wrap;margin:0 0 .8rem}

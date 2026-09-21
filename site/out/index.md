@@ -2,7 +2,7 @@
 
 jevlang is an open source policy engine for the decisions that used to live inside a prompt — routing, triage, approvals, guarding an agent's tools. Built on plain TypeScript or Python (https://github.com/TimMikeladze/JevLang), no runtime dependencies. Made by linesofcode (https://x.com/linesofcode).
 
-Install: `npm install github:TimMikeladze/JevLang` · Currently v0.1.0-dev.1
+Install: `npm install jevlang` · Currently v0.1.0-dev.1
 
 ## A policy, not a prompt
 
@@ -27,21 +27,20 @@ The core is small; the surface is what a production decision needs. jevlang/prov
 ## Boundaries
 
 **Holds**
-- Decisions, wire questions, built state and reports match the Racket jev engine byte-for-byte, pinned by differential oracles.
+- Decisions, wire questions, built state and reports are pinned by differential oracles, and recorded runs replay byte-for-byte.
 - bun test: 97 tests, 0 failures, offline — the number is read out of the captured run below.
-- Pure decisions, validation and replay work fully offline: no account, no network, no Racket.
+- Pure decisions, validation and replay work fully offline: no account, no network.
 
 **Judgement**
 - Cost estimates are fitted to your recorded usage, or a stated ~4-chars-per-token estimate when you have none.
 - calibrate reports ECE and a reliability table, and tells you when you don't have enough labels to trust them.
 
 **Not here yet**
-- Code lookup (jev/code), which needs an SGX executable.
-- Compile-time conveniences: include-questions, #:options-file, #:options.
-- Nothing published to npm yet — install from this repo. The names are settled and recorded.
+- A hosted dashboard — @jev/cloud runs the engine over HTTP; the dashboard surface is still growing.
+- Semantic-versioning guarantees before 1.0 — option shapes may still change.
 
 ## Start
 
 ```sh
-$ npm install github:TimMikeladze/JevLang
+$ npm install jevlang
 ```

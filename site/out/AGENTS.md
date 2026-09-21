@@ -1,6 +1,6 @@
 # AGENTS.md — using JevLang from an agent
 
-Install: `npm install github:TimMikeladze/JevLang` (nothing on npm yet). Node 22+,
+Install: `npm install jevlang`. Node 22+,
 no runtime dependencies. Pure decisions, validation and replay work offline.
 
 Minimal working policy (from the README, verified by the captured runs there):
