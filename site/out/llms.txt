@@ -7,7 +7,7 @@ Reference: https://jevlang.sh/reference
 
 ## A policy, not a prompt
 
-Declare each question once with noul, choice or score, then hand definePolicy({ questions, route }) a list of clauses. A typo like department.is('billling') is a construction-time error, and a route with a hole is refused before anything deploys. Below is the README's whole example, and the decision it really made.
+Declare each question once with noul, choice or score, then hand definePolicy({ questions, route }) a list of clauses. A typo like department.is('billling') is a construction-time error, and a route with a hole is refused before anything deploys. This is the whole policy — and the decision it actually made.
 
 ```
 import { noul, definePolicy, rule, assign, hold } from 'jevlang';
@@ -90,23 +90,24 @@ $ node examples/tool-gate.mjs  # effect=destructive @ 0.95
 
 ## Everything else in the box
 
-The core is small; the surface is what a production decision needs. jevlang/provider is the one call that leaves the machine — and a precheck that already decides makes no call at all. This table is read out of the README at build time.
+The core is small; the surface is what a production decision needs. jevlang/provider is the one call that leaves the machine — and a precheck that already decides makes no call at all. Every module ships in the npm package as a subpath export: install once, import what you need.
 
 ## Same engine, hosted
 
 @jev/cloud runs this engine for many tenants: deploy, promote, evaluate and replay over HTTP. Every route but /healthz takes Authorization: Bearer jev_live_…, and the organization comes from the credential, never the path. Deployments are immutable; promote with expect is the only thing that moves production.
 
-## Boundaries
+## Built for production
 
-Holds:
+Guarantees:
 - Decisions, wire questions, built state and reports are pinned by differential oracles, and recorded runs replay byte-for-byte.
 - bun test: 97 tests, 0 failures, offline — the number is read out of the captured run below.
 - Pure decisions, validation and replay work fully offline: no account, no network.
 
-Judgement:
+Honest numbers:
 - Cost estimates are fitted to your recorded usage, or a stated ~4-chars-per-token estimate when you have none.
 - calibrate reports ECE and a reliability table, and tells you when you don't have enough labels to trust them.
 
-Not here yet:
-- A hosted dashboard — @jev/cloud runs the engine over HTTP; the dashboard surface is still growing.
-- Semantic-versioning guarantees before 1.0 — option shapes may still change.
+Ships today:
+- npm install jevlang — MIT licensed, zero runtime dependencies, TypeScript and Python.
+- Every module in the table above is a published subpath export of the npm package.
+- Need it hosted? @jev/cloud is live at cloud.jevlang.sh (https://cloud.jevlang.sh).

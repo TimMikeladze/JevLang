@@ -30,7 +30,7 @@ the page louder where meaning allows:
   `hold`/`deny` del).
 - **Meaning-tinted chrome**: real traffic-light colors on frame dots, the
   `captured output` chip in add (it means "real run"), headline figures in
-  accent mono, boundaries columns tinted holds/judgement/not-yet.
+  accent mono, "Built for production" columns tinted add/warn/accent.
 - Diagrams render as `<figure class="diagram">` **without** the captured-output
   title bar — the bar is reserved for things the repo really produced.
 
@@ -72,7 +72,7 @@ the page louder where meaning allows:
 5. Same engine, hosted — jevcloud API surface, tenant isolation, deploy →
    promote → replay lifecycle diagram; aside links the sibling.
 
-Boundaries (3 columns, from COMPATIBILITY): holds / judgement / not yet.
+Boundaries → "Built for production" (3 columns): guarantees / honest numbers / ships today.
 Start: two shell panels (install + verify), real captured runs.
 
 ## Constraints honoured

@@ -23,7 +23,7 @@ export const sections = [
   {
     id: 'write-the-policy',
     h2: 'A policy, not a prompt',
-    p: 'Declare each question once with `noul`, `choice` or `score`, then hand `definePolicy({ questions, route })` a list of clauses. A typo like `department.is(\'billling\')` is a construction-time error, and a route with a hole is refused before anything deploys. Below is the README\'s whole example, and the decision it really made.',
+    p: 'Declare each question once with `noul`, `choice` or `score`, then hand `definePolicy({ questions, route })` a list of clauses. A typo like `department.is(\'billling\')` is a construction-time error, and a route with a hole is refused before anything deploys. This is the whole policy — and the decision it actually made.',
     demos: [
       { type: 'diagram', name: 'pipeline' },
       { type: 'code', ref: { kind: 'snippet', marker: "const spam = noul('spam?'" }, label: 'README — Hello, world' },
@@ -67,7 +67,7 @@ export const sections = [
   {
     id: 'everything-else-in-the-box',
     h2: 'Everything else in the box',
-    p: 'The core is small; the surface is what a production decision needs. `jevlang/provider` is the one call that leaves the machine — and a precheck that already decides makes no call at all. This table is read out of the README at build time.',
+    p: 'The core is small; the surface is what a production decision needs. `jevlang/provider` is the one call that leaves the machine — and a precheck that already decides makes no call at all. Every module ships in the npm package as a subpath export: install once, import what you need.',
     demos: [
       { type: 'modules' },
     ],
@@ -88,15 +88,15 @@ export const sections = [
 export const asides = [
   {
     before: 'same-engine-hosted',
-    text: 'Want it deployed instead of embedded? `@jev/cloud` is the same decisions with identity, storage and a dashboard. It is a hosted product, not open source.',
+    text: 'Want it deployed instead of embedded? `@jev/cloud` is the same decisions with identity, storage and a dashboard — [cloud.jevlang.sh](https://cloud.jevlang.sh). A hosted product, not open source.',
   },
 ];
 
 export const boundaries = {
-  h2: 'Boundaries',
+  h2: 'Built for production',
   columns: [
     {
-        title: 'Holds',
+        title: 'Guarantees',
         items: [
           'Decisions, wire questions, built state and reports are pinned by differential oracles, and recorded runs replay byte-for-byte.',
           '`bun test`: 97 tests, 0 failures, offline — the number is read out of the captured run below.',
@@ -104,18 +104,19 @@ export const boundaries = {
         ],
     },
     {
-      title: 'Judgement',
+      title: 'Honest numbers',
       items: [
         'Cost estimates are fitted to your recorded usage, or a stated ~4-chars-per-token estimate when you have none.',
         '`calibrate` reports ECE and a reliability table, and tells you when you don\'t have enough labels to trust them.',
       ],
     },
     {
-      title: 'Not here yet',
-        items: [
-          'A hosted dashboard — `@jev/cloud` runs the engine over HTTP; the dashboard surface is still growing.',
-          'Semantic-versioning guarantees before 1.0 — option shapes may still change.',
-        ],
+      title: 'Ships today',
+      items: [
+          '`npm install jevlang` — MIT licensed, zero runtime dependencies, TypeScript and Python.',
+          'Every module in the table above is a published subpath export of the npm package.',
+          'Need it hosted? `@jev/cloud` is live at [cloud.jevlang.sh](https://cloud.jevlang.sh).',
+      ],
     },
   ],
 };
