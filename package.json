@@ -4,7 +4,7 @@
   "description": "Portable Jev policy validator and local execution engine: one package, multiple entrypoints",
   "type": "module",
   "engines": {
-    "node": ">=22.13"
+    "node": ">=22"
   },
   "exports": {
     ".": {
@@ -77,7 +77,10 @@
     }
   },
   "bin": {
-    "jev": "./src/cli.mjs"
+    "jev": "src/cli.mjs"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "files": [
     "src",
@@ -86,11 +89,13 @@
   ],
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "test:types": "tsc -p test/tsconfig.json"
+    "test:types": "tsc -p test/tsconfig.json",
+    "release": "bumpp --commit --push --tag"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "@types/node": "^22.0.0"
+    "@types/node": "^22.0.0",
+    "bumpp": "^12.3.0",
+    "typescript": "^5.9.3"
   },
-  "license": "UNLICENSED"
+  "license": "MIT"
 }
