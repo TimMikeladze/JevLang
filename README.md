@@ -48,13 +48,12 @@ and tune commands. `src/fixtures.mjs` exposes the same offline tools. Fixture
 version 3 and provider provenance are required; existing fixture files remain
 unchanged. Missing fingerprints are reported as unverified, never verified.
 
-The Python package in `../jevlang-python` now runs its own native port of
-this engine for the offline product (slice 1 of
-`jev-lang/docs/python-port.md`): validation, decisions, state, fixtures,
-monitoring and cost, checked against the same Racket oracles and byte-identical
-text reports. Provider calls (`evaluate`, `record`, `providers`, `hook`) still
-use the bundled Node engine there, and require a local Node executable
-(`JEV_NODE` may select it).
+The Python package in `../jevlang-python` (PyPI `jevlang-sh`) is a complete
+native port of this engine (all three slices of
+`jev-lang/docs/python-port.md`): the offline product, providers, evaluation,
+dispatch, journals, MCP, the gate, webhooks and serving, checked against the
+same Racket oracles and byte-identical text reports, with no Node at run
+time.
 
 ## Names, levels and escape hatches
 
