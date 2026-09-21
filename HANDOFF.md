@@ -35,6 +35,15 @@ Run it all: `npm test && npm run test:types` in `packages/jevlang`,
 `python3 -m unittest discover -s tests` in `packages/jevlang-python`, and
 `python3 tools/verify-portable.py` from the repo root.
 
+**Python is no longer only a wrapper.** Slice 1 of
+`jev-lang/docs/python-port.md` landed: a native Python engine inside
+`packages/jevlang-python/jevlang/` covers validation, decisions, state,
+fixtures, monitoring and cost, checked against the Racket oracles
+(`tests/test_racket_oracle.py`) and byte-identical to this engine's text
+reports (`tests/test_differential.py`). Only provider calls (`evaluate`,
+`record`, `providers`, `hook`) still cross to the bundled Node engine, until
+slice 2.
+
 ## Finished
 
 1. **Representation, validation, pure decisions.** The whole language except the
