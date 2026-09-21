@@ -4,7 +4,7 @@ import { renderLanding, renderReference, llmsText, agentsMd, pageMarkdown, sitem
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 const readme = read('../README.md');
-const cloudReadme = read('../../jevcloud/README.md');
+const cloudReadme = read('../docs/cloud-api.md');
 
 const outDir = new URL('./out/', import.meta.url);
 mkdirSync(outDir, { recursive: true });

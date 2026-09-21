@@ -8,7 +8,7 @@ import { makeResolver, figure, renderLanding, renderReference, modulesTable, clo
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 const readme = read('../README.md');
-const cloudReadme = read('../../jevcloud/README.md');
+const cloudReadme = read('../docs/cloud-api.md');
 const index = read('./out/index.html');
 const reference = read('./out/reference.html');
 
@@ -165,4 +165,11 @@ test('link table honoured', () => {
 test('tables read from docs', () => {
   assert.ok(modulesTable(readme).length >= 8);
   assert.ok(cloudApiTable(cloudReadme).length >= 8);
+});
+
+// extra: the vendored cloud API table matches the sibling repo when present.
+test('vendored cloud API table in sync', () => {
+  let sibling;
+  try { sibling = read('../../jevcloud/README.md'); } catch { return; } // not cloned: skip
+  assert.deepEqual(cloudApiTable(cloudReadme), cloudApiTable(sibling));
 });

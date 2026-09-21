@@ -2,3 +2,5 @@ node_modules/
 *.tgz
 compiled/
 site/shots/
+.vercel
+.env*
