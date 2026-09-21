@@ -1,8 +1,37 @@
 {
   "name": "jevlang",
   "version": "0.1.0-dev.1",
-  "description": "Portable Jev policy validator and local execution engine: one package, multiple entrypoints",
+  "description": "A policy engine for LLM decisions: declare routes, gates and actions once in TypeScript or Python, and every decision comes validated, explainable, replayable and audited",
   "type": "module",
+  "keywords": [
+    "llm",
+    "ai",
+    "policy",
+    "policy-engine",
+    "rules-engine",
+    "agent",
+    "agents",
+    "routing",
+    "triage",
+    "decision-engine",
+    "mcp",
+    "model-context-protocol",
+    "guardrails",
+    "audit",
+    "typecheck",
+    "typescript",
+    "python"
+  ],
+  "author": "Tim Mikeladze <tim.mikeladze@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TimMikeladze/JevLang.git"
+  },
+  "bugs": {
+    "url": "https://github.com/TimMikeladze/JevLang/issues"
+  },
+  "homepage": "https://github.com/TimMikeladze/JevLang#readme",
   "engines": {
     "node": ">=22"
   },
@@ -96,6 +125,5 @@
     "@types/node": "^22.0.0",
     "bumpp": "^12.3.0",
     "typescript": "^5.9.3"
-  },
-  "license": "MIT"
+  }
 }

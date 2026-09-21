@@ -1,9 +1,9 @@
-# Jev
+# JevLang
 
-**Decide once, trust everywhere.** Jev is a policy engine for decisions that
+**Decide once, trust everywhere.** JevLang is a policy engine for decisions that
 used to live inside a prompt: routing, triage, approvals, escalation, guarding
 an agent's tools. You write the policy once in plain TypeScript (or Python);
-Jev asks the model only the questions the policy needs, checks the answers,
+JevLang asks the model only the questions the policy needs, checks the answers,
 decides — and can prove, from a signed journal, exactly why it decided that.
 
 ```sh
@@ -27,7 +27,7 @@ of these problems:
 - **Costs that surprise you.** Every call sends everything, because who knows
   what the model will need.
 
-Jev turns that freeform prompt into a **declared, validated, inspectable
+JevLang turns that freeform prompt into a **declared, validated, inspectable
 policy**:
 
 - **The logic is code you can read.** Routes, thresholds, gates and fallbacks
