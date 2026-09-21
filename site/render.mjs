@@ -231,6 +231,10 @@ details.menu a:hover,details.menu button:hover{background:var(--band);color:var(
 /* theme toggle */
 .theme-toggle{background:none;border:0;color:var(--soft);cursor:pointer;padding:.2rem;display:inline-flex;border-radius:.4rem}
 .theme-toggle:hover{color:var(--ink)}
+.theme-toggle .i{display:none;line-height:0}
+:root[data-theme=dark] .theme-toggle .i-dark{display:inline-flex}
+:root[data-theme=light] .theme-toggle .i-light{display:inline-flex}
+:root[data-theme=system] .theme-toggle .i-system,:root:not([data-theme]) .theme-toggle .i-system{display:inline-flex}
 /* demo frames */
 .frame{border:1px solid var(--line);border-radius:.7rem;overflow:hidden;background:var(--paper);margin-inline:0}
 .frame--stacked+.frame--stacked{margin-top:1rem}
@@ -329,7 +333,7 @@ h1{font-size:2.6rem}
 export const bootScript = `<script>
 (function(){
 var KEY='jevlang-theme',root=document.documentElement,mq=matchMedia('(prefers-color-scheme: dark)');
-function apply(t){root.dataset.theme=t;var b=document.getElementById('theme-toggle');if(b){b.setAttribute('aria-label','Theme: '+t+'. Click to change');b.innerHTML=b.dataset.icon[Object({system:0,dark:1,light:2})[t]];}}
+function apply(t){root.dataset.theme=t;var b=document.getElementById('theme-toggle');if(b)b.setAttribute('aria-label','Theme: '+t+'. Click to change');}
 var stored=null;try{stored=localStorage.getItem(KEY)}catch(e){}
 apply(stored&&['dark','light'].includes(stored)?stored:'system');
 mq.addEventListener('change',function(){if(!localStorage.getItem(KEY))apply('system')});
@@ -393,7 +397,7 @@ export function header(active) {
 <a class="brand" href="/">JevLang</a>
 <nav class="site-nav" aria-label="Site">${navLinks}</nav>
 <div class="head-icons">${iconsRight}
-<button id="theme-toggle" class="theme-toggle" aria-label="Theme: system. Click to change" data-icon='["${'monitor'}","${'moon'}","${'sun'}"]'>${icon('monitor')}</button>
+<button id="theme-toggle" class="theme-toggle" aria-label="Theme: system. Click to change"><span class="i i-system">${icon('monitor')}</span><span class="i i-dark">${icon('moon')}</span><span class="i i-light">${icon('sun')}</span></button>
 </div>
 </div></header>`;
 }

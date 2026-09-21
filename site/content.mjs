@@ -99,7 +99,7 @@ export const boundaries = {
       title: 'Holds',
       items: [
         'Decisions, wire questions, built state and reports match the Racket `jev` engine byte-for-byte, pinned by differential oracles.',
-        '`npm test`: 97 tests, 0 failures, offline — the number is read out of the captured run below.',
+        '`bun test`: 97 tests, 0 failures, offline — the number is read out of the captured run below.',
         'Pure decisions, validation and replay work fully offline: no account, no network, no Racket.',
       ],
     },
@@ -125,9 +125,9 @@ export const start = {
   h2: 'Start',
   panels: [
     { title: 'Install', command: meta.install, kind: 'code' },
-    { title: 'Verify', command: null, kind: 'terminal', ref: { kind: 'terminal', cmd: 'npm install' }, figures: [
-      { label: 'Tests passing', from: /pass (\d+)/ },
-      { label: 'Failures', from: /fail (\d+)/ },
+    { title: 'Verify', command: null, kind: 'terminal', ref: { kind: 'terminal', cmd: 'bun install' }, figures: [
+      { label: 'Tests passing', from: /(\d+) pass/ },
+      { label: 'Failures', from: /(\d+) fail/ },
     ] },
   ],
 };

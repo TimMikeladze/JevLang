@@ -24,7 +24,7 @@ test('references resolve and figures match', () => {
   }
   const verify = r.terminal(start.panels[1].ref.cmd);
   for (const f of start.panels[1].figures) figure(verify, f.from);
-  assert.ok(figure(verify, /pass (\d+)/) === '97');
+  assert.ok(figure(verify, /(\d+) pass/) === '97');
 });
 
 // 3. self-contained pages; theme machinery present.

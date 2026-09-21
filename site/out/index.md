@@ -28,7 +28,7 @@ The core is small; the surface is what a production decision needs. jevlang/prov
 
 **Holds**
 - Decisions, wire questions, built state and reports match the Racket jev engine byte-for-byte, pinned by differential oracles.
-- npm test: 97 tests, 0 failures, offline — the number is read out of the captured run below.
+- bun test: 97 tests, 0 failures, offline — the number is read out of the captured run below.
 - Pure decisions, validation and replay work fully offline: no account, no network, no Racket.
 
 **Judgement**
