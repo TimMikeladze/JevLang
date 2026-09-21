@@ -119,7 +119,10 @@
   "scripts": {
     "test": "node --test test/*.test.mjs",
     "test:types": "tsc -p test/tsconfig.json",
-    "release": "bumpp --commit --push --tag"
+    "release": "bumpp --commit --push --tag",
+    "site": "node site/build.mjs",
+    "site:card": "node site/shoot-card.mjs",
+    "test:site": "node --test site/site.test.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

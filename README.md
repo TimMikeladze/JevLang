@@ -204,3 +204,43 @@ table and the short list of known gaps (code lookup, a hosted offering, and a
 few compile-time conveniences).
 
 MIT licensed.
+
+## Captured runs
+
+Real output, from this checkout, pasted verbatim. The landing page quotes these
+blocks by reference, so editing an example here without re-running it is a
+build error, not a quietly wrong website.
+
+The smallest policy deciding (`node --input-type=module` against
+`examples/hello.mjs`):
+
+```sh
+$ node examples/hello.mjs  # decide({ 'spam?': { noul: 0.97 } })
+{"action":"hold","reason":"almost certainly spam","clause":0,"readings":[{"question":"spam?","kind":"noul","value":0.97,"confidence":null,"detail":null}]}
+```
+
+The ticket router, once routed and once gated (`examples/ticket-router.mjs`):
+
+```sh
+$ node examples/ticket-router.mjs  # decide twice: confidence 0.92, then 0.55
+{"action":"assign","target":"billing-queue","reason":null,"rule":"route","detail":null}
+{"action":"escalate","target":"human-triage","reason":"unclear which team owns this","rule":"gate","detail":"needed confidence >= 0.80; otherwise: assign billing-queue"}
+```
+
+The tool gate verdict for `Bash(rm -rf build)` (`examples/tool-gate.mjs`):
+
+```sh
+$ node examples/tool-gate.mjs  # effect=destructive @ 0.95
+{"action":"escalate","target":"ask","reason":"it destroys data"}
+```
+
+The suite:
+
+```sh
+$ npm install
+up to date, audited 21 packages in 371ms
+found 0 vulnerabilities
+$ npm test
+ℹ pass 97
+ℹ fail 0
+```

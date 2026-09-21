@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JevLang — a policy engine for prompt-sized decisions</title>
+<meta name="description" content="JevLang is an open source policy engine for decisions that live inside a prompt: routing, triage, approvals and tool gates, journaled and replayable.">
+<link rel="canonical" href="https://jevlang.sh/">
+<meta name="theme-color" content="#1f1f1f" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#fcfcfc" media="(prefers-color-scheme: light)">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="JevLang">
+<meta property="og:title" content="JevLang — a policy engine for prompt-sized decisions">
+<meta property="og:description" content="JevLang is an open source policy engine for decisions that live inside a prompt: routing, triage, approvals and tool gates, journaled and replayable.">
+<meta property="og:url" content="https://jevlang.sh/">
+<meta property="og:image" content="https://jevlang.sh/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="JevLang — Decide once, trust everywhere">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://jevlang.sh/og.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2048%2048%22%3E%3Crect%20width%3D%2248%22%20height%3D%2248%22%20rx%3D%2211%22%20fill%3D%22%231c1c1c%22%2F%3E%3Cpath%20d%3D%22M30%2012v16.5c0%204.5-3%207.5-7.5%207.5S15%2033%2015%2029.5%22%20fill%3D%22none%22%20stroke%3D%22%23f7f7f7%22%20stroke-width%3D%223.4%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"JevLang","description":"JevLang is an open source policy engine for decisions that live inside a prompt: routing, triage, approvals and tool gates, journaled and replayable.","url":"https://jevlang.sh/","applicationCategory":"DeveloperApplication","softwareVersion":"0.1.0-dev.1","offers":{"@type":"Offer","price":"0"},"license":"https://opensource.org/licenses/MIT"}</script>
+<style>:root{color-scheme:dark;
+--paper:oklch(12.5% 0 0);--band:oklch(15.5% 0 0);--raise:oklch(18.5% 0 0);
+--ink:oklch(98.5% 0 0);--body:oklch(78% 0 0);--soft:oklch(62% 0 0);
+--line:oklch(100% 0 0/.11);--line-soft:oklch(100% 0 0/.06);
+--accent:oklch(70% .16 250);--add:oklch(72% .17 150);--del:oklch(68% .19 20);--warn:oklch(78% .15 85);
+--sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+--mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
+:root[data-theme=light]{color-scheme:light;
+--paper:oklch(99% 0 0);--band:oklch(97% 0 0);--raise:oklch(100% 0 0);
+--ink:oklch(14.5% 0 0);--body:oklch(27% 0 0);--soft:oklch(30% 0 0);
+--line:oklch(0% 0 0/.12);--line-soft:oklch(0% 0 0/.06);
+--accent:oklch(52% .18 250);--add:oklch(50% .16 150);--del:oklch(50% .19 25);--warn:oklch(55% .13 80)}
+@media (prefers-color-scheme:light){:root:not([data-theme=dark]):not([data-theme=light]){color-scheme:light;
+--paper:oklch(99% 0 0);--band:oklch(97% 0 0);--raise:oklch(100% 0 0);
+--ink:oklch(14.5% 0 0);--body:oklch(27% 0 0);--soft:oklch(30% 0 0);
+--line:oklch(0% 0 0/.12);--line-soft:oklch(0% 0 0/.06);
+--accent:oklch(52% .18 250);--add:oklch(50% .16 150);--del:oklch(50% .19 25);--warn:oklch(55% .13 80)}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--body);font:1rem/1.6 var(--sans)}
+.shell{width:min(1180px,calc(100% - 3rem));margin-inline:auto}
+a{color:var(--ink);text-decoration:underline;text-underline-offset:.18em;text-decoration-color:var(--line)}
+a:hover{text-decoration-color:var(--accent)}
+code{font-family:var(--mono);font-size:.9em;color:var(--ink);background:var(--raise);padding:.1em .32em;border-radius:.28rem}
+h1,h2,h3{color:var(--ink);font-weight:700}
+h1{font-size:clamp(2.6rem,6vw,4.2rem);line-height:1.03;letter-spacing:-.04em;max-width:16ch;margin:1.1rem 0 1.2rem}
+h2{font-size:clamp(1.35rem,2.4vw,1.7rem);line-height:1.2;font-weight:650;letter-spacing:-.02em;margin:0}
+.lede{font-size:clamp(1.05rem,1.6vw,1.2rem);line-height:1.55;max-width:58ch;margin:0 0 1.6rem}
+.muted{color:var(--soft);font-size:.875rem}
+.section{padding-block:clamp(3.5rem,7vw,6rem);scroll-margin-top:4.5rem}
+.section--band{background:var(--band)}
+.section h2+.expl{margin-top:.6rem}
+.expl{max-width:68ch;margin:0}
+.demo{margin-top:1.6rem}
+.skip{position:absolute;left:-9999px}
+.skip:focus{left:1rem;top:1rem;z-index:99;background:var(--raise);color:var(--ink);padding:.5rem .8rem;border-radius:.4rem}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+/* header */
+.site-head{position:sticky;top:0;z-index:10;min-height:3.75rem;background:color-mix(in oklab,var(--paper) 82%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.site-head .shell{display:flex;align-items:center;gap:1rem;min-height:3.75rem}
+.brand{font-weight:700;font-size:1.05rem;color:var(--ink);text-decoration:none}
+.site-nav{display:flex;gap:1.1rem}
+.site-nav a{font-size:.875rem;color:var(--soft);text-decoration:none}
+.site-nav a:hover,.site-nav a[aria-current=page]{color:var(--ink)}
+.head-icons{margin-left:auto;display:flex;align-items:center;gap:.75rem}
+.icon-link{color:var(--soft);display:inline-flex}
+.icon-link:hover{color:var(--ink)}
+.ext{font-size:.75em;opacity:.5}
+/* hero */
+.hero{padding-block:clamp(3.5rem,7vw,6rem) 0}
+.hero .mark{display:inline-block}
+.actions{display:flex;flex-wrap:wrap;gap:.7rem;align-items:center;margin:0 0 1rem}
+.control{display:inline-flex;align-items:center;gap:.5rem;padding:.62rem .85rem;border-radius:.6rem;border:1px solid var(--line);background:var(--raise);color:var(--ink);font:500 .9rem/1.15 var(--sans);text-decoration:none;transition:background .14s ease,border-color .14s ease;cursor:pointer}
+.control:hover{border-color:var(--line);background:color-mix(in oklab,var(--raise) 80%,var(--ink) 4%)}
+.control code{font:.88rem/1 var(--mono);background:none;padding:0}
+.control--solid{background:var(--ink);color:var(--paper);border-color:transparent;font-weight:550}
+.control--solid:hover{background:color-mix(in oklab,var(--ink) 88%,var(--paper))}
+details.control{position:relative}
+details.control summary{list-style:none;display:inline-flex;align-items:center;gap:.5rem;cursor:pointer}
+details.control summary::-webkit-details-marker{display:none}
+details.menu{position:absolute;top:calc(100% + .5rem);left:0;background:var(--raise);border:1px solid var(--line);border-radius:.6rem;padding:.4rem;display:grid;gap:.1rem;min-width:16rem;z-index:5}
+details.menu a,details.menu button{display:flex;width:100%;text-align:left;padding:.45rem .6rem;border-radius:.4rem;color:var(--body);text-decoration:none;font-size:.875rem;background:none;border:0;cursor:pointer}
+details.menu a:hover,details.menu button:hover{background:var(--band);color:var(--ink)}
+/* theme toggle */
+.theme-toggle{background:none;border:0;color:var(--soft);cursor:pointer;padding:.2rem;display:inline-flex;border-radius:.4rem}
+.theme-toggle:hover{color:var(--ink)}
+/* demo frames */
+.frame{border:1px solid var(--line);border-radius:.7rem;overflow:hidden;background:var(--paper);margin-inline:0}
+.frame--stacked+.frame--stacked{margin-top:1rem}
+.frame-bar{display:flex;align-items:center;gap:.75rem;background:var(--band);border-bottom:1px solid var(--line-soft);padding:.55rem .9rem;font:500 .8rem/1 var(--mono);color:var(--soft)}
+.frame-bar .dots{display:flex;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.frame-bar .chip{margin-left:auto;border:1px solid var(--line-soft);border-radius:.4rem;padding:.2rem .5rem;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em}
+.frame-body{margin:0;padding:1rem .9rem;font:.8rem/1.6 var(--mono);color:var(--body);overflow-x:auto;background:var(--paper);white-space:pre-wrap;word-break:break-word}
+.frame-body .cmd{color:var(--ink);font-weight:600}
+.demo+.demo{margin-top:1rem}
+/* figures */
+.figures{display:flex;gap:2rem;flex-wrap:wrap;margin:0 0 .8rem}
+.figure b{display:block;font:650 .9rem/1.2 var(--sans);color:var(--ink)}
+.figure span{font:.8rem/1.4 var(--mono);color:var(--soft)}
+/* tables */
+.tablewrap{margin-top:1.6rem;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th{font:600 .72rem/1.4 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--soft);text-align:left;padding:.55rem .9rem .35rem}
+td{padding:.55rem .9rem;border-top:1px solid var(--line-soft);color:var(--body);vertical-align:top}
+td:first-child{font-family:var(--mono);font-size:.82rem;color:var(--ink);white-space:nowrap}
+/* boundaries */
+.boundaries{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line-soft);border:1px solid var(--line-soft);border-radius:.7rem;overflow:hidden;margin-top:1.6rem}
+.boundary{background:var(--paper);padding:1.4rem 1.3rem}
+.boundary h3{font:600 .85rem/1.2 var(--sans);margin:0 0 .8rem;color:var(--ink)}
+.boundary li{margin:.5rem 0;font-size:.9rem;line-height:1.5}
+.boundary ul{margin:0;padding-left:1.1rem}
+/* aside */
+.aside{padding-block:1.4rem;border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft);background:var(--paper)}
+.aside p{margin:0;max-width:68ch;font-size:.95rem}
+/* start */
+.panels{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:1.6rem}
+.panels>*{min-width:0}
+.panels .frame{height:100%}
+/* footer */
+.site-foot{border-top:1px solid var(--line);padding-block:3rem 2rem;margin-top:clamp(3.5rem,7vw,6rem)}
+.site-foot .credit{max-width:60ch;color:var(--soft);font-size:.9rem;margin:0 0 2rem}
+.foot-cols{display:flex;gap:4rem;flex-wrap:wrap}
+.foot-col h3{font:600 .85rem/1.3 var(--sans);margin:0 0 .6rem}
+.foot-col a{display:block;font-size:.85rem;color:var(--soft);text-decoration:none;padding:.18rem 0}
+.foot-col a:hover{color:var(--ink)}
+.foot-icons{display:flex;gap:.9rem;margin:2rem 0 0}
+.copyright{margin-top:2.2rem;font-size:.8rem;color:var(--soft)}
+/* reference page */
+.ref-layout{display:grid;grid-template-columns:230px minmax(0,1fr);gap:3rem;padding-block:clamp(2.5rem,5vw,4rem)}
+.ref-layout>*{min-width:0}
+.ref-toc{position:sticky;top:4.5rem;align-self:start;max-height:calc(100vh - 6rem);overflow:auto}
+.ref-toc a{display:block;font-size:.8rem;color:var(--soft);text-decoration:none;padding:.22rem 0}
+.ref-toc a:hover{color:var(--ink)}
+.ref-toc .toc-title{font:600 .72rem/1.4 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--soft);margin:0 0 .6rem}
+.ref-doc{max-width:76ch}
+.ref-doc h1{font-size:clamp(2rem,4vw,2.8rem)}
+.ref-doc h2{font-size:1.4rem;margin:2.4rem 0 .8rem;scroll-margin-top:4.5rem}
+.ref-doc pre{background:var(--raise);border:1px solid var(--line-soft);border-radius:.6rem;padding:1rem;overflow-x:auto}
+.ref-doc pre code{background:none;padding:0;font-size:.82rem;line-height:1.6}
+.ref-doc table td:first-child{white-space:normal}
+.ref-doc li{margin:.3rem 0}
+@media (max-width:900px){.ref-layout{grid-template-columns:1fr}.ref-toc{position:static;max-height:none;border-bottom:1px solid var(--line-soft);padding-bottom:1rem}}
+@media (max-width:720px){
+.site-nav{display:none}
+.panels{grid-template-columns:1fr}
+.boundaries{grid-template-columns:1fr}
+h1{font-size:2.6rem}
+.frame{border-radius:0;border-left:0;border-right:0}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto}}</style>
+</head>
+<body id="landing">
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-head"><div class="shell">
+<a class="brand" href="/">JevLang</a>
+<nav class="site-nav" aria-label="Site"><a href="/" aria-current="page">Home</a><a href="/reference">Reference</a></nav>
+<div class="head-icons"><a class="icon-link" href="https://github.com/TimMikeladze/JevLang" aria-label="JevLang on GitHub"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a><a class="icon-link" href="https://x.com/linesofcode" aria-label="linesofcode on X"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg></a><a class="icon-link" href="https://www.linkedin.com/in/tim-mikeladze" aria-label="Tim Mikeladze on LinkedIn"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
+<button id="theme-toggle" class="theme-toggle" aria-label="Theme: system. Click to change" data-icon='["monitor","moon","sun"]'><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM8 21h8M12 17v4"/></svg></button>
+</div>
+</div></header>
+<main id="main">
+<section class="hero"><div class="shell">
+<span class="mark"><svg aria-hidden="true" width="44" height="44" viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="oklch(18.5% 0 0)"/><path d="M30 12v16.5c0 4.5-3 7.5-7.5 7.5S15 33 15 29.5" fill="none" stroke="oklch(98.5% 0 0)" stroke-width="3.4" stroke-linecap="round"/></svg></span>
+<h1>Decide once, trust everywhere</h1>
+<p class="lede"><code>jevlang</code> is an open source policy engine for the decisions that used to live inside a prompt — routing, triage, approvals, guarding an agent's tools. Built on plain <a href="https://github.com/TimMikeladze/JevLang">TypeScript or Python</a>, no runtime dependencies. Made by <a href="https://x.com/linesofcode">linesofcode</a>.</p>
+<div class="actions">
+<button class="control" data-copy="npm install github:TimMikeladze/JevLang" aria-label="Copy install command"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 9h-9a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2zM5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> <code>npm install github:TimMikeladze/JevLang</code> <span class="copy-state" aria-live="polite"></span></button>
+<details class="control">
+<summary><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg> For agents</summary>
+<div class="menu">
+<a href="/llms.txt">llms.txt</a>
+<a href="/AGENTS.md">AGENTS.md</a>
+<button data-copy-markdown aria-label="Copy page as Markdown">Copy page as Markdown</button>
+</div>
+</details>
+<a class="control control--solid" href="/reference"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 1 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/></svg> Documentation</a>
+</div>
+<p class="muted">Currently v0.1.0-dev.1 · MIT license · nothing published to npm yet, install from the repo</p>
+</div></section>
+<section id="write-the-policy" class="section section--band" aria-labelledby="write-the-policy-h">
+<div class="shell">
+<h2 id="write-the-policy-h">A policy, not a prompt</h2>
+<p class="expl">Declare each question once with <code>noul</code>, <code>choice</code> or <code>score</code>, then hand <code>definePolicy({ questions, route })</code> a list of clauses. A typo like <code>department.is('billling')</code> is a construction-time error, and a route with a hole is refused before anything deploys. Below is the README's whole example, and the decision it really made. <a href="/reference#hello-world">Read the section.</a></p>
+
+<figure class="frame frame--stacked demo">
+<div class="frame-bar"><span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span><span>README — Hello, world</span><span class="chip">source</span></div>
+<pre class="frame-body">import { noul, definePolicy, rule, assign, hold } from 'jevlang';
+
+const spam = noul('spam?', 'Is this message spam?');
+
+const policy = definePolicy({
+  name: 'hello',
+  questions: [spam],
+  route: {
+    clauses: [rule(spam.yes(0.9), hold({ reason: 'almost certainly spam' }))],
+    otherwise: assign('inbox'),
+  },
+});
+
+const decision = policy.decide({ 'spam?': { noul: 0.97 } });
+// decision.action === 'hold' — 0.97 clears the 0.9 bar, and the decision
+// carries the reading that got it there</pre>
+</figure>
+<figure class="frame frame--stacked demo">
+<div class="frame-bar"><span>$ node examples/hello.mjs</span><span class="chip">captured output</span></div>
+<pre class="frame-body"><span class="cmd">$ node examples/hello.mjs  # decide({ 'spam?': { noul: 0.97 } })</span>
+{&quot;action&quot;:&quot;hold&quot;,&quot;reason&quot;:&quot;almost certainly spam&quot;,&quot;clause&quot;:0,&quot;readings&quot;:[{&quot;question&quot;:&quot;spam?&quot;,&quot;kind&quot;:&quot;noul&quot;,&quot;value&quot;:0.97,&quot;confidence&quot;:null,&quot;detail&quot;:null}]}</pre>
+</figure>
+</div>
+</section>
+<section id="uncertainty-escalates" class="section section--band" aria-labelledby="uncertainty-escalates-h">
+<div class="shell">
+<h2 id="uncertainty-escalates-h">Uncertainty escalates</h2>
+<p class="expl">Every question can carry a gate: <code>gate(department, 0.8, escalate('human-triage', …))</code> sends the ticket to a person when confidence drops below the bar — by declaration, not by hoping the model says it is unsure. Clause order is policy, diffable in review. <a href="/reference#a-real-one-support-routing">Read the section.</a></p>
+
+<figure class="frame frame--stacked demo">
+<div class="frame-bar"><span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span><span>README — support routing</span><span class="chip">source</span></div>
+<pre class="frame-body">import { choice, score, noul, definePolicy, gate, escalate, rule, all, page, assign } from 'jevlang';
+
+const department = choice('department', 'Which team should handle this ticket?', {
+  billing: 'Payments, invoicing, refunds, payouts, card failures',
+  technical: 'Bugs, outages, API errors, integration problems',
+  sales: 'Pricing, upgrades, quotas, new accounts',
+});
+const frustration = score('frustration', 'How frustrated is the customer?', [
+  'Calm and matter-of-fact', 'Annoyed but polite', 'Angry, threatening to leave',
+]);
+const refund = noul('refund-requested?', 'Is the customer asking for money back?');
+
+export const policy = definePolicy({
+  name: 'ticket-router',
+  questions: [department, frustration, refund],
+  gates: [
+    gate(department, 0.8, escalate('human-triage', { reason: 'unclear which team owns this' })),
+    gate(frustration, 0.7, escalate('human-triage', { reason: 'unclear how upset they are' })),
+  ],
+  route: { clauses: [
+    rule(all(refund.yes(0.8), frustration.mostLikely('Angry, threatening to leave')),
+         page('retention-oncall', { reason: 'angry refund request' })),
+    rule(department.is('billing'), assign('billing-queue')),
+    rule(department.is('technical'), assign('engineering-oncall')),
+    rule(department.is('sales'), assign('sales-inbox')),
+  ] },
+});</pre>
+</figure>
+<div class="figures"><div class="figure"><b>0.80</b><span>Gate bar in the captured run</span></div></div><figure class="frame frame--stacked demo">
+<div class="frame-bar"><span>$ node examples/ticket-router.mjs</span><span class="chip">captured output</span></div>
+<pre class="frame-body"><span class="cmd">$ node examples/ticket-router.mjs  # decide twice: confidence 0.92, then 0.55</span>
+{&quot;action&quot;:&quot;assign&quot;,&quot;target&quot;:&quot;billing-queue&quot;,&quot;reason&quot;:null,&quot;rule&quot;:&quot;route&quot;,&quot;detail&quot;:null}
+{&quot;action&quot;:&quot;escalate&quot;,&quot;target&quot;:&quot;human-triage&quot;,&quot;reason&quot;:&quot;unclear which team owns this&quot;,&quot;rule&quot;:&quot;gate&quot;,&quot;detail&quot;:&quot;needed confidence &gt;= 0.80; otherwise: assign billing-queue&quot;}</pre>
+</figure>
+</div>
+</section>
+<section id="guard-an-agents-tools" class="section section--band" aria-labelledby="guard-an-agents-tools-h">
+<div class="shell">
+<h2 id="guard-an-agents-tools-h">Guard an agent's tools</h2>
+<p class="expl"><code>jevlang/gate</code> decides whether a tool call runs — <code>allow</code>, <code>deny</code> or <code>ask</code> — as a Claude Code or Codex PreToolUse hook, or an MCP server standing in front of another one. It fails closed: anything the policy cannot decide denies and says so, and hard rules like <code>Bash(rm *)</code> block before the model is ever called. <a href="/reference#guard-an-agent-s-tools">Read the section.</a></p>
+
+<figure class="frame frame--stacked demo">
+<div class="frame-bar"><span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span><span>README — tool gate</span><span class="chip">source</span></div>
+<pre class="frame-body">const effect = choice('effect', 'What would this tool call do if it ran?', { /* read-only, destructive, ... */ });
+const leaks = noul('leaks-secrets?', &quot;Could this call send secrets somewhere they don't belong?&quot;);
+// rule(leaks.yes(0.5), assign('deny', ...)), rule(effect.is('destructive'), escalate('ask', ...)), ...</pre>
+</figure>
+<figure class="frame frame--stacked demo">
+<div class="frame-bar"><span>$ node examples/tool-gate.mjs</span><span class="chip">captured output</span></div>
+<pre class="frame-body"><span class="cmd">$ node examples/tool-gate.mjs  # effect=destructive @ 0.95</span>
+{&quot;action&quot;:&quot;escalate&quot;,&quot;target&quot;:&quot;ask&quot;,&quot;reason&quot;:&quot;it destroys data&quot;}</pre>
+</figure>
+</div>
+</section>
+<section id="everything-else-in-the-box" class="section section--band" aria-labelledby="everything-else-in-the-box-h">
+<div class="shell">
+<h2 id="everything-else-in-the-box-h">Everything else in the box</h2>
+<p class="expl">The core is small; the surface is what a production decision needs. <code>jevlang/provider</code> is the one call that leaves the machine — and a precheck that already decides makes no call at all. This table is read out of the README at build time. <a href="/reference#everything-else-in-the-box">Read the section.</a></p>
+
+<div class="tablewrap"><table><thead><tr><th>Export</th><th>What it carries</th></tr></thead><tbody><tr><td><code>jevlang</code></td><td>the language: <code>choice</code>, <code>score</code>, <code>noul</code>, <code>rule</code>, <code>all</code>, <code>any</code>, <code>not</code>, <code>gate</code>, <code>assign</code>, <code>escalate</code>, <code>page</code>, <code>hold</code>, plans, actions, JSON Schema for every action, and portable frozen artifacts.</td></tr><tr><td><code>jevlang/provider</code></td><td>layered provider config, deterministic resolution, and any executable that speaks <code>jev-provider/1</code> becomes a provider. Built-in CLI adapters for Claude, Codex and fx. <code>evaluateWithProvider(policy, input)</code> is the one call that leaves the machine; a precheck that already decides makes no call at all.</td></tr><tr><td><code>jevlang/dispatch</code></td><td>handlers with confirmation, cooldowns, budgets, guards, idempotency keys, plan rollback, and one audit record per outcome.</td></tr><tr><td><code>jevlang/journal, jevlang/journal-db</code></td><td>in-memory and SQLite journals; <code>dbJournal</code> takes any SQL driver.</td></tr><tr><td><code>jevlang/loop, jevlang/session</code></td><td>events in, decisions dispatched, at your concurrency and debounce; clarify-questions become conversations that know when to stop asking.</td></tr><tr><td><code>jevlang/mcp</code></td><td>serve a policy as MCP tools (<code>decide</code> offline and free, <code>evaluate</code> capped), dual-era protocol. <code>jevlang/mcp-client</code> turns any other server's tools into dispatcher handlers; <code>jevlang/mcp-import</code> makes a <code>tools/list</code> snapshot into validated action declarations.</td></tr><tr><td><code>jevlang/webhooks, jevlang/wiring, jevlang/harvest</code></td><td>signed webhooks in and out, a crash-safe spool with at-least-once delivery, and labeled fixtures grown from what people did with real cases.</td></tr><tr><td><code>jevlang/serve</code></td><td>an HTTP sidecar (<code>/decide</code>, <code>/evaluate</code>, <code>/dispatch</code> with <code>dry_run</code>, <code>/policy</code>, <code>/healthz</code>) so any language can use the policy; MCP and webhook routes mount alongside it.</td></tr></tbody></table></div>
+</div>
+</section>
+<div class="aside"><div class="shell"><p>Want it deployed instead of embedded? <code>@jev/cloud</code> is the same decisions with identity, storage and a dashboard. It is a hosted product, not open source.</p></div></div><section id="same-engine-hosted" class="section section--band" aria-labelledby="same-engine-hosted-h">
+<div class="shell">
+<h2 id="same-engine-hosted-h">Same engine, hosted</h2>
+<p class="expl"><code>@jev/cloud</code> runs this engine for many tenants: deploy, promote, evaluate and replay over HTTP. Every route but <code>/healthz</code> takes <code>Authorization: Bearer jev_live_…</code>, and the organization comes from the credential, never the path. Deployments are immutable; <code>promote</code> with <code>expect</code> is the only thing that moves production.</p>
+
+<div class="tablewrap"><table><thead><tr><th>Route</th><th>What it does</th></tr></thead><tbody><tr><td><code>POST /v1/projects</code></td><td>create a project (<code>{slug, config}</code>)</td></tr><tr><td><code>POST /v1/projects/:slug/deployments</code></td><td>publish a policy artifact (<code>{policy, note}</code>)</td></tr><tr><td><code>GET /v1/projects/:slug/deployments</code></td><td>newest first</td></tr><tr><td><code>POST /v1/projects/:slug/promote</code></td><td><code>{deployment, expect}</code> moves production; <code>{deployment, gate: {sample, max_changed}}</code> diffs <code>sample</code> production traces against the deployment first and refuses (422) when the changed fraction is over <code>max_changed</code> — or when fewer than 30 traces are replayable, because a gate over too little evidence is not a gate. A refusal is audited as <code>deployment.promote_refused</code> and moves nothing</td></tr><tr><td><code>PUT /v1/projects/:slug</code></td><td>replace a project's <code>config</code> (<code>alerts</code>, <code>event_urls</code>, <code>schedule</code>, <code>provider</code>), validated where the service reads it</td></tr><tr><td><code>GET/PUT/DELETE /v1/projects/:slug/secrets[/:name]</code></td><td>names and versions only; values never come back</td></tr><tr><td><code>POST /v1/projects/:slug/evaluate</code></td><td>ask the provider, then decide</td></tr><tr><td><code>POST /v1/projects/:slug/decide</code></td><td>decide on answers the caller already has</td></tr><tr><td><code>POST /v1/projects/:slug/dispatch</code></td><td>decide, then run the handlers (<code>dry_run</code> rehearses)</td></tr><tr><td><code>GET /v1/projects/:slug/traces[/:id]</code></td><td>what happened</td></tr><tr><td><code>POST /v1/projects/:slug/traces/:id/replay</code></td><td>decide again, against <code>?deployment=</code></td></tr><tr><td><code>POST /v1/projects/:slug/replay-diff</code></td><td>production's recent traces decided again against <code>{deployment, limit, since}</code>; rows <code>{trace_id, old, new, changed}</code> and a <code>{replayed, changed, refused}</code> summary — a trace whose inputs cannot be rebuilt is counted as <code>refused</code>, never skipped</td></tr><tr><td><code>GET /v1/usage</code></td><td>rows, and a total that separates money from estimates</td></tr><tr><td><code>GET/PUT /v1/billing</code></td><td>the Stripe mapping, and what has been reported</td></tr><tr><td><code>POST /v1/billing/report</code></td><td>report a closed month (<code>{month: &quot;2026-08&quot;}</code>)</td></tr><tr><td><code>POST /v1/stripe/webhook</code></td><td>Stripe's own events; signed, and the only <code>/v1</code> route with no key</td></tr><tr><td><code>GET /v1/audit</code></td><td>what changed, and who did it</td></tr></tbody></table></div>
+</div>
+</section>
+<section id="boundaries" class="section" aria-labelledby="boundaries-h">
+<div class="shell">
+<h2 id="boundaries-h">Boundaries</h2>
+<p class="expl">What is proven, what is a judgement, and what is not here yet — the same honesty the engine ships with.</p>
+<div class="boundaries">
+<div class="boundary"><h3>Holds</h3><ul><li>Decisions, wire questions, built state and reports match the Racket <code>jev</code> engine byte-for-byte, pinned by differential oracles.</li><li><code>npm test</code>: 97 tests, 0 failures, offline — the number is read out of the captured run below.</li><li>Pure decisions, validation and replay work fully offline: no account, no network, no Racket.</li></ul></div><div class="boundary"><h3>Judgement</h3><ul><li>Cost estimates are fitted to your recorded usage, or a stated ~4-chars-per-token estimate when you have none.</li><li><code>calibrate</code> reports ECE and a reliability table, and tells you when you don't have enough labels to trust them.</li></ul></div><div class="boundary"><h3>Not here yet</h3><ul><li>Code lookup (<code>jev/code</code>), which needs an SGX executable.</li><li>Compile-time conveniences: <code>include-questions</code>, <code>#:options-file</code>, <code>#:options</code>.</li><li>Nothing published to npm yet — install from this repo. The names are settled and recorded.</li></ul></div>
+</div>
+</div>
+</section>
+<section id="start" class="section section--band" aria-labelledby="start-h">
+<div class="shell">
+<h2 id="start-h">Start</h2>
+<p class="expl">Two panels: install, then verify. The right one is a real run from this checkout.</p>
+<div class="panels">
+<div>
+<div class="figures"><div class="figure"><b>97</b><span>Tests passing</span></div><div class="figure"><b>0</b><span>Failures</span></div></div>
+<figure class="frame frame--stacked demo">
+<div class="frame-bar"><span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span><span>shell</span><span class="chip">source</span></div>
+<pre class="frame-body">$ npm install github:TimMikeladze/JevLang</pre>
+</figure>
+<figure class="frame frame--stacked demo">
+<div class="frame-bar"><span>$ npm install</span><span class="chip">captured output</span></div>
+<pre class="frame-body"><span class="cmd">$ npm install</span>
+up to date, audited 21 packages in 371ms
+found 0 vulnerabilities
+<span class="cmd">$ npm test</span>
+ℹ pass 97
+ℹ fail 0</pre>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</main>
+<footer class="site-foot"><div class="shell">
+<p class="credit">Built by linesofcode — open source policy infrastructure for decisions that used to live in prompts.</p>
+<div class="foot-cols"><div class="foot-col"><h3>JevLang</h3><a href="/">Home</a><a href="/reference">Reference</a><a href="https://github.com/TimMikeladze/JevLang">GitHub <span class="ext">↗</span></a></div><div class="foot-col"><h3>Community</h3><a href="https://x.com/linesofcode">X <span class="ext">↗</span></a><a href="https://github.com/TimMikeladze/JevLang">GitHub <span class="ext">↗</span></a><a href="https://www.linkedin.com/in/tim-mikeladze">LinkedIn <span class="ext">↗</span></a><a href="https://discord.com/users/linesofcode">Discord <span class="ext">↗</span></a></div></div>
+<div class="foot-icons"><a class="icon-link" href="https://github.com/TimMikeladze/JevLang" aria-label="JevLang on GitHub"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a><a class="icon-link" href="https://x.com/linesofcode" aria-label="linesofcode on X"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg></a><a class="icon-link" href="https://www.linkedin.com/in/tim-mikeladze" aria-label="Tim Mikeladze on LinkedIn"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a><a class="icon-link" href="https://discord.com/users/linesofcode" aria-label="linesofcode on Discord"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a></div>
+<p class="copyright">© 2026 linesofcode</p>
+</div></footer>
+<script>
+(function(){
+var KEY='jevlang-theme',root=document.documentElement,mq=matchMedia('(prefers-color-scheme: dark)');
+function apply(t){root.dataset.theme=t;var b=document.getElementById('theme-toggle');if(b){b.setAttribute('aria-label','Theme: '+t+'. Click to change');b.innerHTML=b.dataset.icon[Object({system:0,dark:1,light:2})[t]];}}
+var stored=null;try{stored=localStorage.getItem(KEY)}catch(e){}
+apply(stored&&['dark','light'].includes(stored)?stored:'system');
+mq.addEventListener('change',function(){if(!localStorage.getItem(KEY))apply('system')});
+document.addEventListener('click',function(e){
+var t=e.target.closest('#theme-toggle');if(t){var cur=root.dataset.theme;var next={system:'dark',dark:'light',light:'system'}[cur];try{localStorage.setItem(KEY,next)}catch(_){}apply(next);return;}
+var c=e.target.closest('[data-copy]');if(c&&navigator.clipboard){navigator.clipboard.writeText(c.dataset.copy).then(function(){var s=c.querySelector('.copy-state');if(s){s.textContent=' copied'}setTimeout(function(){if(s)s.textContent=''},1200)});}
+});
+})();
+</script>
+</body>
+</html>

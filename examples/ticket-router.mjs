@@ -26,3 +26,12 @@ export const policy = definePolicy({
     rule(department.is('sales'), assign('sales-inbox')),
   ] },
 });
+
+if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
+  const ok = { department: { choice: 'billing', confidence: 0.92 }, frustration: { score: 0.2, confidence: 0.9 }, 'refund-requested?': { noul: 0.05 } };
+  const low = { department: { choice: 'billing', confidence: 0.55 }, frustration: { score: 0.4, confidence: 0.8 }, 'refund-requested?': { noul: 0.02 } };
+  for (const answers of [ok, low]) {
+    const d = policy.decide(answers);
+    console.log(JSON.stringify({ action: d.action, target: d.target, reason: d.reason, rule: d.rule, detail: d.readings[0].detail ?? null }));
+  }
+}

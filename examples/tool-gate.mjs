@@ -48,3 +48,8 @@ export const policy = definePolicy({
     ],
   },
 });
+
+if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
+  const d = policy.decide({ effect: { choice: 'destructive', confidence: 0.95 }, 'leaks-secrets?': { noul: 0.02 }, 'steered?': { noul: 0.01 } });
+  console.log(JSON.stringify({ action: d.action, target: d.target, reason: d.reason }));
+}
