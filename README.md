@@ -190,9 +190,9 @@ a stated ~4-chars-per-token estimate when you don't.
 
 ```sh
 git clone <this repo> && cd jevlang
-npm install
-npm test            # 97 tests offline; the Racket differential oracles run too when Racket is on PATH
-npm run test:types
+bun install
+bun test            # 97 tests offline; the Racket differential oracles run too when Racket is on PATH
+bun run test:types
 ```
 
 The engine is pinned by differential tests against the Racket `jev`
@@ -237,10 +237,9 @@ $ node examples/tool-gate.mjs  # effect=destructive @ 0.95
 The suite:
 
 ```sh
-$ npm install
-up to date, audited 21 packages in 371ms
-found 0 vulnerabilities
-$ npm test
-ℹ pass 97
-ℹ fail 0
+$ bun install
+Checked 20 installs across 21 packages (no changes)
+$ bun test
+ 97 pass
+ 0 fail
 ```

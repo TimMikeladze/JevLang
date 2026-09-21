@@ -31,7 +31,7 @@ shared data rather than restated expectations:
 Nothing in the suite reaches the network. The HTTP behaviour is exercised
 against a local `node:http` server, and providers against fake executables.
 
-Run it all: `npm test && npm run test:types` in `packages/jevlang`,
+Run it all: `bun install && bun test && bun run test:types` in `packages/jevlang`,
 `python3 -m unittest discover -s tests` in `packages/jevlang-python`, and
 `python3 tools/verify-portable.py` from the repo root.
 

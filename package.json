@@ -117,12 +117,12 @@
     "COMPATIBILITY.md"
   ],
   "scripts": {
-    "test": "node --test test/*.test.mjs",
+    "test": "bun test test/*.test.mjs",
     "test:types": "tsc -p test/tsconfig.json",
     "release": "bumpp --commit --push --tag",
-    "site": "node site/build.mjs",
-    "site:card": "node site/shoot-card.mjs",
-    "test:site": "node --test site/site.test.mjs"
+    "site": "bun site/build.mjs",
+    "site:card": "bun site/shoot-card.mjs",
+    "test:site": "bun test site/site.test.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
