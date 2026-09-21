@@ -392,7 +392,7 @@ const iconLink = (l) => `<a class="icon-link" href="${esc(resolveHref(l.href))}"
 function resolveHref(h) { return h === 'repo' ? repo : h; }
 
 export function header(active) {
-  const navLinks = nav.map((n) => `<a href="${esc(n.href)}"${n.external ? ' class="ext"' : ''}${n.href === active ? ' aria-current="page"' : ''}>${esc(n.label)}${n.external ? ' <span class="ext">↗</span>' : ''}</a>`).join('');
+  const navLinks = nav.map((n) => `<a href="${esc(n.href)}"${n.external ? ` class="ext" target="_blank" rel="noopener"` : ''}${n.href === active ? ' aria-current="page"' : ''}>${esc(n.label)}${n.external ? ' <span class="ext">↗</span>' : ''}</a>`).join('');
   const iconsRight = links.filter((l) => l.where.includes('header')).map(iconLink).join('');
   return `<a class="skip" href="#main">Skip to content</a>
 <header class="site-head"><div class="shell">
