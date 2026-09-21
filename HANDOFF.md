@@ -35,15 +35,19 @@ Run it all: `npm test && npm run test:types` in `packages/jevlang`,
 `python3 -m unittest discover -s tests` in `packages/jevlang-python`, and
 `python3 tools/verify-portable.py` from the repo root.
 
-**Python is no longer only a wrapper.** Slices 1 and 2 of
-`jev-lang/docs/python-port.md` landed: a native Python engine inside
-`packages/jevlang-python/jevlang/` covers validation, decisions, state,
+**Python runs the whole product natively; the Node wrapper is gone.** All
+three slices of `jev-lang/docs/python-port.md` landed: a native Python engine
+inside `packages/jevlang-python/jevlang/` covers validation, decisions, state,
 fixtures, monitoring, cost, providers, evaluate, record, dispatch, journals,
-batch, pipelines, handlers, the event loop and sessions — checked against the
-Racket oracles (`tests/test_racket_oracle.py`, and the routing, CLI-adapter,
-journal, dispatch and automation oracles) and byte-identical to this engine's
-text reports (`tests/test_differential.py`). Only `hook` (the gate, slice 3)
-still crosses to the bundled Node engine.
+batch, pipelines, handlers, the event loop, sessions, MCP (server, client,
+import), the gate and its hooks, webhooks, the wiring spool, harvesting and
+serving — checked against the Racket oracles (`tests/test_racket_oracle.py`
+plus the routing, CLI-adapter, journal, dispatch, automation, mcp,
+mcp-import, gate, webhooks and harvest oracles) and byte-identical to this
+engine's text reports (`tests/test_differential.py`). The subprocess wrapper,
+`JEV_NODE` and the `rpc` protocol are deleted with migration errors, the wheel
+bundles no Node engine, and the suite (149 tests) passes with Node stripped
+from PATH.
 
 ## Finished
 
