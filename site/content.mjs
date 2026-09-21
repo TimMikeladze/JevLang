@@ -25,8 +25,11 @@ export const sections = [
     h2: 'A policy, not a prompt',
     p: 'Declare each question once with `noul`, `choice` or `score`, then hand `definePolicy({ questions, route })` a list of clauses. A typo like `department.is(\'billling\')` is a construction-time error, and a route with a hole is refused before anything deploys. Below is the README\'s whole example, and the decision it really made.',
     demos: [
+      { type: 'diagram', name: 'pipeline' },
       { type: 'code', ref: { kind: 'snippet', marker: "const spam = noul('spam?'" }, label: 'README — Hello, world' },
-      { type: 'terminal', ref: { kind: 'terminal', cmd: 'node examples/hello.mjs' } },
+      { type: 'terminal', ref: { kind: 'terminal', cmd: 'node examples/hello.mjs' }, figures: [
+        { label: 'Spam reading that decided it', from: /"value":([\d.]+)/ },
+      ] },
     ],
     doc: 'Hello, world',
   },
@@ -35,10 +38,16 @@ export const sections = [
     h2: 'Uncertainty escalates',
     p: 'Every question can carry a gate: `gate(department, 0.8, escalate(\'human-triage\', …))` sends the ticket to a person when confidence drops below the bar — by declaration, not by hoping the model says it is unsure. Clause order is policy, diffable in review.',
     demos: [
+      { type: 'diagram', name: 'gate-meter', ref: { kind: 'terminal', cmd: 'node examples/ticket-router.mjs' }, data: {
+        bar: /needed confidence >= ([\d.]+)/,
+        passes: /confidence ([\d.]+), then/,
+        fails: /then ([\d.]+)/,
+      } },
       { type: 'code', ref: { kind: 'snippet', marker: "const department = choice('department'" }, label: 'README — support routing' },
       { type: 'terminal', ref: { kind: 'terminal', cmd: 'node examples/ticket-router.mjs' }, figures: [
         { label: 'Gate bar in the captured run', from: /needed confidence >= ([\d.]+)/ },
       ] },
+      { type: 'diagram', name: 'router-tree' },
     ],
     doc: 'A real one: support routing',
   },
@@ -47,6 +56,9 @@ export const sections = [
     h2: 'Guard an agent\'s tools',
     p: '`jevlang/gate` decides whether a tool call runs — `allow`, `deny` or `ask` — as a Claude Code or Codex PreToolUse hook, or an MCP server standing in front of another one. It fails closed: anything the policy cannot decide denies and says so, and hard rules like `Bash(rm *)` block before the model is ever called.',
     demos: [
+      { type: 'diagram', name: 'gate-verdict', ref: { kind: 'terminal', cmd: 'node examples/tool-gate.mjs' }, data: {
+        effect: /effect=\w+ @ ([\d.]+)/,
+      } },
       { type: 'code', ref: { kind: 'snippet', marker: "const effect = choice('effect'" }, label: 'README — tool gate' },
       { type: 'terminal', ref: { kind: 'terminal', cmd: 'node examples/tool-gate.mjs' } },
     ],
@@ -66,6 +78,7 @@ export const sections = [
     h2: 'Same engine, hosted',
     p: '`@jev/cloud` runs this engine for many tenants: deploy, promote, evaluate and replay over HTTP. Every route but `/healthz` takes `Authorization: Bearer jev_live_…`, and the organization comes from the credential, never the path. Deployments are immutable; `promote` with `expect` is the only thing that moves production.',
     demos: [
+      { type: 'diagram', name: 'cloud-lifecycle' },
       { type: 'cloud-api' },
     ],
     doc: null,

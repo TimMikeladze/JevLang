@@ -163,19 +163,25 @@ export const css = String.raw`:root{color-scheme:dark;
 --paper:oklch(12.5% 0 0);--band:oklch(15.5% 0 0);--raise:oklch(18.5% 0 0);
 --ink:oklch(98.5% 0 0);--body:oklch(78% 0 0);--soft:oklch(62% 0 0);
 --line:oklch(100% 0 0/.11);--line-soft:oklch(100% 0 0/.06);
---accent:oklch(70% .16 250);--add:oklch(72% .17 150);--del:oklch(68% .19 20);--warn:oklch(78% .15 85);
---sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
---mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
+ --accent:oklch(70% .16 250);--add:oklch(72% .17 150);--del:oklch(68% .19 20);--warn:oklch(78% .15 85);
+ --violet:oklch(76% .14 300);
+ --tk-kw:oklch(73% .13 250);--tk-str:oklch(74% .15 150);--tk-num:oklch(80% .13 85);--tk-fn:oklch(76% .13 300);--tk-cmt:oklch(58% 0 0);
+ --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+ --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
 :root[data-theme=light]{color-scheme:light;
---paper:oklch(99% 0 0);--band:oklch(97% 0 0);--raise:oklch(100% 0 0);
---ink:oklch(14.5% 0 0);--body:oklch(27% 0 0);--soft:oklch(30% 0 0);
---line:oklch(0% 0 0/.12);--line-soft:oklch(0% 0 0/.06);
---accent:oklch(52% .18 250);--add:oklch(50% .16 150);--del:oklch(50% .19 25);--warn:oklch(55% .13 80)}
+ --paper:oklch(99% 0 0);--band:oklch(97% 0 0);--raise:oklch(100% 0 0);
+ --ink:oklch(14.5% 0 0);--body:oklch(27% 0 0);--soft:oklch(30% 0 0);
+ --line:oklch(0% 0 0/.12);--line-soft:oklch(0% 0 0/.06);
+ --accent:oklch(52% .18 250);--add:oklch(50% .16 150);--del:oklch(50% .19 25);--warn:oklch(55% .13 80);
+ --violet:oklch(50% .15 300);
+ --tk-kw:oklch(52% .14 250);--tk-str:oklch(50% .15 150);--tk-num:oklch(55% .13 80);--tk-fn:oklch(52% .14 300);--tk-cmt:oklch(48% 0 0)}
 @media (prefers-color-scheme:light){:root:not([data-theme=dark]):not([data-theme=light]){color-scheme:light;
---paper:oklch(99% 0 0);--band:oklch(97% 0 0);--raise:oklch(100% 0 0);
---ink:oklch(14.5% 0 0);--body:oklch(27% 0 0);--soft:oklch(30% 0 0);
---line:oklch(0% 0 0/.12);--line-soft:oklch(0% 0 0/.06);
---accent:oklch(52% .18 250);--add:oklch(50% .16 150);--del:oklch(50% .19 25);--warn:oklch(55% .13 80)}}
+ --paper:oklch(99% 0 0);--band:oklch(97% 0 0);--raise:oklch(100% 0 0);
+ --ink:oklch(14.5% 0 0);--body:oklch(27% 0 0);--soft:oklch(30% 0 0);
+ --line:oklch(0% 0 0/.12);--line-soft:oklch(0% 0 0/.06);
+ --accent:oklch(52% .18 250);--add:oklch(50% .16 150);--del:oklch(50% .19 25);--warn:oklch(55% .13 80);
+ --violet:oklch(50% .15 300);
+ --tk-kw:oklch(52% .14 250);--tk-str:oklch(50% .15 150);--tk-num:oklch(55% .13 80);--tk-fn:oklch(52% .14 300);--tk-cmt:oklch(48% 0 0)}}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{margin:0;background:var(--paper);color:var(--body);font:1rem/1.6 var(--sans)}
@@ -230,14 +236,35 @@ details.menu a:hover,details.menu button:hover{background:var(--band);color:var(
 .frame--stacked+.frame--stacked{margin-top:1rem}
 .frame-bar{display:flex;align-items:center;gap:.75rem;background:var(--band);border-bottom:1px solid var(--line-soft);padding:.55rem .9rem;font:500 .8rem/1 var(--mono);color:var(--soft)}
 .frame-bar .dots{display:flex;gap:6px}
-.dot{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.dot{width:10px;height:10px;border-radius:50%}
+.dot:nth-child(1){background:oklch(66% .19 25)}
+.dot:nth-child(2){background:oklch(78% .15 85)}
+.dot:nth-child(3){background:oklch(70% .17 150)}
 .frame-bar .chip{margin-left:auto;border:1px solid var(--line-soft);border-radius:.4rem;padding:.2rem .5rem;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em}
+.frame-bar .chip--captured{color:var(--add)}
 .frame-body{margin:0;padding:1rem .9rem;font:.8rem/1.6 var(--mono);color:var(--body);overflow-x:auto;background:var(--paper);white-space:pre-wrap;word-break:break-word}
 .frame-body .cmd{color:var(--ink);font-weight:600}
+.tk-kw{color:var(--tk-kw)}.tk-str{color:var(--tk-str)}.tk-num{color:var(--tk-num)}.tk-fn{color:var(--tk-fn)}.tk-cmt{color:var(--tk-cmt);font-style:italic}
+.tk-key{color:var(--accent)}
+.act-assign{color:var(--add);font-weight:600}.act-escalate{color:var(--warn);font-weight:600}.act-page{color:var(--warn);font-weight:600}.act-hold{color:var(--del);font-weight:600}.act-deny{color:var(--del);font-weight:600}.act-ask{color:var(--warn);font-weight:600}.act-allow{color:var(--add);font-weight:600}
 .demo+.demo{margin-top:1rem}
+/* diagrams */
+.diagram{border:1px solid var(--line);border-radius:.7rem;background:var(--paper);padding:1.4rem 1.2rem 1rem;margin-inline:0;overflow-x:auto}
+.diagram svg{display:block;width:100%;height:auto;min-width:640px}
+.diagram figcaption{margin-top:.7rem;font:.72rem/1.5 var(--mono);color:var(--soft);letter-spacing:.02em}
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1}
+.dg-node text{font-family:var(--mono);fill:var(--ink);font-size:15px;font-weight:600}
+.dg-sub{font-family:var(--mono);fill:var(--soft);font-size:11.5px;font-weight:400}
+.dg-note{font-family:var(--mono);fill:var(--soft);font-size:11.5px}
+.dg-edge{stroke:var(--line);stroke-width:1.4;fill:none}
+.dg-arrow{fill:var(--soft)}
+.dg-accent{stroke:var(--accent)}.dg-add{stroke:var(--add)}.dg-warn{stroke:var(--warn)}.dg-del{stroke:var(--del)}
+.dg-tint-add{fill:color-mix(in oklab,var(--add) 9%,transparent)}
+.dg-tint-del{fill:color-mix(in oklab,var(--del) 9%,transparent)}
+.dg-lane{stroke:var(--accent);stroke-dasharray:3 5;stroke-width:1.2}
 /* figures */
 .figures{display:flex;gap:2rem;flex-wrap:wrap;margin:0 0 .8rem}
-.figure b{display:block;font:650 .9rem/1.2 var(--sans);color:var(--ink)}
+.figure b{display:block;font:650 1.15rem/1.2 var(--mono);color:var(--accent)}
 .figure span{font:.8rem/1.4 var(--mono);color:var(--soft)}
 /* tables */
 .tablewrap{margin-top:1.6rem;overflow-x:auto}
@@ -247,7 +274,13 @@ td{padding:.55rem .9rem;border-top:1px solid var(--line-soft);color:var(--body);
 td:first-child{font-family:var(--mono);font-size:.82rem;color:var(--ink);white-space:nowrap}
 /* boundaries */
 .boundaries{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line-soft);border:1px solid var(--line-soft);border-radius:.7rem;overflow:hidden;margin-top:1.6rem}
-.boundary{background:var(--paper);padding:1.4rem 1.3rem}
+.boundary{background:var(--paper);padding:1.4rem 1.3rem;border-top:3px solid transparent}
+.boundary:nth-child(1){border-top-color:var(--add)}
+.boundary:nth-child(2){border-top-color:var(--warn)}
+.boundary:nth-child(3){border-top-color:var(--del)}
+.boundary:nth-child(1) h3{color:var(--add)}
+.boundary:nth-child(2) h3{color:var(--warn)}
+.boundary:nth-child(3) h3{color:var(--del)}
 .boundary h3{font:600 .85rem/1.2 var(--sans);margin:0 0 .8rem;color:var(--ink)}
 .boundary li{margin:.5rem 0;font-size:.9rem;line-height:1.5}
 .boundary ul{margin:0;padding-left:1.1rem}
@@ -378,19 +411,164 @@ export function footer() {
 
 // ---------- demo renderers ----------
 
+// ---------- syntax highlighting (deterministic) ----------
+
+const TS_KEYWORDS = new Set(['import', 'from', 'export', 'const', 'let', 'return', 'if', 'else', 'new', 'true', 'false', 'null', 'undefined', 'function', 'await', 'async', 'of', 'in', 'for', 'while', 'type', 'interface']);
+
+export function highlightTs(src) {
+  let out = '';
+  const push = (cls, text) => { out += cls ? `<span class="tk-${cls}">${esc(text)}</span>` : esc(text); };
+  let i = 0;
+  while (i < src.length) {
+    const rest = src.slice(i);
+    let m;
+    if ((m = rest.match(/^\/\/[^\n]*/))) { push('cmt', m[0]); }
+    else if ((m = rest.match(/^'(?:[^'\\\n]|\\.)*'?|^"(?:[^"\\\n]|\\.)*"?/))) { push('str', m[0]); }
+    else if ((m = rest.match(/^\d[\d.]*/))) { push('num', m[0]); }
+    else if ((m = rest.match(/^[A-Za-z_$][\w$]*/))) {
+      const w = m[0];
+      if (TS_KEYWORDS.has(w)) push('kw', w);
+      else if (/^\s*[(<]/.test(src.slice(i + w.length))) push('fn', w);
+      else push(null, w);
+    } else { push(null, src[i]); i++; continue; }
+    i += m[0].length;
+  }
+  return out;
+}
+
+const ACTION_CLASS = { assign: 'act-assign', escalate: 'act-escalate', page: 'act-page', hold: 'act-hold', deny: 'act-deny', ask: 'act-ask', allow: 'act-allow' };
+
+function terminalLine(raw) {
+  let s = esc(raw);
+  const Q = '&quot;';
+  s = s.replace(new RegExp(`${Q}action${Q}:${Q}(\\w+)${Q}`, 'g'), (_, a) => `${Q}action${Q}:<span class="${ACTION_CLASS[a] ?? ''}">${Q}${a}${Q}</span>`);
+  s = s.replace(new RegExp(`${Q}(\\w+[?]?|\\?[\\w-]+)${Q}:`, 'g'), `<span class="tk-key">${Q}$1${Q}</span>:`);
+  s = s.replace(/:(-?\d+\.?\d*)([,}\]])/g, ':<span class="tk-num">$1</span>$2');
+  return s;
+}
+
 function codeFrame(label, text) {
   return `<figure class="frame frame--stacked demo">
 <div class="frame-bar"><span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span><span>${esc(label)}</span><span class="chip">source</span></div>
-<pre class="frame-body">${esc(text)}</pre>
+<pre class="frame-body">${highlightTs(text)}</pre>
 </figure>`;
 }
 
 function terminalFrame(cmd, text) {
-  const body = esc(text).split('\n').map((l) => l.startsWith('$ ') ? `<span class="cmd">${l}</span>` : l).join('\n');
+  const body = text.split('\n').map((l) => (l.startsWith('$ ') ? `<span class="cmd">${esc(l)}</span>` : terminalLine(l))).join('\n');
   return `<figure class="frame frame--stacked demo">
-<div class="frame-bar"><span>$ ${esc(cmd)}</span><span class="chip">captured output</span></div>
+<div class="frame-bar"><span>$ ${esc(cmd)}</span><span class="chip chip--captured">captured output</span></div>
 <pre class="frame-body">${body}</pre>
 </figure>`;
+}
+
+// ---------- diagrams ----------
+// Named, drawn here, data injected from captured runs by the caller. The title
+// bar is reserved for captured artefacts, so diagrams render as plain figures.
+
+const DG_DEFS = (id) => `<defs><marker id="${id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-arrow" d="M0 0L10 5L0 10z"/></marker></defs>`;
+const DG_NODE = (x, y, w, h, cls = '') => `<rect class="dg-box ${cls}" x="${x}" y="${y}" width="${w}" height="${h}" rx="10"/>`;
+const DG_TEXT = (x, y, t, cls = '') => `<text x="${x}" y="${y}" text-anchor="middle" ${cls ? `class="${cls}"` : 'class="dg-node"'}>${esc(t)}</text>`;
+const DG_EDGE = (d, marker = true) => `<path class="dg-edge" d="${d}"${marker ? ` marker-end="url(#dg)"` : ''}/>`;
+
+const diagramDrawers = {
+  pipeline() {
+    return `<svg viewBox="0 0 1040 216" role="img" aria-label="How a decision flows: answers in, questions asked and validated, gates checked, route clauses evaluated, action out, journal signed. The provider is the only optional call that leaves the machine.">
+${DG_DEFS('dg')}
+${DG_NODE(8, 56, 118, 60)}${DG_TEXT(67, 82, 'answers')}${DG_TEXT(67, 101, 'decide(input)', 'dg-sub')}
+${DG_NODE(166, 56, 200, 60, 'dg-accent')}${DG_TEXT(266, 82, 'questions')}${DG_TEXT(266, 101, 'noul · choice · score', 'dg-sub')}
+${DG_NODE(410, 56, 150, 60, 'dg-warn')}${DG_TEXT(485, 82, 'gates')}${DG_TEXT(485, 101, 'gate(q, bar)', 'dg-sub')}
+${DG_NODE(604, 56, 150, 60, 'dg-add')}${DG_TEXT(679, 82, 'route')}${DG_TEXT(679, 101, 'rule → action', 'dg-sub')}
+${DG_NODE(798, 56, 234, 60)}${DG_TEXT(915, 82, 'journal')}${DG_TEXT(915, 101, 'signed · replayable', 'dg-sub')}
+${DG_TEXT(266, 44, 'validated', 'dg-note')}${DG_TEXT(485, 44, 'fail safe', 'dg-note')}${DG_TEXT(679, 44, 'first match wins', 'dg-note')}${DG_TEXT(915, 44, 'byte-for-byte fixtures', 'dg-note')}
+${DG_EDGE('M126 86L162 86')}${DG_EDGE('M366 86L406 86')}${DG_EDGE('M560 86L600 86')}${DG_EDGE('M754 86L794 86')}
+${DG_NODE(166, 160, 200, 46, 'dg-accent')}${DG_TEXT(266, 181, 'provider', 'dg-node')}${DG_TEXT(266, 198, 'evaluateWithProvider', 'dg-sub')}
+<path class="dg-lane" d="M266 160V122" marker-end="url(#dg)"/>
+<text x="798" y="181" class="dg-note" text-anchor="start">the one call that leaves the machine — a precheck that already decides makes no call at all</text>
+</svg>`;
+  },
+
+  'gate-meter'({ bar, passes, fails }) {
+    const X = (v) => 80 + 900 * v;
+    return `<svg viewBox="0 0 1040 168" role="img" aria-label="Confidence axis from 0 to 1. The gate bar at ${bar} divides it: at or above, the ticket routes; below, it escalates to a human. The captured run tried ${passes}, which routed, and ${fails}, which escalated.">
+${DG_DEFS('dg')}
+<rect class="dg-tint-del" x="80" y="86" width="${X(bar) - 80}" height="28"/>
+<rect class="dg-tint-add" x="${X(bar)}" y="86" width="${980 - X(bar)}" height="28"/>
+<text x="${(80 + X(bar)) / 2}" y="80" text-anchor="middle" class="dg-note" fill="var(--del)">escalate</text>
+<text x="${(X(bar) + 980) / 2}" y="80" text-anchor="middle" class="dg-note" fill="var(--add)">route</text>
+<line x1="80" y1="100" x2="980" y2="100" stroke="var(--soft)" stroke-width="1.4"/>
+${[0, 0.25, 0.5, 0.75, 1].map((t) => `<line x1="${X(t)}" y1="96" x2="${X(t)}" y2="104" stroke="var(--soft)"/><text x="${X(t)}" y="126" text-anchor="middle" class="dg-note">${t}</text>`).join('')}
+<line x1="${X(bar)}" y1="58" x2="${X(bar)}" y2="114" class="dg-accent" stroke="var(--accent)" stroke-width="2"/>
+<text x="${X(bar)}" y="44" text-anchor="middle" class="dg-note" fill="var(--accent)">gate(department, ${bar}, escalate('human-triage'))</text>
+<circle cx="${X(passes)}" cy="100" r="6" fill="var(--add)"/>
+<text x="${X(passes)}" y="70" text-anchor="middle" class="dg-note" fill="var(--add)">${passes} → assign 'billing-queue'</text>
+<circle cx="${X(fails)}" cy="100" r="6" fill="var(--del)"/>
+<text x="${X(fails)}" y="152" text-anchor="middle" class="dg-note" fill="var(--del)">${fails} → escalate 'human-triage'</text>
+</svg>`;
+  },
+
+  'router-tree'() {
+    const rows = [20, 80, 140, 200];
+    const clauses = ["1 · all(refund ≥ 0.8, angry)", "2 · department.is('billing')", "3 · department.is('technical')", "4 · department.is('sales')"];
+    const targets = [["page('retention-oncall')", 'dg-warn'], ["assign('billing-queue')", 'dg-add'], ["assign('engineering-oncall')", 'dg-add'], ["assign('sales-inbox')", 'dg-add']];
+    const edge = (y) => `M128 160C190 160 190 ${y + 22} 246 ${y + 22}`;
+    return `<svg viewBox="0 0 1040 316" role="img" aria-label="The ticket router as a tree: a ticket enters, four ordered clauses are tried in order, and the first match decides the target. Below either gate bar, the ticket escalates to human triage instead.">
+${DG_DEFS('dg')}
+${DG_NODE(8, 136, 120, 48)}${DG_TEXT(68, 165, 'ticket')}
+${clauses.map((c, i) => DG_NODE(250, rows[i], 300, 44) + DG_TEXT(400, rows[i] + 27, c, 'dg-sub')).join('')}
+${targets.map(([t, cls], i) => DG_NODE(680, rows[i], 352, 44, cls) + DG_TEXT(856, rows[i] + 27, t, 'dg-sub')).join('')}
+${rows.map((y) => DG_EDGE(edge(y))).join('')}
+${rows.map((y) => DG_EDGE(`M550 ${y + 22}L676 ${y + 22}`)).join('')}
+${DG_NODE(680, 268, 352, 44, 'dg-warn')}${DG_TEXT(856, 295, "escalate('human-triage')", 'dg-sub')}
+${DG_EDGE('M68 184C68 296 400 290 676 290')}
+<text x="250" y="300" class="dg-note" text-anchor="start">below gate(0.8) or gate(0.7)</text>
+</svg>`;
+  },
+
+  'gate-verdict'({ effect }) {
+    return `<svg viewBox="0 0 1040 252" role="img" aria-label="A tool call is checked two ways: hard rules deny before the model is ever called, and questions about effect and secret leaks are asked of the model. The verdict is allow, ask or deny — and anything the policy cannot decide denies.">
+${DG_DEFS('dg')}
+${DG_NODE(8, 60, 250, 52)}${DG_TEXT(133, 92, 'Bash(rm -rf build)', 'dg-sub')}
+${DG_NODE(330, 16, 250, 52, 'dg-del')}${DG_TEXT(455, 38, 'hard rules — no model')}${DG_TEXT(455, 56, "Bash(rm *) → deny", 'dg-sub')}
+${DG_NODE(330, 120, 250, 52, 'dg-accent')}${DG_TEXT(455, 142, 'questions')}${DG_TEXT(455, 160, "effect · leaks-secrets?  effect=destructive @ ${effect}", 'dg-sub')}
+${DG_NODE(680, 16, 180, 48, 'dg-add')}${DG_TEXT(770, 45, 'allow')}
+${DG_NODE(680, 98, 180, 48, 'dg-warn')}${DG_TEXT(770, 127, 'ask')}
+${DG_NODE(680, 180, 180, 48, 'dg-del')}${DG_TEXT(770, 209, 'deny')}
+${DG_EDGE('M258 78C290 70 296 42 326 42')}${DG_EDGE('M258 94C290 106 296 146 326 146')}
+${DG_EDGE('M580 42C620 42 630 190 676 198')}
+${DG_EDGE('M580 140C620 132 630 130 676 126')}
+${DG_EDGE('M580 160C620 176 630 214 676 218')}
+<text x="680" y="243" class="dg-note" text-anchor="start" fill="var(--del)">fails closed — anything the policy can't decide denies and says so</text>
+</svg>`;
+  },
+
+  'cloud-lifecycle'() {
+    return `<svg viewBox="0 0 1040 150" role="img" aria-label="The hosted lifecycle: deploy produces an immutable snapshot, promote with an expected fingerprint is the only thing that moves production, and recorded cases replay against it.">
+${DG_DEFS('dg')}
+${DG_NODE(8, 40, 190, 56, 'dg-accent')}${DG_TEXT(103, 63, 'jev deploy')}${DG_TEXT(103, 82, 'immutable snapshot', 'dg-sub')}
+${DG_NODE(300, 40, 210, 56, 'dg-warn')}${DG_TEXT(405, 63, 'jev promote')}${DG_TEXT(405, 82, 'expect: fingerprint', 'dg-sub')}
+${DG_NODE(612, 40, 180, 56, 'dg-add')}${DG_TEXT(702, 63, 'production')}${DG_TEXT(702, 82, 'the running policy', 'dg-sub')}
+${DG_NODE(852, 40, 180, 56)}${DG_TEXT(942, 63, 'replay')}${DG_TEXT(942, 82, 'recorded cases', 'dg-sub')}
+${DG_EDGE('M198 68L296 68')}${DG_EDGE('M510 68L608 68')}${DG_EDGE('M792 68L848 68')}
+<text x="103" y="122" class="dg-note" text-anchor="middle">frozen artifact</text>
+<text x="405" y="122" class="dg-note" text-anchor="middle" fill="var(--warn)">the only thing that moves production</text>
+<text x="942" y="122" class="dg-note" text-anchor="middle">byte-for-byte</text>
+</svg>`;
+  },
+};
+
+const diagramCaptions = {
+  pipeline: 'diagram · how a decision flows; the dotted lane is the optional provider call',
+  'gate-meter': 'diagram · gate bar and both readings come from the captured run above',
+  'router-tree': 'diagram · examples/ticket-router.mjs as declared — clause order is policy',
+  'gate-verdict': 'diagram · jevlang/gate as a PreToolUse hook; effect confidence from the captured run',
+  'cloud-lifecycle': 'diagram · @jev/cloud: deployments are immutable, promote is the only move',
+};
+
+export function diagram(name, ctx = {}) {
+  const f = diagramDrawers[name];
+  if (!f) throw new Error(`unknown diagram: ${name}`);
+  return `<figure class="diagram demo">${f(ctx)}<figcaption>${esc(diagramCaptions[name] ?? '')}</figcaption></figure>`;
 }
 
 function figuresRow(figs) {
@@ -416,6 +594,14 @@ export function renderLanding({ readme, cloudReadme }) {
   const sectionHtml = contentSections.map((s) => {
     const demos = s.demos.map((d) => {
       if (d.type === 'code') return codeFrame(d.label, resolve.snippet(d.ref.marker));
+      if (d.type === 'diagram') {
+        const ctx = {};
+        if (d.ref?.kind === 'terminal') {
+          const block = resolve.terminal(d.ref.cmd);
+          for (const [k, re] of Object.entries(d.data ?? {})) ctx[k] = figure(block, re);
+        }
+        return diagram(d.name, ctx);
+      }
       if (d.type === 'terminal') {
         const block = resolve.terminal(d.ref.cmd);
         const figs = d.figures?.map((f) => ({ label: f.label, value: figure(block, f.from) }));

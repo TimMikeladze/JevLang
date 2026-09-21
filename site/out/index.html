@@ -26,19 +26,25 @@
 --paper:oklch(12.5% 0 0);--band:oklch(15.5% 0 0);--raise:oklch(18.5% 0 0);
 --ink:oklch(98.5% 0 0);--body:oklch(78% 0 0);--soft:oklch(62% 0 0);
 --line:oklch(100% 0 0/.11);--line-soft:oklch(100% 0 0/.06);
---accent:oklch(70% .16 250);--add:oklch(72% .17 150);--del:oklch(68% .19 20);--warn:oklch(78% .15 85);
---sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
---mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
+ --accent:oklch(70% .16 250);--add:oklch(72% .17 150);--del:oklch(68% .19 20);--warn:oklch(78% .15 85);
+ --violet:oklch(76% .14 300);
+ --tk-kw:oklch(73% .13 250);--tk-str:oklch(74% .15 150);--tk-num:oklch(80% .13 85);--tk-fn:oklch(76% .13 300);--tk-cmt:oklch(58% 0 0);
+ --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+ --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
 :root[data-theme=light]{color-scheme:light;
---paper:oklch(99% 0 0);--band:oklch(97% 0 0);--raise:oklch(100% 0 0);
---ink:oklch(14.5% 0 0);--body:oklch(27% 0 0);--soft:oklch(30% 0 0);
---line:oklch(0% 0 0/.12);--line-soft:oklch(0% 0 0/.06);
---accent:oklch(52% .18 250);--add:oklch(50% .16 150);--del:oklch(50% .19 25);--warn:oklch(55% .13 80)}
+ --paper:oklch(99% 0 0);--band:oklch(97% 0 0);--raise:oklch(100% 0 0);
+ --ink:oklch(14.5% 0 0);--body:oklch(27% 0 0);--soft:oklch(30% 0 0);
+ --line:oklch(0% 0 0/.12);--line-soft:oklch(0% 0 0/.06);
+ --accent:oklch(52% .18 250);--add:oklch(50% .16 150);--del:oklch(50% .19 25);--warn:oklch(55% .13 80);
+ --violet:oklch(50% .15 300);
+ --tk-kw:oklch(52% .14 250);--tk-str:oklch(50% .15 150);--tk-num:oklch(55% .13 80);--tk-fn:oklch(52% .14 300);--tk-cmt:oklch(48% 0 0)}
 @media (prefers-color-scheme:light){:root:not([data-theme=dark]):not([data-theme=light]){color-scheme:light;
---paper:oklch(99% 0 0);--band:oklch(97% 0 0);--raise:oklch(100% 0 0);
---ink:oklch(14.5% 0 0);--body:oklch(27% 0 0);--soft:oklch(30% 0 0);
---line:oklch(0% 0 0/.12);--line-soft:oklch(0% 0 0/.06);
---accent:oklch(52% .18 250);--add:oklch(50% .16 150);--del:oklch(50% .19 25);--warn:oklch(55% .13 80)}}
+ --paper:oklch(99% 0 0);--band:oklch(97% 0 0);--raise:oklch(100% 0 0);
+ --ink:oklch(14.5% 0 0);--body:oklch(27% 0 0);--soft:oklch(30% 0 0);
+ --line:oklch(0% 0 0/.12);--line-soft:oklch(0% 0 0/.06);
+ --accent:oklch(52% .18 250);--add:oklch(50% .16 150);--del:oklch(50% .19 25);--warn:oklch(55% .13 80);
+ --violet:oklch(50% .15 300);
+ --tk-kw:oklch(52% .14 250);--tk-str:oklch(50% .15 150);--tk-num:oklch(55% .13 80);--tk-fn:oklch(52% .14 300);--tk-cmt:oklch(48% 0 0)}}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{margin:0;background:var(--paper);color:var(--body);font:1rem/1.6 var(--sans)}
@@ -93,14 +99,35 @@ details.menu a:hover,details.menu button:hover{background:var(--band);color:var(
 .frame--stacked+.frame--stacked{margin-top:1rem}
 .frame-bar{display:flex;align-items:center;gap:.75rem;background:var(--band);border-bottom:1px solid var(--line-soft);padding:.55rem .9rem;font:500 .8rem/1 var(--mono);color:var(--soft)}
 .frame-bar .dots{display:flex;gap:6px}
-.dot{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.dot{width:10px;height:10px;border-radius:50%}
+.dot:nth-child(1){background:oklch(66% .19 25)}
+.dot:nth-child(2){background:oklch(78% .15 85)}
+.dot:nth-child(3){background:oklch(70% .17 150)}
 .frame-bar .chip{margin-left:auto;border:1px solid var(--line-soft);border-radius:.4rem;padding:.2rem .5rem;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em}
+.frame-bar .chip--captured{color:var(--add)}
 .frame-body{margin:0;padding:1rem .9rem;font:.8rem/1.6 var(--mono);color:var(--body);overflow-x:auto;background:var(--paper);white-space:pre-wrap;word-break:break-word}
 .frame-body .cmd{color:var(--ink);font-weight:600}
+.tk-kw{color:var(--tk-kw)}.tk-str{color:var(--tk-str)}.tk-num{color:var(--tk-num)}.tk-fn{color:var(--tk-fn)}.tk-cmt{color:var(--tk-cmt);font-style:italic}
+.tk-key{color:var(--accent)}
+.act-assign{color:var(--add);font-weight:600}.act-escalate{color:var(--warn);font-weight:600}.act-page{color:var(--warn);font-weight:600}.act-hold{color:var(--del);font-weight:600}.act-deny{color:var(--del);font-weight:600}.act-ask{color:var(--warn);font-weight:600}.act-allow{color:var(--add);font-weight:600}
 .demo+.demo{margin-top:1rem}
+/* diagrams */
+.diagram{border:1px solid var(--line);border-radius:.7rem;background:var(--paper);padding:1.4rem 1.2rem 1rem;margin-inline:0;overflow-x:auto}
+.diagram svg{display:block;width:100%;height:auto;min-width:640px}
+.diagram figcaption{margin-top:.7rem;font:.72rem/1.5 var(--mono);color:var(--soft);letter-spacing:.02em}
+.dg-box{fill:var(--raise);stroke:var(--line);stroke-width:1}
+.dg-node text{font-family:var(--mono);fill:var(--ink);font-size:15px;font-weight:600}
+.dg-sub{font-family:var(--mono);fill:var(--soft);font-size:11.5px;font-weight:400}
+.dg-note{font-family:var(--mono);fill:var(--soft);font-size:11.5px}
+.dg-edge{stroke:var(--line);stroke-width:1.4;fill:none}
+.dg-arrow{fill:var(--soft)}
+.dg-accent{stroke:var(--accent)}.dg-add{stroke:var(--add)}.dg-warn{stroke:var(--warn)}.dg-del{stroke:var(--del)}
+.dg-tint-add{fill:color-mix(in oklab,var(--add) 9%,transparent)}
+.dg-tint-del{fill:color-mix(in oklab,var(--del) 9%,transparent)}
+.dg-lane{stroke:var(--accent);stroke-dasharray:3 5;stroke-width:1.2}
 /* figures */
 .figures{display:flex;gap:2rem;flex-wrap:wrap;margin:0 0 .8rem}
-.figure b{display:block;font:650 .9rem/1.2 var(--sans);color:var(--ink)}
+.figure b{display:block;font:650 1.15rem/1.2 var(--mono);color:var(--accent)}
 .figure span{font:.8rem/1.4 var(--mono);color:var(--soft)}
 /* tables */
 .tablewrap{margin-top:1.6rem;overflow-x:auto}
@@ -110,7 +137,13 @@ td{padding:.55rem .9rem;border-top:1px solid var(--line-soft);color:var(--body);
 td:first-child{font-family:var(--mono);font-size:.82rem;color:var(--ink);white-space:nowrap}
 /* boundaries */
 .boundaries{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line-soft);border:1px solid var(--line-soft);border-radius:.7rem;overflow:hidden;margin-top:1.6rem}
-.boundary{background:var(--paper);padding:1.4rem 1.3rem}
+.boundary{background:var(--paper);padding:1.4rem 1.3rem;border-top:3px solid transparent}
+.boundary:nth-child(1){border-top-color:var(--add)}
+.boundary:nth-child(2){border-top-color:var(--warn)}
+.boundary:nth-child(3){border-top-color:var(--del)}
+.boundary:nth-child(1) h3{color:var(--add)}
+.boundary:nth-child(2) h3{color:var(--warn)}
+.boundary:nth-child(3) h3{color:var(--del)}
 .boundary h3{font:600 .85rem/1.2 var(--sans);margin:0 0 .8rem;color:var(--ink)}
 .boundary li{margin:.5rem 0;font-size:.9rem;line-height:1.5}
 .boundary ul{margin:0;padding-left:1.1rem}
@@ -187,29 +220,42 @@ h1{font-size:2.6rem}
 <h2 id="write-the-policy-h">A policy, not a prompt</h2>
 <p class="expl">Declare each question once with <code>noul</code>, <code>choice</code> or <code>score</code>, then hand <code>definePolicy({ questions, route })</code> a list of clauses. A typo like <code>department.is('billling')</code> is a construction-time error, and a route with a hole is refused before anything deploys. Below is the README's whole example, and the decision it really made. <a href="/reference#hello-world">Read the section.</a></p>
 
+<figure class="diagram demo"><svg viewBox="0 0 1040 216" role="img" aria-label="How a decision flows: answers in, questions asked and validated, gates checked, route clauses evaluated, action out, journal signed. The provider is the only optional call that leaves the machine.">
+<defs><marker id="dg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-arrow" d="M0 0L10 5L0 10z"/></marker></defs>
+<rect class="dg-box " x="8" y="56" width="118" height="60" rx="10"/><text x="67" y="82" text-anchor="middle" class="dg-node">answers</text><text x="67" y="101" text-anchor="middle" class="dg-sub">decide(input)</text>
+<rect class="dg-box dg-accent" x="166" y="56" width="200" height="60" rx="10"/><text x="266" y="82" text-anchor="middle" class="dg-node">questions</text><text x="266" y="101" text-anchor="middle" class="dg-sub">noul · choice · score</text>
+<rect class="dg-box dg-warn" x="410" y="56" width="150" height="60" rx="10"/><text x="485" y="82" text-anchor="middle" class="dg-node">gates</text><text x="485" y="101" text-anchor="middle" class="dg-sub">gate(q, bar)</text>
+<rect class="dg-box dg-add" x="604" y="56" width="150" height="60" rx="10"/><text x="679" y="82" text-anchor="middle" class="dg-node">route</text><text x="679" y="101" text-anchor="middle" class="dg-sub">rule → action</text>
+<rect class="dg-box " x="798" y="56" width="234" height="60" rx="10"/><text x="915" y="82" text-anchor="middle" class="dg-node">journal</text><text x="915" y="101" text-anchor="middle" class="dg-sub">signed · replayable</text>
+<text x="266" y="44" text-anchor="middle" class="dg-note">validated</text><text x="485" y="44" text-anchor="middle" class="dg-note">fail safe</text><text x="679" y="44" text-anchor="middle" class="dg-note">first match wins</text><text x="915" y="44" text-anchor="middle" class="dg-note">byte-for-byte fixtures</text>
+<path class="dg-edge" d="M126 86L162 86" marker-end="url(#dg)"/><path class="dg-edge" d="M366 86L406 86" marker-end="url(#dg)"/><path class="dg-edge" d="M560 86L600 86" marker-end="url(#dg)"/><path class="dg-edge" d="M754 86L794 86" marker-end="url(#dg)"/>
+<rect class="dg-box dg-accent" x="166" y="160" width="200" height="46" rx="10"/><text x="266" y="181" text-anchor="middle" class="dg-node">provider</text><text x="266" y="198" text-anchor="middle" class="dg-sub">evaluateWithProvider</text>
+<path class="dg-lane" d="M266 160V122" marker-end="url(#dg)"/>
+<text x="798" y="181" class="dg-note" text-anchor="start">the one call that leaves the machine — a precheck that already decides makes no call at all</text>
+</svg><figcaption>diagram · how a decision flows; the dotted lane is the optional provider call</figcaption></figure>
 <figure class="frame frame--stacked demo">
 <div class="frame-bar"><span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span><span>README — Hello, world</span><span class="chip">source</span></div>
-<pre class="frame-body">import { noul, definePolicy, rule, assign, hold } from 'jevlang';
+<pre class="frame-body"><span class="tk-kw">import</span> { noul, definePolicy, rule, assign, hold } <span class="tk-kw">from</span> <span class="tk-str">'jevlang'</span>;
 
-const spam = noul('spam?', 'Is this message spam?');
+<span class="tk-kw">const</span> spam = <span class="tk-fn">noul</span>(<span class="tk-str">'spam?'</span>, <span class="tk-str">'Is this message spam?'</span>);
 
-const policy = definePolicy({
-  name: 'hello',
+<span class="tk-kw">const</span> policy = <span class="tk-fn">definePolicy</span>({
+  name: <span class="tk-str">'hello'</span>,
   questions: [spam],
   route: {
-    clauses: [rule(spam.yes(0.9), hold({ reason: 'almost certainly spam' }))],
-    otherwise: assign('inbox'),
+    clauses: [<span class="tk-fn">rule</span>(spam.<span class="tk-fn">yes</span>(<span class="tk-num">0.9</span>), <span class="tk-fn">hold</span>({ reason: <span class="tk-str">'almost certainly spam'</span> }))],
+    otherwise: <span class="tk-fn">assign</span>(<span class="tk-str">'inbox'</span>),
   },
 });
 
-const decision = policy.decide({ 'spam?': { noul: 0.97 } });
-// decision.action === 'hold' — 0.97 clears the 0.9 bar, and the decision
-// carries the reading that got it there</pre>
+<span class="tk-kw">const</span> decision = policy.<span class="tk-fn">decide</span>({ <span class="tk-str">'spam?'</span>: { noul: <span class="tk-num">0.97</span> } });
+<span class="tk-cmt">// decision.action === 'hold' — 0.97 clears the 0.9 bar, and the decision</span>
+<span class="tk-cmt">// carries the reading that got it there</span></pre>
 </figure>
-<figure class="frame frame--stacked demo">
-<div class="frame-bar"><span>$ node examples/hello.mjs</span><span class="chip">captured output</span></div>
+<div class="figures"><div class="figure"><b>0.97</b><span>Spam reading that decided it</span></div></div><figure class="frame frame--stacked demo">
+<div class="frame-bar"><span>$ node examples/hello.mjs</span><span class="chip chip--captured">captured output</span></div>
 <pre class="frame-body"><span class="cmd">$ node examples/hello.mjs  # decide({ 'spam?': { noul: 0.97 } })</span>
-{&quot;action&quot;:&quot;hold&quot;,&quot;reason&quot;:&quot;almost certainly spam&quot;,&quot;clause&quot;:0,&quot;readings&quot;:[{&quot;question&quot;:&quot;spam?&quot;,&quot;kind&quot;:&quot;noul&quot;,&quot;value&quot;:0.97,&quot;confidence&quot;:null,&quot;detail&quot;:null}]}</pre>
+{<span class="tk-key">&quot;action&quot;</span>:<span class="act-hold">&quot;hold&quot;</span>,<span class="tk-key">&quot;reason&quot;</span>:&quot;almost certainly spam&quot;,<span class="tk-key">&quot;clause&quot;</span>:<span class="tk-num">0</span>,<span class="tk-key">&quot;readings&quot;</span>:[{<span class="tk-key">&quot;question&quot;</span>:&quot;spam?&quot;,<span class="tk-key">&quot;kind&quot;</span>:&quot;noul&quot;,<span class="tk-key">&quot;value&quot;</span>:<span class="tk-num">0.97</span>,<span class="tk-key">&quot;confidence&quot;</span>:null,<span class="tk-key">&quot;detail&quot;</span>:null}]}</pre>
 </figure>
 </div>
 </section>
@@ -218,42 +264,68 @@ const decision = policy.decide({ 'spam?': { noul: 0.97 } });
 <h2 id="uncertainty-escalates-h">Uncertainty escalates</h2>
 <p class="expl">Every question can carry a gate: <code>gate(department, 0.8, escalate('human-triage', …))</code> sends the ticket to a person when confidence drops below the bar — by declaration, not by hoping the model says it is unsure. Clause order is policy, diffable in review. <a href="/reference#a-real-one-support-routing">Read the section.</a></p>
 
+<figure class="diagram demo"><svg viewBox="0 0 1040 168" role="img" aria-label="Confidence axis from 0 to 1. The gate bar at 0.80 divides it: at or above, the ticket routes; below, it escalates to a human. The captured run tried 0.92, which routed, and 0.55, which escalated.">
+<defs><marker id="dg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-arrow" d="M0 0L10 5L0 10z"/></marker></defs>
+<rect class="dg-tint-del" x="80" y="86" width="720" height="28"/>
+<rect class="dg-tint-add" x="800" y="86" width="180" height="28"/>
+<text x="440" y="80" text-anchor="middle" class="dg-note" fill="var(--del)">escalate</text>
+<text x="890" y="80" text-anchor="middle" class="dg-note" fill="var(--add)">route</text>
+<line x1="80" y1="100" x2="980" y2="100" stroke="var(--soft)" stroke-width="1.4"/>
+<line x1="80" y1="96" x2="80" y2="104" stroke="var(--soft)"/><text x="80" y="126" text-anchor="middle" class="dg-note">0</text><line x1="305" y1="96" x2="305" y2="104" stroke="var(--soft)"/><text x="305" y="126" text-anchor="middle" class="dg-note">0.25</text><line x1="530" y1="96" x2="530" y2="104" stroke="var(--soft)"/><text x="530" y="126" text-anchor="middle" class="dg-note">0.5</text><line x1="755" y1="96" x2="755" y2="104" stroke="var(--soft)"/><text x="755" y="126" text-anchor="middle" class="dg-note">0.75</text><line x1="980" y1="96" x2="980" y2="104" stroke="var(--soft)"/><text x="980" y="126" text-anchor="middle" class="dg-note">1</text>
+<line x1="800" y1="58" x2="800" y2="114" class="dg-accent" stroke="var(--accent)" stroke-width="2"/>
+<text x="800" y="44" text-anchor="middle" class="dg-note" fill="var(--accent)">gate(department, 0.80, escalate('human-triage'))</text>
+<circle cx="908" cy="100" r="6" fill="var(--add)"/>
+<text x="908" y="70" text-anchor="middle" class="dg-note" fill="var(--add)">0.92 → assign 'billing-queue'</text>
+<circle cx="575" cy="100" r="6" fill="var(--del)"/>
+<text x="575" y="152" text-anchor="middle" class="dg-note" fill="var(--del)">0.55 → escalate 'human-triage'</text>
+</svg><figcaption>diagram · gate bar and both readings come from the captured run above</figcaption></figure>
 <figure class="frame frame--stacked demo">
 <div class="frame-bar"><span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span><span>README — support routing</span><span class="chip">source</span></div>
-<pre class="frame-body">import { choice, score, noul, definePolicy, gate, escalate, rule, all, page, assign } from 'jevlang';
+<pre class="frame-body"><span class="tk-kw">import</span> { choice, score, noul, definePolicy, gate, escalate, rule, all, page, assign } <span class="tk-kw">from</span> <span class="tk-str">'jevlang'</span>;
 
-const department = choice('department', 'Which team should handle this ticket?', {
-  billing: 'Payments, invoicing, refunds, payouts, card failures',
-  technical: 'Bugs, outages, API errors, integration problems',
-  sales: 'Pricing, upgrades, quotas, new accounts',
+<span class="tk-kw">const</span> department = <span class="tk-fn">choice</span>(<span class="tk-str">'department'</span>, <span class="tk-str">'Which team should handle this ticket?'</span>, {
+  billing: <span class="tk-str">'Payments, invoicing, refunds, payouts, card failures'</span>,
+  technical: <span class="tk-str">'Bugs, outages, API errors, integration problems'</span>,
+  sales: <span class="tk-str">'Pricing, upgrades, quotas, new accounts'</span>,
 });
-const frustration = score('frustration', 'How frustrated is the customer?', [
-  'Calm and matter-of-fact', 'Annoyed but polite', 'Angry, threatening to leave',
+<span class="tk-kw">const</span> frustration = <span class="tk-fn">score</span>(<span class="tk-str">'frustration'</span>, <span class="tk-str">'How frustrated is the customer?'</span>, [
+  <span class="tk-str">'Calm and matter-of-fact'</span>, <span class="tk-str">'Annoyed but polite'</span>, <span class="tk-str">'Angry, threatening to leave'</span>,
 ]);
-const refund = noul('refund-requested?', 'Is the customer asking for money back?');
+<span class="tk-kw">const</span> refund = <span class="tk-fn">noul</span>(<span class="tk-str">'refund-requested?'</span>, <span class="tk-str">'Is the customer asking for money back?'</span>);
 
-export const policy = definePolicy({
-  name: 'ticket-router',
+<span class="tk-kw">export</span> <span class="tk-kw">const</span> policy = <span class="tk-fn">definePolicy</span>({
+  name: <span class="tk-str">'ticket-router'</span>,
   questions: [department, frustration, refund],
   gates: [
-    gate(department, 0.8, escalate('human-triage', { reason: 'unclear which team owns this' })),
-    gate(frustration, 0.7, escalate('human-triage', { reason: 'unclear how upset they are' })),
+    <span class="tk-fn">gate</span>(department, <span class="tk-num">0.8</span>, <span class="tk-fn">escalate</span>(<span class="tk-str">'human-triage'</span>, { reason: <span class="tk-str">'unclear which team owns this'</span> })),
+    <span class="tk-fn">gate</span>(frustration, <span class="tk-num">0.7</span>, <span class="tk-fn">escalate</span>(<span class="tk-str">'human-triage'</span>, { reason: <span class="tk-str">'unclear how upset they are'</span> })),
   ],
   route: { clauses: [
-    rule(all(refund.yes(0.8), frustration.mostLikely('Angry, threatening to leave')),
-         page('retention-oncall', { reason: 'angry refund request' })),
-    rule(department.is('billing'), assign('billing-queue')),
-    rule(department.is('technical'), assign('engineering-oncall')),
-    rule(department.is('sales'), assign('sales-inbox')),
+    <span class="tk-fn">rule</span>(<span class="tk-fn">all</span>(refund.<span class="tk-fn">yes</span>(<span class="tk-num">0.8</span>), frustration.<span class="tk-fn">mostLikely</span>(<span class="tk-str">'Angry, threatening to leave'</span>)),
+         <span class="tk-fn">page</span>(<span class="tk-str">'retention-oncall'</span>, { reason: <span class="tk-str">'angry refund request'</span> })),
+    <span class="tk-fn">rule</span>(department.<span class="tk-fn">is</span>(<span class="tk-str">'billing'</span>), <span class="tk-fn">assign</span>(<span class="tk-str">'billing-queue'</span>)),
+    <span class="tk-fn">rule</span>(department.<span class="tk-fn">is</span>(<span class="tk-str">'technical'</span>), <span class="tk-fn">assign</span>(<span class="tk-str">'engineering-oncall'</span>)),
+    <span class="tk-fn">rule</span>(department.<span class="tk-fn">is</span>(<span class="tk-str">'sales'</span>), <span class="tk-fn">assign</span>(<span class="tk-str">'sales-inbox'</span>)),
   ] },
 });</pre>
 </figure>
 <div class="figures"><div class="figure"><b>0.80</b><span>Gate bar in the captured run</span></div></div><figure class="frame frame--stacked demo">
-<div class="frame-bar"><span>$ node examples/ticket-router.mjs</span><span class="chip">captured output</span></div>
+<div class="frame-bar"><span>$ node examples/ticket-router.mjs</span><span class="chip chip--captured">captured output</span></div>
 <pre class="frame-body"><span class="cmd">$ node examples/ticket-router.mjs  # decide twice: confidence 0.92, then 0.55</span>
-{&quot;action&quot;:&quot;assign&quot;,&quot;target&quot;:&quot;billing-queue&quot;,&quot;reason&quot;:null,&quot;rule&quot;:&quot;route&quot;,&quot;detail&quot;:null}
-{&quot;action&quot;:&quot;escalate&quot;,&quot;target&quot;:&quot;human-triage&quot;,&quot;reason&quot;:&quot;unclear which team owns this&quot;,&quot;rule&quot;:&quot;gate&quot;,&quot;detail&quot;:&quot;needed confidence &gt;= 0.80; otherwise: assign billing-queue&quot;}</pre>
+{<span class="tk-key">&quot;action&quot;</span>:<span class="act-assign">&quot;assign&quot;</span>,<span class="tk-key">&quot;target&quot;</span>:&quot;billing-queue&quot;,<span class="tk-key">&quot;reason&quot;</span>:null,<span class="tk-key">&quot;rule&quot;</span>:&quot;route&quot;,<span class="tk-key">&quot;detail&quot;</span>:null}
+{<span class="tk-key">&quot;action&quot;</span>:<span class="act-escalate">&quot;escalate&quot;</span>,<span class="tk-key">&quot;target&quot;</span>:&quot;human-triage&quot;,<span class="tk-key">&quot;reason&quot;</span>:&quot;unclear which team owns this&quot;,<span class="tk-key">&quot;rule&quot;</span>:&quot;gate&quot;,<span class="tk-key">&quot;detail&quot;</span>:&quot;needed confidence &gt;= 0.80; otherwise: assign billing-queue&quot;}</pre>
 </figure>
+<figure class="diagram demo"><svg viewBox="0 0 1040 316" role="img" aria-label="The ticket router as a tree: a ticket enters, four ordered clauses are tried in order, and the first match decides the target. Below either gate bar, the ticket escalates to human triage instead.">
+<defs><marker id="dg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-arrow" d="M0 0L10 5L0 10z"/></marker></defs>
+<rect class="dg-box " x="8" y="136" width="120" height="48" rx="10"/><text x="68" y="165" text-anchor="middle" class="dg-node">ticket</text>
+<rect class="dg-box " x="250" y="20" width="300" height="44" rx="10"/><text x="400" y="47" text-anchor="middle" class="dg-sub">1 · all(refund ≥ 0.8, angry)</text><rect class="dg-box " x="250" y="80" width="300" height="44" rx="10"/><text x="400" y="107" text-anchor="middle" class="dg-sub">2 · department.is('billing')</text><rect class="dg-box " x="250" y="140" width="300" height="44" rx="10"/><text x="400" y="167" text-anchor="middle" class="dg-sub">3 · department.is('technical')</text><rect class="dg-box " x="250" y="200" width="300" height="44" rx="10"/><text x="400" y="227" text-anchor="middle" class="dg-sub">4 · department.is('sales')</text>
+<rect class="dg-box dg-warn" x="680" y="20" width="352" height="44" rx="10"/><text x="856" y="47" text-anchor="middle" class="dg-sub">page('retention-oncall')</text><rect class="dg-box dg-add" x="680" y="80" width="352" height="44" rx="10"/><text x="856" y="107" text-anchor="middle" class="dg-sub">assign('billing-queue')</text><rect class="dg-box dg-add" x="680" y="140" width="352" height="44" rx="10"/><text x="856" y="167" text-anchor="middle" class="dg-sub">assign('engineering-oncall')</text><rect class="dg-box dg-add" x="680" y="200" width="352" height="44" rx="10"/><text x="856" y="227" text-anchor="middle" class="dg-sub">assign('sales-inbox')</text>
+<path class="dg-edge" d="M128 160C190 160 190 42 246 42" marker-end="url(#dg)"/><path class="dg-edge" d="M128 160C190 160 190 102 246 102" marker-end="url(#dg)"/><path class="dg-edge" d="M128 160C190 160 190 162 246 162" marker-end="url(#dg)"/><path class="dg-edge" d="M128 160C190 160 190 222 246 222" marker-end="url(#dg)"/>
+<path class="dg-edge" d="M550 42L676 42" marker-end="url(#dg)"/><path class="dg-edge" d="M550 102L676 102" marker-end="url(#dg)"/><path class="dg-edge" d="M550 162L676 162" marker-end="url(#dg)"/><path class="dg-edge" d="M550 222L676 222" marker-end="url(#dg)"/>
+<rect class="dg-box dg-warn" x="680" y="268" width="352" height="44" rx="10"/><text x="856" y="295" text-anchor="middle" class="dg-sub">escalate('human-triage')</text>
+<path class="dg-edge" d="M68 184C68 296 400 290 676 290" marker-end="url(#dg)"/>
+<text x="250" y="300" class="dg-note" text-anchor="start">below gate(0.8) or gate(0.7)</text>
+</svg><figcaption>diagram · examples/ticket-router.mjs as declared — clause order is policy</figcaption></figure>
 </div>
 </section>
 <section id="guard-an-agents-tools" class="section section--band" aria-labelledby="guard-an-agents-tools-h">
@@ -261,16 +333,30 @@ export const policy = definePolicy({
 <h2 id="guard-an-agents-tools-h">Guard an agent's tools</h2>
 <p class="expl"><code>jevlang/gate</code> decides whether a tool call runs — <code>allow</code>, <code>deny</code> or <code>ask</code> — as a Claude Code or Codex PreToolUse hook, or an MCP server standing in front of another one. It fails closed: anything the policy cannot decide denies and says so, and hard rules like <code>Bash(rm *)</code> block before the model is ever called. <a href="/reference#guard-an-agent-s-tools">Read the section.</a></p>
 
+<figure class="diagram demo"><svg viewBox="0 0 1040 252" role="img" aria-label="A tool call is checked two ways: hard rules deny before the model is ever called, and questions about effect and secret leaks are asked of the model. The verdict is allow, ask or deny — and anything the policy cannot decide denies.">
+<defs><marker id="dg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-arrow" d="M0 0L10 5L0 10z"/></marker></defs>
+<rect class="dg-box " x="8" y="60" width="250" height="52" rx="10"/><text x="133" y="92" text-anchor="middle" class="dg-sub">Bash(rm -rf build)</text>
+<rect class="dg-box dg-del" x="330" y="16" width="250" height="52" rx="10"/><text x="455" y="38" text-anchor="middle" class="dg-node">hard rules — no model</text><text x="455" y="56" text-anchor="middle" class="dg-sub">Bash(rm *) → deny</text>
+<rect class="dg-box dg-accent" x="330" y="120" width="250" height="52" rx="10"/><text x="455" y="142" text-anchor="middle" class="dg-node">questions</text><text x="455" y="160" text-anchor="middle" class="dg-sub">effect · leaks-secrets?  effect=destructive @ ${effect}</text>
+<rect class="dg-box dg-add" x="680" y="16" width="180" height="48" rx="10"/><text x="770" y="45" text-anchor="middle" class="dg-node">allow</text>
+<rect class="dg-box dg-warn" x="680" y="98" width="180" height="48" rx="10"/><text x="770" y="127" text-anchor="middle" class="dg-node">ask</text>
+<rect class="dg-box dg-del" x="680" y="180" width="180" height="48" rx="10"/><text x="770" y="209" text-anchor="middle" class="dg-node">deny</text>
+<path class="dg-edge" d="M258 78C290 70 296 42 326 42" marker-end="url(#dg)"/><path class="dg-edge" d="M258 94C290 106 296 146 326 146" marker-end="url(#dg)"/>
+<path class="dg-edge" d="M580 42C620 42 630 190 676 198" marker-end="url(#dg)"/>
+<path class="dg-edge" d="M580 140C620 132 630 130 676 126" marker-end="url(#dg)"/>
+<path class="dg-edge" d="M580 160C620 176 630 214 676 218" marker-end="url(#dg)"/>
+<text x="680" y="243" class="dg-note" text-anchor="start" fill="var(--del)">fails closed — anything the policy can't decide denies and says so</text>
+</svg><figcaption>diagram · jevlang/gate as a PreToolUse hook; effect confidence from the captured run</figcaption></figure>
 <figure class="frame frame--stacked demo">
 <div class="frame-bar"><span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span><span>README — tool gate</span><span class="chip">source</span></div>
-<pre class="frame-body">const effect = choice('effect', 'What would this tool call do if it ran?', { /* read-only, destructive, ... */ });
-const leaks = noul('leaks-secrets?', &quot;Could this call send secrets somewhere they don't belong?&quot;);
-// rule(leaks.yes(0.5), assign('deny', ...)), rule(effect.is('destructive'), escalate('ask', ...)), ...</pre>
+<pre class="frame-body"><span class="tk-kw">const</span> effect = <span class="tk-fn">choice</span>(<span class="tk-str">'effect'</span>, <span class="tk-str">'What would this tool call do if it ran?'</span>, { /* read-only, destructive, ... */ });
+<span class="tk-kw">const</span> leaks = <span class="tk-fn">noul</span>(<span class="tk-str">'leaks-secrets?'</span>, <span class="tk-str">&quot;Could this call send secrets somewhere they don't belong?&quot;</span>);
+<span class="tk-cmt">// rule(leaks.yes(0.5), assign('deny', ...)), rule(effect.is('destructive'), escalate('ask', ...)), ...</span></pre>
 </figure>
 <figure class="frame frame--stacked demo">
-<div class="frame-bar"><span>$ node examples/tool-gate.mjs</span><span class="chip">captured output</span></div>
+<div class="frame-bar"><span>$ node examples/tool-gate.mjs</span><span class="chip chip--captured">captured output</span></div>
 <pre class="frame-body"><span class="cmd">$ node examples/tool-gate.mjs  # effect=destructive @ 0.95</span>
-{&quot;action&quot;:&quot;escalate&quot;,&quot;target&quot;:&quot;ask&quot;,&quot;reason&quot;:&quot;it destroys data&quot;}</pre>
+{<span class="tk-key">&quot;action&quot;</span>:<span class="act-escalate">&quot;escalate&quot;</span>,<span class="tk-key">&quot;target&quot;</span>:&quot;ask&quot;,<span class="tk-key">&quot;reason&quot;</span>:&quot;it destroys data&quot;}</pre>
 </figure>
 </div>
 </section>
@@ -287,6 +373,17 @@ const leaks = noul('leaks-secrets?', &quot;Could this call send secrets somewher
 <h2 id="same-engine-hosted-h">Same engine, hosted</h2>
 <p class="expl"><code>@jev/cloud</code> runs this engine for many tenants: deploy, promote, evaluate and replay over HTTP. Every route but <code>/healthz</code> takes <code>Authorization: Bearer jev_live_…</code>, and the organization comes from the credential, never the path. Deployments are immutable; <code>promote</code> with <code>expect</code> is the only thing that moves production.</p>
 
+<figure class="diagram demo"><svg viewBox="0 0 1040 150" role="img" aria-label="The hosted lifecycle: deploy produces an immutable snapshot, promote with an expected fingerprint is the only thing that moves production, and recorded cases replay against it.">
+<defs><marker id="dg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-arrow" d="M0 0L10 5L0 10z"/></marker></defs>
+<rect class="dg-box dg-accent" x="8" y="40" width="190" height="56" rx="10"/><text x="103" y="63" text-anchor="middle" class="dg-node">jev deploy</text><text x="103" y="82" text-anchor="middle" class="dg-sub">immutable snapshot</text>
+<rect class="dg-box dg-warn" x="300" y="40" width="210" height="56" rx="10"/><text x="405" y="63" text-anchor="middle" class="dg-node">jev promote</text><text x="405" y="82" text-anchor="middle" class="dg-sub">expect: fingerprint</text>
+<rect class="dg-box dg-add" x="612" y="40" width="180" height="56" rx="10"/><text x="702" y="63" text-anchor="middle" class="dg-node">production</text><text x="702" y="82" text-anchor="middle" class="dg-sub">the running policy</text>
+<rect class="dg-box " x="852" y="40" width="180" height="56" rx="10"/><text x="942" y="63" text-anchor="middle" class="dg-node">replay</text><text x="942" y="82" text-anchor="middle" class="dg-sub">recorded cases</text>
+<path class="dg-edge" d="M198 68L296 68" marker-end="url(#dg)"/><path class="dg-edge" d="M510 68L608 68" marker-end="url(#dg)"/><path class="dg-edge" d="M792 68L848 68" marker-end="url(#dg)"/>
+<text x="103" y="122" class="dg-note" text-anchor="middle">frozen artifact</text>
+<text x="405" y="122" class="dg-note" text-anchor="middle" fill="var(--warn)">the only thing that moves production</text>
+<text x="942" y="122" class="dg-note" text-anchor="middle">byte-for-byte</text>
+</svg><figcaption>diagram · @jev/cloud: deployments are immutable, promote is the only move</figcaption></figure>
 <div class="tablewrap"><table><thead><tr><th>Route</th><th>What it does</th></tr></thead><tbody><tr><td><code>POST /v1/projects</code></td><td>create a project (<code>{slug, config}</code>)</td></tr><tr><td><code>POST /v1/projects/:slug/deployments</code></td><td>publish a policy artifact (<code>{policy, note}</code>)</td></tr><tr><td><code>GET /v1/projects/:slug/deployments</code></td><td>newest first</td></tr><tr><td><code>POST /v1/projects/:slug/promote</code></td><td><code>{deployment, expect}</code> moves production; <code>{deployment, gate: {sample, max_changed}}</code> diffs <code>sample</code> production traces against the deployment first and refuses (422) when the changed fraction is over <code>max_changed</code> — or when fewer than 30 traces are replayable, because a gate over too little evidence is not a gate. A refusal is audited as <code>deployment.promote_refused</code> and moves nothing</td></tr><tr><td><code>PUT /v1/projects/:slug</code></td><td>replace a project's <code>config</code> (<code>alerts</code>, <code>event_urls</code>, <code>schedule</code>, <code>provider</code>), validated where the service reads it</td></tr><tr><td><code>GET/PUT/DELETE /v1/projects/:slug/secrets[/:name]</code></td><td>names and versions only; values never come back</td></tr><tr><td><code>POST /v1/projects/:slug/evaluate</code></td><td>ask the provider, then decide</td></tr><tr><td><code>POST /v1/projects/:slug/decide</code></td><td>decide on answers the caller already has</td></tr><tr><td><code>POST /v1/projects/:slug/dispatch</code></td><td>decide, then run the handlers (<code>dry_run</code> rehearses)</td></tr><tr><td><code>GET /v1/projects/:slug/traces[/:id]</code></td><td>what happened</td></tr><tr><td><code>POST /v1/projects/:slug/traces/:id/replay</code></td><td>decide again, against <code>?deployment=</code></td></tr><tr><td><code>POST /v1/projects/:slug/replay-diff</code></td><td>production's recent traces decided again against <code>{deployment, limit, since}</code>; rows <code>{trace_id, old, new, changed}</code> and a <code>{replayed, changed, refused}</code> summary — a trace whose inputs cannot be rebuilt is counted as <code>refused</code>, never skipped</td></tr><tr><td><code>GET /v1/usage</code></td><td>rows, and a total that separates money from estimates</td></tr><tr><td><code>GET/PUT /v1/billing</code></td><td>the Stripe mapping, and what has been reported</td></tr><tr><td><code>POST /v1/billing/report</code></td><td>report a closed month (<code>{month: &quot;2026-08&quot;}</code>)</td></tr><tr><td><code>POST /v1/stripe/webhook</code></td><td>Stripe's own events; signed, and the only <code>/v1</code> route with no key</td></tr><tr><td><code>GET /v1/audit</code></td><td>what changed, and who did it</td></tr></tbody></table></div>
 </div>
 </section>
@@ -311,7 +408,7 @@ const leaks = noul('leaks-secrets?', &quot;Could this call send secrets somewher
 <pre class="frame-body">$ npm install github:TimMikeladze/JevLang</pre>
 </figure>
 <figure class="frame frame--stacked demo">
-<div class="frame-bar"><span>$ npm install</span><span class="chip">captured output</span></div>
+<div class="frame-bar"><span>$ npm install</span><span class="chip chip--captured">captured output</span></div>
 <pre class="frame-body"><span class="cmd">$ npm install</span>
 up to date, audited 21 packages in 371ms
 found 0 vulnerabilities

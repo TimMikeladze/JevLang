@@ -167,6 +167,34 @@ test('tables read from docs', () => {
   assert.ok(cloudApiTable(cloudReadme).length >= 8);
 });
 
+// extra: diagrams render inside their sections, with values read from runs.
+test('diagrams render with captured values', () => {
+  const r = makeResolver(readme);
+  for (const s of sections) for (const d of s.demos) {
+    if (d.type !== 'diagram') continue;
+    const sec = index.split(`<section id="${s.id}"`)[1].split('</section>')[0];
+    assert.ok(sec.includes('<figure class="diagram'), `${s.id}: ${d.name} missing`);
+    if (d.ref?.kind === 'terminal') {
+      const block = r.terminal(d.ref.cmd);
+      for (const re of Object.values(d.data ?? {})) figure(block, re);
+    }
+  }
+  const routed = r.terminal('node examples/ticket-router.mjs');
+  const bar = figure(routed, /needed confidence >= ([\d.]+)/);
+  assert.ok(index.includes(`gate(department, ${bar}, escalate('`));
+  const gated = r.terminal('node examples/tool-gate.mjs');
+  assert.ok(index.includes(`effect=destructive @ ${figure(gated, /effect=\w+ @ ([\d.]+)/)}`));
+});
+
+// extra: syntax highlighting is applied and stays escaped.
+test('code frames highlighted and escaped', () => {
+  assert.ok(index.includes('class="tk-kw"'));
+  assert.ok(index.includes('class="tk-str"'));
+  assert.ok(index.includes('class="tk-key"'));
+  assert.ok(index.includes('class="act-assign"') || index.includes('class="act-escalate"'));
+  assert.ok(!index.includes('<pre class="frame-body"><import'));
+});
+
 // extra: the vendored cloud API table matches the sibling repo when present.
 test('vendored cloud API table in sync', () => {
   let sibling;
