@@ -302,7 +302,8 @@ apply(stored&&['dark','light'].includes(stored)?stored:'system');
 mq.addEventListener('change',function(){if(!localStorage.getItem(KEY))apply('system')});
 document.addEventListener('click',function(e){
 var t=e.target.closest('#theme-toggle');if(t){var cur=root.dataset.theme;var next={system:'dark',dark:'light',light:'system'}[cur];try{localStorage.setItem(KEY,next)}catch(_){}apply(next);return;}
-var c=e.target.closest('[data-copy]');if(c&&navigator.clipboard){navigator.clipboard.writeText(c.dataset.copy).then(function(){var s=c.querySelector('.copy-state');if(s){s.textContent=' copied'}setTimeout(function(){if(s)s.textContent=''},1200)});}
+var c=e.target.closest('[data-copy]');if(c&&navigator.clipboard){navigator.clipboard.writeText(c.dataset.copy).then(function(){var s=c.querySelector('.copy-state');if(s){s.textContent=' copied'}setTimeout(function(){if(s)s.textContent=''},1200)});return;}
+var m=e.target.closest('[data-copy-markdown]');if(m&&navigator.clipboard){fetch('/index.md').then(function(r){return r.text()}).then(function(t){navigator.clipboard.writeText(t);m.textContent='Copied';setTimeout(function(){m.textContent='Copy page as Markdown'},1200);});}
 });
 })();
 </script>`;
