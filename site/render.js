@@ -339,9 +339,10 @@ export function footer() {
   const cols = footerColumns.map((c) => `<div class="foot-col"><h3>${esc(c.title)}</h3>${c.links.map((l) => `<a href="${esc(resolveHref(l.href))}"${l.external ? ' target="_blank" rel="noopener"' : ''}>${esc(l.label)}${l.external ? ' <span class="ext">↗</span>' : ''}</a>`).join('')}</div>`).join('');
   const iconRow = links.filter((l) => l.where.includes('footer')).map(iconLink).join('');
   return `<footer class="site-foot"><div class="shell">
+<p class="credit">Built by linesofcode — open source policy infrastructure for decisions that used to live in prompts.</p>
 <div class="foot-cols">${cols}</div>
 <div class="foot-icons">${iconRow}</div>
-<p class="copyright">© ${year}</p>
+<p class="copyright">© ${year} linesofcode</p>
 </div></footer>`;
 }
 
