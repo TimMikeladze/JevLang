@@ -103,10 +103,14 @@ h2{font-size:clamp(1.35rem,2.4vw,1.7rem);line-height:1.2;font-weight:650;letter-
 :root[data-pref=light] .theme-toggle .i-light{display:inline-flex}
 :root[data-pref=system] .theme-toggle .i-system,:root:not([data-pref]) .theme-toggle .i-system{display:inline-flex}
 /* hero */
-.hero{padding-block:clamp(3.5rem,7vw,6rem) clamp(3rem,6vw,5rem)}
+.hero{position:relative;padding-block:clamp(3.5rem,7vw,6rem) clamp(3rem,6vw,5rem);isolation:isolate}
 .hero .mark{display:inline-block;line-height:0}
 .mark-tile{fill:var(--raise);stroke:var(--line)}
 .mark-glyph{stroke:var(--ink)}
+.hero-pattern{position:absolute;inset:0;width:100%;height:100%;z-index:-1}
+.hero-pattern-lines{stroke:var(--line);stroke-width:1.6}
+.hero-pattern-dot{fill:var(--band);stroke:var(--line);stroke-width:1.6}
+@media (max-width:900px){.hero-pattern{display:none}}
 .actions{display:flex;flex-wrap:wrap;gap:.7rem;align-items:center;margin:0 0 1.1rem}
 .control{display:inline-flex;align-items:center;gap:.5rem;padding:.62rem .85rem;border-radius:.6rem;border:1px solid var(--line);background:var(--raise);color:var(--ink);font:500 .9rem/1.15 var(--sans);text-decoration:none;transition:background .14s ease,border-color .14s ease;cursor:pointer}
 .control:hover{border-color:var(--line);background:color-mix(in oklab,var(--raise) 80%,var(--ink) 4%)}
@@ -379,7 +383,36 @@ h1{font-size:2.6rem}
 </div>
 </div></header>
 <main id="main">
-<section class="hero" aria-labelledby="top"><div class="shell">
+<section class="hero" aria-labelledby="top"><svg class="hero-pattern" aria-hidden="true" viewBox="0 0 1200 520" preserveAspectRatio="xMidYMid slice">
+<defs>
+<linearGradient id="hp-fade" x1="0" x2="1" y1="0" y2="0">
+<stop offset="0" stop-color="#fff" stop-opacity="0"/>
+<stop offset=".4" stop-color="#fff" stop-opacity="0"/>
+<stop offset=".68" stop-color="#fff" stop-opacity="1"/>
+</linearGradient>
+<mask id="hp-mask"><rect width="1200" height="520" fill="url(#hp-fade)"/></mask>
+</defs>
+<g class="hero-pattern-lines" mask="url(#hp-mask)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<circle class="hero-pattern-dot" cx="660" cy="54" r="4"/>
+<path d="M660 54H824V132"/>
+<circle class="hero-pattern-dot" cx="824" cy="132" r="4"/>
+<circle class="hero-pattern-dot" cx="960" cy="40" r="4"/>
+<path d="M960 40V96H1086V176"/>
+<circle class="hero-pattern-dot" cx="1086" cy="176" r="4"/>
+<circle class="hero-pattern-dot" cx="762" cy="238" r="4"/>
+<path d="M762 238H902V308H1024"/>
+<circle class="hero-pattern-dot" cx="1024" cy="308" r="4"/>
+<circle class="hero-pattern-dot" cx="1128" cy="70" r="4"/>
+<path d="M1128 70V158"/>
+<circle class="hero-pattern-dot" cx="1128" cy="158" r="4"/>
+<circle class="hero-pattern-dot" cx="700" cy="330" r="4"/>
+<path d="M700 330H776V420"/>
+<circle class="hero-pattern-dot" cx="776" cy="420" r="4"/>
+<circle class="hero-pattern-dot" cx="980" cy="366" r="4"/>
+<path d="M980 366H1112"/>
+<circle class="hero-pattern-dot" cx="1112" cy="366" r="4"/>
+</g>
+</svg><div class="shell">
 <span class="mark"><svg aria-hidden="true" width="44" height="44" viewBox="0 0 48 48"><rect class="mark-tile" x=".5" y=".5" width="47" height="47" rx="11"/><path class="mark-glyph" d="M30 12v16.5c0 4.5-3 7.5-7.5 7.5S15 33 15 29.5" fill="none" stroke-width="3.4" stroke-linecap="round"/></svg></span>
 <h1 id="top">The model answers, your policy decides</h1>
 <p class="lede"><code>jevlang</code> is an open source policy engine for decisions an LLM used to make inside a prompt: routing, triage, approvals, guarding an agent's tools. You declare the questions the model answers and the rules that act on them, in plain <a href="https://github.com/TimMikeladze/JevLang">TypeScript or Python</a>. Made by <a href="https://x.com/linesofcode">linesofcode</a>.</p>

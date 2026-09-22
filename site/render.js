@@ -197,6 +197,41 @@ export const productMark = `<svg aria-hidden="true" width="44" height="44" viewB
 
 export const favicon = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#1c1c1c"/><path d="M30 12v16.5c0 4.5-3 7.5-7.5 7.5S15 33 15 29.5" fill="none" stroke="#f7f7f7" stroke-width="3.4" stroke-linecap="round"/></svg>`)}`;
 
+// The hero's background: a faint routing graph — orthogonal paths and node
+// dots, the same shape as a policy's route. Masked out behind the headline's
+// column so it only shows in the empty air to its right, and hidden on narrow
+// screens where there is no such air.
+export const heroPattern = `<svg class="hero-pattern" aria-hidden="true" viewBox="0 0 1200 520" preserveAspectRatio="xMidYMid slice">
+<defs>
+<linearGradient id="hp-fade" x1="0" x2="1" y1="0" y2="0">
+<stop offset="0" stop-color="#fff" stop-opacity="0"/>
+<stop offset=".4" stop-color="#fff" stop-opacity="0"/>
+<stop offset=".68" stop-color="#fff" stop-opacity="1"/>
+</linearGradient>
+<mask id="hp-mask"><rect width="1200" height="520" fill="url(#hp-fade)"/></mask>
+</defs>
+<g class="hero-pattern-lines" mask="url(#hp-mask)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<circle class="hero-pattern-dot" cx="660" cy="54" r="4"/>
+<path d="M660 54H824V132"/>
+<circle class="hero-pattern-dot" cx="824" cy="132" r="4"/>
+<circle class="hero-pattern-dot" cx="960" cy="40" r="4"/>
+<path d="M960 40V96H1086V176"/>
+<circle class="hero-pattern-dot" cx="1086" cy="176" r="4"/>
+<circle class="hero-pattern-dot" cx="762" cy="238" r="4"/>
+<path d="M762 238H902V308H1024"/>
+<circle class="hero-pattern-dot" cx="1024" cy="308" r="4"/>
+<circle class="hero-pattern-dot" cx="1128" cy="70" r="4"/>
+<path d="M1128 70V158"/>
+<circle class="hero-pattern-dot" cx="1128" cy="158" r="4"/>
+<circle class="hero-pattern-dot" cx="700" cy="330" r="4"/>
+<path d="M700 330H776V420"/>
+<circle class="hero-pattern-dot" cx="776" cy="420" r="4"/>
+<circle class="hero-pattern-dot" cx="980" cy="366" r="4"/>
+<path d="M980 366H1112"/>
+<circle class="hero-pattern-dot" cx="1112" cy="366" r="4"/>
+</g>
+</svg>`;
+
 // ---------- script ----------
 
 // The one script: it resolves the stored theme before first paint (it sits in
@@ -527,7 +562,7 @@ ${boundaries.columns.map((c) => `<div class="boundary"><h3>${esc(c.title)} <span
 <a class="control control--solid" href="/reference">${icon('book')} Documentation</a>
 </div>`;
 
-  const hero = `<section class="hero" aria-labelledby="top"><div class="shell">
+  const hero = `<section class="hero" aria-labelledby="top">${heroPattern}<div class="shell">
 <span class="mark">${productMark}</span>
 <h1 id="top">${esc(meta.h1)}</h1>
 <p class="lede">${inlineMd(meta.lede)}</p>
