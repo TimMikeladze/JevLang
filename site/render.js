@@ -583,7 +583,6 @@ ${boundaries.columns.map((c) => `<div class="boundary"><h3>${esc(c.title)} <span
 </div>`;
 
   const hero = `<section class="hero" aria-labelledby="top">${heroPattern}<div class="shell">
-<span class="mark">${productMark}</span>
 <h1 id="top">${esc(meta.h1)}</h1>
 <p class="lede">${inlineMd(meta.lede)}</p>
 ${actions}

@@ -21,7 +21,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://jevlang.sh/og.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2048%2048%22%3E%3Crect%20width%3D%2248%22%20height%3D%2248%22%20rx%3D%2211%22%20fill%3D%22%231c1c1c%22%2F%3E%3Cpath%20d%3D%22M30%2012v16.5c0%204.5-3%207.5-7.5%207.5S15%2033%2015%2029.5%22%20fill%3D%22none%22%20stroke%3D%22%23f7f7f7%22%20stroke-width%3D%223.4%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"JevLang","description":"jevlang is a typesafe policy engine for LLM decisions: the model answers small questions in TypeScript, your policy decides, and every decision explains itself.","url":"https://jevlang.sh/","applicationCategory":"DeveloperApplication","softwareVersion":"1.0.0","offers":{"@type":"Offer","price":"0"},"license":"https://opensource.org/licenses/MIT"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"JevLang","description":"jevlang is a typesafe policy engine for LLM decisions: the model answers small questions in TypeScript, your policy decides, and every decision explains itself.","url":"https://jevlang.sh/","applicationCategory":"DeveloperApplication","softwareVersion":"1.1.0","offers":{"@type":"Offer","price":"0"},"license":"https://opensource.org/licenses/MIT"}</script>
 <script>
 (function(){
 var K='jevlang-theme',r=document.documentElement,mq=matchMedia('(prefers-color-scheme: dark)');
@@ -104,7 +104,6 @@ h2{font-size:clamp(1.35rem,2.4vw,1.7rem);line-height:1.2;font-weight:650;letter-
 :root[data-pref=system] .theme-toggle .i-system,:root:not([data-pref]) .theme-toggle .i-system{display:inline-flex}
 /* hero */
 .hero{position:relative;padding-block:clamp(3.5rem,7vw,6rem) clamp(3rem,6vw,5rem);isolation:isolate}
-.hero .mark{display:inline-block;line-height:0}
 .mark-tile{fill:var(--raise);stroke:var(--line)}
 .mark-glyph{stroke:var(--ink)}
 .hero-pattern{position:absolute;inset:0;width:100%;height:100%;z-index:-1}
@@ -455,7 +454,6 @@ h1{font-size:2.6rem}
 <circle class="hero-pattern-dot hp-action hp-del-dot" cx="1000" cy="430" r="4" style="animation-delay:-.3s"/>
 </g>
 </svg><div class="shell">
-<span class="mark"><svg aria-hidden="true" width="44" height="44" viewBox="0 0 48 48"><rect class="mark-tile" x=".5" y=".5" width="47" height="47" rx="11"/><path class="mark-glyph" d="M30 12v16.5c0 4.5-3 7.5-7.5 7.5S15 33 15 29.5" fill="none" stroke-width="3.4" stroke-linecap="round"/></svg></span>
 <h1 id="top">Typesafe policy for LLM decisions</h1>
 <p class="lede"><code>jevlang</code> is a typesafe policy engine for decisions an LLM used to make inside a prompt: routing, triage, approvals, guarding an agent's tools. You declare the questions the model answers and the rules that act on them, in plain <a href="https://github.com/TimMikeladze/JevLang">TypeScript</a>. Mistakes are build errors, and every decision explains itself.</p>
 <div class="actions">

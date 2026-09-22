@@ -67,7 +67,6 @@ h2{font-size:clamp(1.35rem,2.4vw,1.7rem);line-height:1.2;font-weight:650;letter-
 :root[data-pref=system] .theme-toggle .i-system,:root:not([data-pref]) .theme-toggle .i-system{display:inline-flex}
 /* hero */
 .hero{position:relative;padding-block:clamp(3.5rem,7vw,6rem) clamp(3rem,6vw,5rem);isolation:isolate}
-.hero .mark{display:inline-block;line-height:0}
 .mark-tile{fill:var(--raise);stroke:var(--line)}
 .mark-glyph{stroke:var(--ink)}
 .hero-pattern{position:absolute;inset:0;width:100%;height:100%;z-index:-1}

@@ -13,10 +13,21 @@
   --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
 }
 *{box-sizing:border-box;margin:0}
-body{width:1200px;height:630px;background:var(--paper);color:var(--body);font-family:var(--sans);padding:72px 80px;display:flex;flex-direction:column}
-.markrow{display:flex;align-items:center;gap:22px;margin-bottom:38px}
-.mark{width:64px;height:64px}
-h1{color:var(--ink);font-size:80px;line-height:1.05;letter-spacing:-.04em;font-weight:700}
+body{position:relative;width:1200px;height:630px;background:var(--paper);color:var(--body);font-family:var(--sans);padding:72px 80px;display:flex;flex-direction:column;isolation:isolate;overflow:hidden}
+.hero-pattern{position:absolute;inset:0;width:100%;height:100%;z-index:-1}
+.hero-pattern-lines{stroke:var(--line);stroke-width:1.6}
+.hero-pattern-dot{fill:var(--band);stroke:var(--line);stroke-width:1.6}
+.hero-pattern-dot.hp-pivot{fill:var(--raise)}
+.hp-trunk,.hp-branch{stroke-width:1.7}
+.hp-accent{stroke:color-mix(in oklab,var(--accent) 55%,var(--line))}
+.hp-add{stroke:color-mix(in oklab,var(--add) 55%,var(--line))}
+.hp-warn{stroke:color-mix(in oklab,var(--warn) 55%,var(--line))}
+.hp-del{stroke:color-mix(in oklab,var(--del) 55%,var(--line))}
+.hp-accent-dot{stroke:color-mix(in oklab,var(--accent) 65%,var(--line))}
+.hp-add-dot{stroke:color-mix(in oklab,var(--add) 65%,var(--line))}
+.hp-warn-dot{stroke:color-mix(in oklab,var(--warn) 65%,var(--line))}
+.hp-del-dot{stroke:color-mix(in oklab,var(--del) 65%,var(--line))}
+h1{color:var(--ink);font-size:80px;line-height:1.05;letter-spacing:-.04em;font-weight:700;max-width:11ch}
 h1 em{font-style:normal;color:var(--accent)}
 .lede{margin-top:28px;font-size:24px;line-height:1.45;max-width:46ch;color:var(--body)}
 .lede code{font-family:var(--mono);color:var(--ink);background:var(--raise);padding:.06em .3em;border-radius:.35em;font-size:.85em}
@@ -26,11 +37,51 @@ h1 em{font-style:normal;color:var(--accent)}
 </style>
 </head>
 <body>
-<div class="markrow">
-<svg class="mark" viewBox="0 0 48 48" width="64" height="64" aria-hidden="true"><rect width="48" height="48" rx="11" fill="oklch(18.5% 0 0)"/><path d="M30 12v16.5c0 4.5-3 7.5-7.5 7.5S15 33 15 29.5" fill="none" stroke="oklch(98.5% 0 0)" stroke-width="3.4" stroke-linecap="round"/></svg>
-</div>
-<h1>The model answers,<br><em>your policy</em> decides</h1>
-<p class="lede">An open source policy engine for the decisions that used to live inside a prompt.</p>
+<svg class="hero-pattern" aria-hidden="true" viewBox="0 0 1200 520" preserveAspectRatio="xMidYMid slice">
+<defs>
+<linearGradient id="hp-fade" x1="0" x2="1" y1="0" y2="0">
+<stop offset="0" stop-color="#fff" stop-opacity="0"/>
+<stop offset=".4" stop-color="#fff" stop-opacity="0"/>
+<stop offset=".68" stop-color="#fff" stop-opacity="1"/>
+</linearGradient>
+<mask id="hp-mask"><rect width="1200" height="520" fill="url(#hp-fade)"/></mask>
+</defs>
+<g mask="url(#hp-mask)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<g class="hero-pattern-lines">
+<path d="M860 132H1006V206"/>
+<path d="M1140 40V96"/>
+<path d="M980 366H1112"/>
+<path d="M840 400H930"/>
+<path d="M1180 250V326"/>
+<circle class="hero-pattern-dot" cx="860" cy="132" r="4"/>
+<circle class="hero-pattern-dot" cx="1006" cy="206" r="4"/>
+<circle class="hero-pattern-dot" cx="1140" cy="40" r="4"/>
+<circle class="hero-pattern-dot" cx="1140" cy="96" r="4"/>
+<circle class="hero-pattern-dot" cx="980" cy="366" r="4"/>
+<circle class="hero-pattern-dot" cx="1112" cy="366" r="4"/>
+<circle class="hero-pattern-dot" cx="840" cy="400" r="4"/>
+<circle class="hero-pattern-dot" cx="930" cy="400" r="4"/>
+<circle class="hero-pattern-dot" cx="1180" cy="250" r="4"/>
+<circle class="hero-pattern-dot" cx="1180" cy="326" r="4"/>
+</g>
+<g class="hp-trunk hp-accent"><path d="M900 60V120H980"/></g>
+<circle class="hero-pattern-dot hp-pivot hp-accent-dot" cx="900" cy="60" r="4"/>
+<circle class="hero-pattern-dot hp-pivot hp-accent-dot" cx="980" cy="120" r="5"/>
+<g class="hp-branch hp-add"><path d="M980 120H1080"/></g>
+<circle class="hero-pattern-dot hp-action hp-add-dot" cx="1080" cy="120" r="4"/>
+<g class="hp-branch hp-warn"><path d="M980 120V190"/></g>
+<circle class="hero-pattern-dot hp-action hp-warn-dot" cx="980" cy="190" r="4"/>
+<g class="hp-trunk hp-accent"><path d="M1000 300V360"/></g>
+<circle class="hero-pattern-dot hp-pivot hp-accent-dot" cx="1000" cy="300" r="4"/>
+<circle class="hero-pattern-dot hp-pivot hp-accent-dot" cx="1000" cy="360" r="5"/>
+<g class="hp-branch hp-add"><path d="M1000 360H1100"/></g>
+<circle class="hero-pattern-dot hp-action hp-add-dot" cx="1100" cy="360" r="4"/>
+<g class="hp-branch hp-del"><path d="M1000 360V430"/></g>
+<circle class="hero-pattern-dot hp-action hp-del-dot" cx="1000" cy="430" r="4"/>
+</g>
+</svg>
+<h1>Typesafe policy<br>for <em>LLM decisions</em></h1>
+<p class="lede">jevlang is a typesafe policy engine for decisions an LLM used to make inside a prompt: routing, triage, approvals, guarding an agent's tools.</p>
 <div class="row">
 <span class="chip">bun add jevlang</span>
 <span class="sep">·</span>
