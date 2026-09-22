@@ -14,7 +14,7 @@ export const meta = {
   name: 'JevLang',
   h1: 'Typesafe policy for LLM decisions',
   lede:
-    '`jevlang` is a typesafe policy engine for decisions an LLM used to make inside a prompt: routing, triage, approvals, guarding an agent\'s tools. You declare the questions the model answers and the rules that act on them, in plain [TypeScript](REPO). Mistakes are build errors, and every decision explains itself. Made by [linesofcode](https://x.com/linesofcode).',
+    '`jevlang` is a typesafe policy engine for decisions an LLM used to make inside a prompt: routing, triage, approvals, guarding an agent\'s tools. You declare the questions the model answers and the rules that act on them, in plain [TypeScript](REPO). Mistakes are build errors, and every decision explains itself.',
   description:
     'jevlang is a typesafe policy engine for LLM decisions: the model answers small questions in TypeScript, your policy decides, and every decision explains itself.',
   install: 'bun add jevlang',
