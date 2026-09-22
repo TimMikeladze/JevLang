@@ -287,6 +287,6 @@ test('boundaries', () => {
 // extra: the vendored cloud API table matches the sibling repo when present.
 test('vendored cloud API table in sync', () => {
   let sibling;
-  try { sibling = read('../../jevcloud/README.md'); } catch { return; } // not cloned: skip
+  try { sibling = read('../../jevcloud-next/README.md'); } catch { return; } // not cloned: skip
   assert.deepEqual(cloudApiTable(cloudReadme), cloudApiTable(sibling));
 });

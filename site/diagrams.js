@@ -201,12 +201,12 @@ export function lifecycle({ api }) {
     if (!row) throw new Error(`lifecycle: no route containing ${needle} in the API table`);
     return row[0];
   };
-  return `<figure class="diagram" aria-label="The hosted lifecycle: a deployment is published and never changes, promote with an expected version is the only thing that moves production, and replay decides recent traces again against a candidate.">
+  return `<figure class="diagram" aria-label="The hosted lifecycle: a deployment is published and never changes, promote with an expected version is the only thing that moves production, and every evaluation is recorded as a trace.">
 ${flow([
     { title: 'Deploy', api: `<code>${esc(route('/deployments'))}</code>`, data: '<p>Publish a policy. The first deployment becomes production; later ones wait as previews. None can be edited.</p>' },
     { title: 'Promote', api: `<code>${esc(route('/promote'))}</code>`, data: '<p><span class="q">expect</span> names the version you believe production is, so two promotions cannot both win. A rollback is a promotion back.</p>' },
-    { title: 'Replay', api: `<code>${esc(route('/replay-diff'))}</code>`, data: '<p>Production’s recent traces are decided again against a candidate. A promote can refuse when too many would change.</p>' },
-  ], ['artifact', 'diff first'])}
+    { title: 'Evaluate', api: `<code>${esc(route('/evaluate'))}</code>`, data: '<p>Answers go in, a decision comes out, and the whole exchange is written down: input, answers, the clause that fired, a trace.</p>' },
+  ], ['artifact', 'pinned'])}
 <figcaption><b>Promote is the only thing that moves production.</b> A deployment is a frozen artifact; nothing it did is undone by a rollback.</figcaption>
 </figure>`;
 }
