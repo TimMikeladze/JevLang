@@ -448,6 +448,20 @@ The core is small; the surface around it is what a production decision needs.
   guards, idempotency keys, plan rollback, and one audit record per outcome.
 - **`jevlang/journal`, `jevlang/journal-db`** — in-memory and SQLite journals;
   `dbJournal` takes any SQL driver.
+- **`jevlang/store`** — every decision recorded in a place you choose: memory,
+  an ndjson file, SQLite, or any SQL driver a journal takes. Appends are
+  idempotent on a fingerprint of the run, and `withStore(evaluate, store)` or
+  `makeLoop({ store })` records history as it happens — the same records feed
+  `summarize` and `replay`.
+
+```js
+import { sqliteStore } from 'jevlang/store';
+
+const store = await sqliteStore('decisions.sqlite');
+const wrapped = withStore(input => policy.decide({}), store, { policy: 'support' });
+await wrapped(ticket);                       // recorded: input, decision, fingerprint id
+const history = await store.list({ policy: 'support', limit: 100 }); // oldest first
+```
 - **`jevlang/loop`, `jevlang/session`** — events in, decisions dispatched, at
   your concurrency and debounce; clarify-questions become conversations that
   know when to stop asking.

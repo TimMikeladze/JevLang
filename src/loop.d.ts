@@ -1,5 +1,6 @@
 import type { Decision, JSONValue } from './index.js';
 import type { Dispatcher, Outcome } from './dispatch.js';
+import type { Store } from './store.js';
 
 export interface LoopEvent { input: JSONValue; key: string | null; principal: JSONValue; id: string | null; at: number }
 export type EventResult = Outcome | 'stale' | Error;
@@ -10,7 +11,7 @@ export function makeLoop(options: {
   evaluate: (input: JSONValue) => Promise<Decision> | Decision; dispatcher: Dispatcher; sources?: Source[];
   debounce?: number; maxAge?: number | null; workers?: number;
   onOutcome?: ((event: LoopEvent, result: EventResult) => void | Promise<void>) | null;
-  clock?: () => number; runDueEvery?: number | null;
+  clock?: () => number; runDueEvery?: number | null; store?: Store | null;
 }): Loop;
 export function loopStart(loop: Loop): Loop;
 export function loopStop(loop: Loop): Promise<void>;

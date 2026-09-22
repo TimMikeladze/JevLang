@@ -56,6 +56,10 @@
       "types": "./src/journal.d.ts",
       "default": "./src/journal-db.js"
     },
+    "./store": {
+      "types": "./src/store.d.ts",
+      "default": "./src/store.js"
+    },
     "./handlers": {
       "types": "./src/handlers.d.ts",
       "default": "./src/handlers.js"

@@ -15,6 +15,7 @@
 //   event's failure never stops the loop.
 import { requireAt, finite } from './common.js';
 import { resolve as resolveDecision, runDue } from './dispatch.js';
+import { withStore } from './store.js';
 
 // input     : what the policy's evaluate takes
 // key       : events with the same key are serialized and debounced
@@ -27,15 +28,18 @@ export const makeEvent = (input, { key = null, principal = null, id = null, at =
 
 export function makeLoop({
   evaluate, dispatcher, sources = [], debounce = 0, maxAge = null, workers = 4,
-  onOutcome = null, clock = () => Date.now(), runDueEvery = null,
+  onOutcome = null, clock = () => Date.now(), runDueEvery = null, store = null,
 } = {}) {
   requireAt(typeof evaluate === 'function', 'evaluate', 'a loop needs an evaluate function');
   requireAt(dispatcher && typeof dispatcher.targets === 'function', 'dispatcher', 'a loop needs a dispatcher');
   requireAt(finite(debounce) && debounce >= 0, 'debounce', 'debounce is seconds, at least 0');
   requireAt(maxAge === null || (finite(maxAge) && maxAge > 0), 'maxAge', 'maxAge is positive seconds, or null');
   requireAt(Number.isInteger(workers) && workers > 0, 'workers', 'workers must be a positive integer');
+  // With a store, every event's input and decision is recorded on its way to
+  // dispatch; the recorded decision is the one dispatched, unchanged.
+  const recording = store === null ? evaluate : withStore(evaluate, store, { clock });
   return {
-    evaluate, dispatcher, sources, debounce, maxAge, workers, onOutcome, clock, runDueEvery,
+    evaluate: recording, dispatcher, sources, debounce, maxAge, workers, onOutcome, clock, runDueEvery, store,
     running: false, pending: new Map(), waiting: new Map(), busy: new Set(), readyQueue: [],
     inFlight: 0, timer: null, dueTimer: null, stops: [], counter: 0, settled: [],
   };

@@ -689,6 +689,15 @@ listening on http://127.0.0.1:8080</code></pre>
 <li><strong><code>jevlang/provider</code></strong> — layered provider config, deterministic resolution, and any executable that speaks <code>jev-provider/1</code> becomes a provider. Built-in CLI adapters for Claude, Codex and fx. <code>evaluateWithProvider(policy, input)</code> is the one call that leaves the machine; a precheck that already decides makes no call at all.</li>
 <li><strong><code>jevlang/dispatch</code></strong> — handlers with confirmation, cooldowns, budgets, guards, idempotency keys, plan rollback, and one audit record per outcome.</li>
 <li><strong><code>jevlang/journal</code>, <code>jevlang/journal-db</code></strong> — in-memory and SQLite journals; <code>dbJournal</code> takes any SQL driver.</li>
+<li><strong><code>jevlang/store</code></strong> — every decision recorded in a place you choose: memory, an ndjson file, SQLite, or any SQL driver a journal takes. Appends are idempotent on a fingerprint of the run, and <code>withStore(evaluate, store)</code> or <code>makeLoop({ store })</code> records history as it happens — the same records feed <code>summarize</code> and <code>replay</code>.</li>
+</ul>
+<pre><code><span class="tk-kw">import</span> { sqliteStore } <span class="tk-kw">from</span> <span class="tk-str">'jevlang/store'</span>;
+
+<span class="tk-kw">const</span> store = <span class="tk-kw">await</span> <span class="tk-fn">sqliteStore</span>(<span class="tk-str">'decisions.sqlite'</span>);
+<span class="tk-kw">const</span> wrapped = <span class="tk-fn">withStore</span>(input =&gt; policy.<span class="tk-fn">decide</span>({}), store, { policy: <span class="tk-str">'support'</span> });
+<span class="tk-kw">await</span> <span class="tk-fn">wrapped</span>(ticket);                       <span class="tk-cmt">// recorded: input, decision, fingerprint id</span>
+<span class="tk-kw">const</span> history = <span class="tk-kw">await</span> store.<span class="tk-fn">list</span>({ policy: <span class="tk-str">'support'</span>, limit: <span class="tk-num">100</span> }); <span class="tk-cmt">// oldest first</span></code></pre>
+<ul>
 <li><strong><code>jevlang/loop</code>, <code>jevlang/session</code></strong> — events in, decisions dispatched, at your concurrency and debounce; clarify-questions become conversations that know when to stop asking.</li>
 <li><strong><code>jevlang/mcp</code></strong> — serve a policy as MCP tools (<code>decide</code> offline and free, <code>evaluate</code> capped), dual-era protocol. <code>jevlang/mcp-client</code> turns any other server's tools into dispatcher handlers; <code>jevlang/mcp-import</code> makes a <code>tools/list</code> snapshot into validated action declarations.</li>
 <li><strong><code>jevlang/webhooks</code>, <code>jevlang/wiring</code>, <code>jevlang/harvest</code></strong> — signed webhooks in and out, a crash-safe spool with at-least-once delivery, and labeled fixtures grown from what people did with real cases.</li>
