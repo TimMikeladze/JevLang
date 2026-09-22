@@ -110,7 +110,21 @@ h2{font-size:clamp(1.35rem,2.4vw,1.7rem);line-height:1.2;font-weight:650;letter-
 .hero-pattern{position:absolute;inset:0;width:100%;height:100%;z-index:-1}
 .hero-pattern-lines{stroke:var(--line);stroke-width:1.6}
 .hero-pattern-dot{fill:var(--band);stroke:var(--line);stroke-width:1.6}
+.hero-pattern-dot.hp-pivot{fill:var(--raise)}
+.hp-trunk,.hp-branch{stroke-width:1.7;stroke-dasharray:1.4 7;animation:hp-flow 2.8s linear infinite}
+.hp-accent{stroke:color-mix(in oklab,var(--accent) 55%,var(--line))}
+.hp-add{stroke:color-mix(in oklab,var(--add) 55%,var(--line))}
+.hp-warn{stroke:color-mix(in oklab,var(--warn) 55%,var(--line))}
+.hp-del{stroke:color-mix(in oklab,var(--del) 55%,var(--line))}
+.hp-accent-dot{stroke:color-mix(in oklab,var(--accent) 65%,var(--line))}
+.hp-add-dot{stroke:color-mix(in oklab,var(--add) 65%,var(--line))}
+.hp-warn-dot{stroke:color-mix(in oklab,var(--warn) 65%,var(--line))}
+.hp-del-dot{stroke:color-mix(in oklab,var(--del) 65%,var(--line))}
+.hero-pattern-dot.hp-action{animation:hp-pulse 3.4s ease-in-out infinite}
+@keyframes hp-flow{to{stroke-dashoffset:-25.2}}
+@keyframes hp-pulse{0%,100%{opacity:.5}50%{opacity:1}}
 @media (max-width:900px){.hero-pattern{display:none}}
+@media (prefers-reduced-motion:reduce){.hp-trunk,.hp-branch,.hero-pattern-dot.hp-action{animation:none}}
 .actions{display:flex;flex-wrap:wrap;gap:.7rem;align-items:center;margin:0 0 1.1rem}
 .control{display:inline-flex;align-items:center;gap:.5rem;padding:.62rem .85rem;border-radius:.6rem;border:1px solid var(--line);background:var(--raise);color:var(--ink);font:500 .9rem/1.15 var(--sans);text-decoration:none;transition:background .14s ease,border-color .14s ease;cursor:pointer}
 .control:hover{border-color:var(--line);background:color-mix(in oklab,var(--raise) 80%,var(--ink) 4%)}
