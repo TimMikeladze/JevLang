@@ -21,7 +21,7 @@ export function findExecutable(name) {
   }
   return null;
 }
-const allowedEnvironment = names => Object.fromEntries([...new Set([...minimumEnvironment, ...names])]
+export const allowedEnvironment = names => Object.fromEntries([...new Set([...minimumEnvironment, ...names])]
   .map(name => [name, environmentReader.get(name)])
   .filter(([, value]) => value != null));
 

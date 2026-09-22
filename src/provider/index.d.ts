@@ -84,3 +84,4 @@ export function restoreOptionalFields(value: JSONValue, schema: JSONValue): JSON
 export function catalogToSettings(text: string): Record<string, { efforts: string[]; default_effort?: string | null; modalities?: string[] }> | null;
 export function fxProvider(): Provider;
 export const fxCliRunner: CliRunner;
+export function layaProvider(options?: { command?: string | string[]; maxParallel?: number; timeoutSeconds?: number; environment?: string[] }): Provider;

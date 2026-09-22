@@ -9,3 +9,4 @@ export { jsonSchemaValid, validateJsonSchema } from './schema.js';
 export { claudeProvider, claudeCliRunner, lastStructuredCall } from './providers/claude.js';
 export { codexProvider, codexCliRunner, codexOutputSchema, restoreOptionalFields, catalogToSettings } from './providers/codex.js';
 export { fxProvider, fxCliRunner } from './providers/fx.js';
+export { layaProvider } from './providers/laya.js';

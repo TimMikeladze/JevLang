@@ -389,7 +389,7 @@ escalate human-triage  // unclear which team owns this
 | Export | What it carries |
 | --- | --- |
 | `jevlang` | the language: choice, score, noul, rule, all, any, not, gate, assign, escalate, page, hold, plans, actions, JSON Schema for every action, and portable frozen artifacts. |
-| `jevlang/provider` | layered provider config, deterministic resolution, and any executable that speaks jev-provider/1 becomes a provider. Built-in CLI adapters for Claude, Codex and fx. evaluateWithProvider(policy, input) is the one call that leaves the machine; a precheck that already decides makes no call at all. |
+| `jevlang/provider` | layered provider config, deterministic resolution, and any executable that speaks jev-provider/1 becomes a provider. Built-in CLI adapters for Claude, Codex and fx, and a built-in **Laya** adapter for self-hosted, open-weights decisions. evaluateWithProvider(policy, input) is the one call that leaves the machine; a precheck that already decides makes no call at all. |
 | `jevlang/dispatch` | handlers with confirmation, cooldowns, budgets, guards, idempotency keys, plan rollback, and one audit record per outcome. |
 | `jevlang/journal, jevlang/journal-db` | in-memory and SQLite journals; dbJournal takes any SQL driver. |
 | `jevlang/store` | every decision recorded in a place you choose: memory, an ndjson file, SQLite, or any SQL driver a journal takes. Appends are idempotent on a fingerprint of the run, and withStore(evaluate, store) or makeLoop({ store }) records history as it happens — the same records feed summarize and replay. |

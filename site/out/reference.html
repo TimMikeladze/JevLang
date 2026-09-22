@@ -21,7 +21,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://jevlang.sh/og.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2048%2048%22%3E%3Crect%20width%3D%2248%22%20height%3D%2248%22%20rx%3D%2211%22%20fill%3D%22%231c1c1c%22%2F%3E%3Cpath%20d%3D%22M30%2012v16.5c0%204.5-3%207.5-7.5%207.5S15%2033%2015%2029.5%22%20fill%3D%22none%22%20stroke%3D%22%23f7f7f7%22%20stroke-width%3D%223.4%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"JevLang","description":"jevlang is a typesafe policy engine for LLM decisions: the model answers small questions in TypeScript, your policy decides, and every decision explains itself.","url":"https://jevlang.sh/","applicationCategory":"DeveloperApplication","softwareVersion":"0.1.0","offers":{"@type":"Offer","price":"0"},"license":"https://opensource.org/licenses/MIT"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"JevLang","description":"jevlang is a typesafe policy engine for LLM decisions: the model answers small questions in TypeScript, your policy decides, and every decision explains itself.","url":"https://jevlang.sh/","applicationCategory":"DeveloperApplication","softwareVersion":"1.0.0","offers":{"@type":"Offer","price":"0"},"license":"https://opensource.org/licenses/MIT"}</script>
 <script>
 (function(){
 var K='jevlang-theme',r=document.documentElement,mq=matchMedia('(prefers-color-scheme: dark)');
@@ -412,7 +412,7 @@ h1{font-size:2.6rem}
 </div>
 </div></header>
 <main id="main"><div class="shell ref-layout">
-<nav class="ref-toc" aria-label="Contents"><p class="toc-title">Contents</p><a href="#why-you-need-this">Why you need this</a><a href="#hello-world">Hello, world</a><a href="#three-kinds-of-question">Three kinds of question</a><a href="#a-real-one-support-routing">A real one: support routing</a><a href="#mistakes-are-build-errors">Mistakes are build errors</a><a href="#guard-an-agent-s-tools">Guard an agent's tools</a><a href="#call-it-from-anywhere">Call it from anywhere</a><a href="#everything-else-in-the-box">Everything else in the box</a><a href="#verify-it-yourself">Verify it yourself</a></nav>
+<nav class="ref-toc" aria-label="Contents"><p class="toc-title">Contents</p><a href="#why-you-need-this">Why you need this</a><a href="#hello-world">Hello, world</a><a href="#three-kinds-of-question">Three kinds of question</a><a href="#a-real-one-support-routing">A real one: support routing</a><a href="#mistakes-are-build-errors">Mistakes are build errors</a><a href="#guard-an-agent-s-tools">Guard an agent's tools</a><a href="#call-it-from-anywhere">Call it from anywhere</a><a href="#self-hosted-decisions-with-laya">Self-hosted decisions with Laya</a><a href="#everything-else-in-the-box">Everything else in the box</a><a href="#verify-it-yourself">Verify it yourself</a></nav>
 <article class="ref-doc">
 <h1 id="jevlang">JevLang</h1>
 <p><strong>Decide once, trust everywhere.</strong> JevLang is a policy engine for decisions that used to live inside a prompt: routing, triage, approvals, escalation, guarding an agent's tools. You write the policy once in plain TypeScript (or Python); JevLang asks the model only the questions the policy needs, checks the answers, decides — and can prove, from a signed journal, exactly why it decided that.</p>
@@ -697,11 +697,26 @@ listening on http://127.0.0.1:8080</code></pre>
 <span class="tk-dim">  gate 0, $.gates[0]</span>
 <span class="tk-dim">  because</span>
     <span class="tk-ink">department</span> = <span class="tk-ink">billing</span><span class="tk-dim">   confidence 0.55   (needed confidence &gt;= 0.80; otherwise: assign billing-queue)</span></code></pre>
+<h2 id="self-hosted-decisions-with-laya">Self-hosted decisions with Laya</h2>
+<p><a href="https://huggingface.co/convaiinnovations/laya">Laya</a> is an open-weights (Apache 2.0) model that answers exactly the three question kinds JevLang asks — <code>choice</code>, <code>score</code>, <code>noul</code> — with calibrated probabilities in one forward pass. It is a built-in provider: <code>pip install laya</code> once, then name it.</p>
+<pre><code><span class="tk-kw">import</span> { evaluateWithProvider } <span class="tk-kw">from</span> <span class="tk-str">'jevlang'</span>;
+<span class="tk-kw">import</span> { policy } <span class="tk-kw">from</span> <span class="tk-str">'./ticket-router.js'</span>;
+
+<span class="tk-cmt">// The Router picks the checkpoint per input (~33 ms on a T4); no API key, no egress.</span>
+<span class="tk-kw">const</span> decision = <span class="tk-kw">await</span> <span class="tk-fn">evaluateWithProvider</span>(policy, input, { provider: <span class="tk-str">'laya'</span> });
+
+<span class="tk-cmt">// Or pin a checkpoint: 'english' (ModernBERT-large), 'multilingual' (100+</span>
+<span class="tk-cmt">// languages), 'typed-decisions' — all from convaiinnovations/laya.</span>
+<span class="tk-kw">const</span> pinned = <span class="tk-kw">await</span> <span class="tk-fn">evaluateWithProvider</span>(policy, hindiInput, {
+  provider: <span class="tk-str">'laya'</span>, model: <span class="tk-str">'multilingual'</span>,
+});</code></pre>
+<p>The adapter runs a small bridge under your <code>python3</code> (configurable as <code>providers.laya.command</code>, so a venv works too), adapts the wire questions to Laya's format, and re-attaches each answer's <code>type</code> before validation. The first run downloads the checkpoint weights (~800 MB) into the Hugging Face cache; the default timeout is 600 s for that, and <code>providers.laya</code> also takes <code>max_parallel</code> and <code>environment</code>. Decisions report their provenance as <code>provider: 'laya'</code> and the checkpoint that answered as <code>model</code>, with a cost of <code>self-hosted</code> / $0. The design notes live in <a href="docs/laya.md">docs/laya.md</a>.</p>
+<p>Be honest with yourself the way the model card is: base checkpoints are near chance zero-shot on some tasks — fine-tune (<code>laya-typed-decisions</code>, or your own run) and temperature-fit on your own data before trusting the probabilities.</p>
 <h2 id="everything-else-in-the-box">Everything else in the box</h2>
 <p>The core is small; the surface around it is what a production decision needs.</p>
 <ul>
 <li><strong><code>jevlang</code></strong> — the language: <code>choice</code>, <code>score</code>, <code>noul</code>, <code>rule</code>, <code>all</code>, <code>any</code>, <code>not</code>, <code>gate</code>, <code>assign</code>, <code>escalate</code>, <code>page</code>, <code>hold</code>, plans, actions, JSON Schema for every action, and portable frozen artifacts.</li>
-<li><strong><code>jevlang/provider</code></strong> — layered provider config, deterministic resolution, and any executable that speaks <code>jev-provider/1</code> becomes a provider. Built-in CLI adapters for Claude, Codex and fx. <code>evaluateWithProvider(policy, input)</code> is the one call that leaves the machine; a precheck that already decides makes no call at all.</li>
+<li><strong><code>jevlang/provider</code></strong> — layered provider config, deterministic resolution, and any executable that speaks <code>jev-provider/1</code> becomes a provider. Built-in CLI adapters for Claude, Codex and fx, and a built-in <strong>Laya</strong> adapter for self-hosted, open-weights decisions. <code>evaluateWithProvider(policy, input)</code> is the one call that leaves the machine; a precheck that already decides makes no call at all.</li>
 <li><strong><code>jevlang/dispatch</code></strong> — handlers with confirmation, cooldowns, budgets, guards, idempotency keys, plan rollback, and one audit record per outcome.</li>
 <li><strong><code>jevlang/journal</code>, <code>jevlang/journal-db</code></strong> — in-memory and SQLite journals; <code>dbJournal</code> takes any SQL driver.</li>
 <li><strong><code>jevlang/store</code></strong> — every decision recorded in a place you choose: memory, an ndjson file, SQLite, or any SQL driver a journal takes. Appends are idempotent on a fingerprint of the run, and <code>withStore(evaluate, store)</code> or <code>makeLoop({ store })</code> records history as it happens — the same records feed <code>summarize</code> and <code>replay</code>.</li>

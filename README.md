@@ -432,6 +432,40 @@ escalate human-triage  // unclear which team owns this
     department = billing   confidence 0.55   (needed confidence >= 0.80; otherwise: assign billing-queue)
 ```
 
+## Self-hosted decisions with Laya
+
+[Laya](https://huggingface.co/convaiinnovations/laya) is an open-weights
+(Apache 2.0) model that answers exactly the three question kinds JevLang asks
+— `choice`, `score`, `noul` — with calibrated probabilities in one forward
+pass. It is a built-in provider: `pip install laya` once, then name it.
+
+```js
+import { evaluateWithProvider } from 'jevlang';
+import { policy } from './ticket-router.js';
+
+// The Router picks the checkpoint per input (~33 ms on a T4); no API key, no egress.
+const decision = await evaluateWithProvider(policy, input, { provider: 'laya' });
+
+// Or pin a checkpoint: 'english' (ModernBERT-large), 'multilingual' (100+
+// languages), 'typed-decisions' — all from convaiinnovations/laya.
+const pinned = await evaluateWithProvider(policy, hindiInput, {
+  provider: 'laya', model: 'multilingual',
+});
+```
+
+The adapter runs a small bridge under your `python3` (configurable as
+`providers.laya.command`, so a venv works too), adapts the wire questions to
+Laya's format, and re-attaches each answer's `type` before validation. The
+first run downloads the checkpoint weights (~800 MB) into the Hugging Face
+cache; the default timeout is 600 s for that, and `providers.laya` also takes
+`max_parallel` and `environment`. Decisions report their provenance as
+`provider: 'laya'` and the checkpoint that answered as `model`, with a cost of
+`self-hosted` / $0. The design notes live in [docs/laya.md](docs/laya.md).
+
+Be honest with yourself the way the model card is: base checkpoints are near
+chance zero-shot on some tasks — fine-tune (`laya-typed-decisions`, or your own
+run) and temperature-fit on your own data before trusting the probabilities.
+
 ## Everything else in the box
 
 The core is small; the surface around it is what a production decision needs.
@@ -441,7 +475,8 @@ The core is small; the surface around it is what a production decision needs.
   JSON Schema for every action, and portable frozen artifacts.
 - **`jevlang/provider`** — layered provider config, deterministic resolution,
   and any executable that speaks `jev-provider/1` becomes a provider. Built-in
-  CLI adapters for Claude, Codex and fx. `evaluateWithProvider(policy, input)`
+  CLI adapters for Claude, Codex and fx, and a built-in **Laya** adapter for
+  self-hosted, open-weights decisions. `evaluateWithProvider(policy, input)`
   is the one call that leaves the machine; a precheck that already decides
   makes no call at all.
 - **`jevlang/dispatch`** — handlers with confirmation, cooldowns, budgets,

@@ -231,14 +231,15 @@ test('discovery reads each CLI, and says what is wrong when it cannot', async t 
   assert.match(old.detail, /0\.0\.10 or newer/);
 });
 
-test('the default registry carries the three adapters, and the configuration may replace them', () => {
+test('the default registry carries the built-in adapters, and the configuration may replace them', () => {
   const plain = makeDefaultRegistry({});
-  assert.deepEqual(plain.providers().map(p => p.id), ['claude', 'codex', 'fx']);
+  assert.deepEqual(plain.providers().map(p => p.id), ['claude', 'codex', 'fx', 'laya']);
   const configured = makeDefaultRegistry({
     providers: { claude: { command: '/opt/claude', max_parallel: 1 }, house: { command: 'house-agent' } },
   });
-  assert.deepEqual(configured.providers().map(p => p.id), ['claude', 'codex', 'fx', 'house']);
+  assert.deepEqual(configured.providers().map(p => p.id), ['claude', 'codex', 'fx', 'laya', 'house']);
   assert.equal(configured.get('claude').caps.maxParallel, 1);
   assert.throws(() => makeDefaultRegistry({ providers: { codex: { command: 5 } } }), /must be a string/);
   assert.throws(() => makeDefaultRegistry({ providers: { fx: { max_parallel: 0 } } }), /positive integer/);
+  assert.throws(() => makeDefaultRegistry({ providers: { laya: { timeout_seconds: 0 } } }), /positive number/);
 });

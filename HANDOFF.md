@@ -96,6 +96,15 @@ from PATH.
    `--sandbox`, because naming a sandbox alongside `--approve-for-me` conflicts;
    both implementations do that, and `jev-provider/README.md` says so.
 
+12a. **The Laya adapter** (`docs/laya.md`): open-weights decisions through an
+   embedded Python bridge (`pip install laya`, no network egress, $0). Built
+   into the default registry as `laya`, with `model` selecting `router`
+   (default), `english`, `multilingual` or `typed-decisions`; questions are
+   adapted and answers normalized inside the bridge, and the errors are
+   classified (missing package = configuration, runtime failure = retryable).
+   `test/laya.test.js` runs the real bridge against a stub `laya` package, so
+   no weights are downloaded.
+
 13. **Every reference policy, and every broken one.** The differential now
    covers all of `jev-lang/examples/` but the two code-lookup examples, and
    `test/broken.test.js` shows each mistake in `examples/broken/` refused here

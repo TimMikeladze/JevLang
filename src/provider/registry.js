@@ -1,5 +1,5 @@
-// The default registry: the built-in Claude, Codex and fx adapters, then every
-// other provider the configuration declares a command for.
+// The default registry: the built-in Claude, Codex, fx and laya adapters, then
+// every other provider the configuration declares a command for.
 import { object, own, requireAt } from '../common.js';
 import { ProviderRegistry, capabilities } from './core.js';
 import { loadProviderConfig } from './config.js';
@@ -7,8 +7,9 @@ import { commandProvider } from './command.js';
 import { claudeProvider } from './providers/claude.js';
 import { codexProvider } from './providers/codex.js';
 import { fxProvider } from './providers/fx.js';
+import { layaProvider } from './providers/laya.js';
 
-const builtIn = { claude: [claudeProvider, 'claude', 2], codex: [codexProvider, 'codex', 4], fx: [fxProvider, 'fx', 2] };
+const builtIn = { claude: [claudeProvider, 'claude', 2], codex: [codexProvider, 'codex', 4], fx: [fxProvider, 'fx', 2], laya: [layaProvider, 'python3', 1] };
 
 const configured = value => capabilities({
   modes: Array.isArray(value.modes) ? value.modes : ['structured'],
@@ -28,7 +29,11 @@ export function makeDefaultRegistry(config = loadProviderConfig()) {
     requireAt(typeof command === 'string', `providers.${id}.command`, 'a built-in provider command must be a string');
     const maxParallel = own(settings, 'max_parallel') ? settings.max_parallel : defaultParallel;
     requireAt(Number.isInteger(maxParallel) && maxParallel > 0, `providers.${id}.max_parallel`, 'max_parallel must be a positive integer');
-    registry.register(make({ command, maxParallel }));
+    const timeoutSeconds = own(settings, 'timeout_seconds') ? settings.timeout_seconds : 600;
+    requireAt(typeof timeoutSeconds === 'number' && timeoutSeconds > 0, `providers.${id}.timeout_seconds`, 'timeout_seconds must be a positive number');
+    registry.register(make({ command, maxParallel,
+      environment: Array.isArray(settings.environment) ? settings.environment : [],
+      timeoutSeconds }));
   }
   for (const id of Object.keys(providers).sort()) {
     if (own(builtIn, id)) continue;
