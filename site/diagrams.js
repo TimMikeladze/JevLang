@@ -163,7 +163,7 @@ const num = (n) => String(n);
 
 // ---------- flow: ordered boxes joined by labelled arrows ----------
 
-export function flow(steps, links, { model = null } = {}) {
+export function flow(steps, links, { model = null, elbows = false } = {}) {
   const cells = steps.map((s, i) => {
     const step = `<div class="flow-step${model === i ? ' flow-step--model' : ''}">
 <span class="flow-n">${i + 1}</span>
@@ -171,9 +171,12 @@ export function flow(steps, links, { model = null } = {}) {
 <span class="flow-api">${s.api}</span>
 <div class="flow-data">${s.data}</div>
 </div>`;
-    return i < links.length ? `${step}\n<div class="flow-link" aria-hidden="true"><span>${esc(links[i])}</span></div>` : step;
+    if (i >= links.length) return step;
+    const bend = elbows ? ` flow-link--elbow flow-link--${i % 2 === 0 ? 'up' : 'down'}` : '';
+    const segs = elbows ? '<i class="e1"></i><i class="e2"></i><i class="e3"></i>' : '';
+    return `${step}\n<div class="flow-link${bend}" aria-hidden="true">${segs}<span>${esc(links[i])}</span></div>`;
   });
-  return `<div class="flow${steps.length === 3 ? ' flow--3' : ''}">${cells.join('\n')}</div>`;
+  return `<div class="flow${steps.length === 3 ? ' flow--3' : ''}${elbows ? ' flow--angles' : ''}">${cells.join('\n')}</div>`;
 }
 
 // The ticket, the model's readings, the rule that fired, the action — one real run.
@@ -206,7 +209,7 @@ ${flow([
     { title: 'Deploy', api: `<code>${esc(route('/deployments'))}</code>`, data: '<p>Publish a policy. The first deployment becomes production; later ones wait as previews. None can be edited.</p>' },
     { title: 'Promote', api: `<code>${esc(route('/promote'))}</code>`, data: '<p><span class="q">expect</span> names the version you believe production is, so two promotions cannot both win. A rollback is a promotion back.</p>' },
     { title: 'Evaluate', api: `<code>${esc(route('/evaluate'))}</code>`, data: '<p>Answers go in, a decision comes out, and the whole exchange is written down: input, answers, the clause that fired, a trace.</p>' },
-  ], ['artifact', 'pinned'])}
+  ], ['artifact', 'pinned'], { elbows: true })}
 <figcaption><b>Promote is the only thing that moves production.</b> A deployment is a frozen artifact; nothing it did is undone by a rollback.</figcaption>
 </figure>`;
 }

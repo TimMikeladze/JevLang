@@ -22,7 +22,10 @@ export const meta = {
   license: 'MIT',
 };
 
-export const sections = [
+// Cloud is hidden from the site for now; flip to bring back the hosted section, aside and nav item.
+export const showCloud = false;
+
+const allSections = [
   {
     id: 'how-it-works',
     h2: 'How one decision works',
@@ -130,12 +133,16 @@ export const sections = [
   },
 ];
 
-export const asides = [
+export const sections = showCloud ? allSections : allSections.filter((s) => s.id !== 'same-engine-hosted');
+
+const allAsides = [
   {
     before: 'same-engine-hosted',
     text: 'Want it deployed instead of embedded? [Jev Cloud](https://cloud.jevlang.sh) runs the same decisions with identity, storage and a dashboard: organizations by default, keys shown once and stored hashed, every decision a trace. A hosted product, and not something you `bun add`.',
   },
 ];
+
+export const asides = showCloud ? allAsides : allAsides.filter((a) => a.before !== 'same-engine-hosted');
 
 // Three counted columns: what holds, what is a judgement, what is not here yet.
 // `{name}` in an item is a figure read out of a captured run.
@@ -196,11 +203,13 @@ export const links = [
   { label: 'linesofcode on Discord', href: 'https://discord.com/users/linesofcode', icon: 'discord', where: ['footer'] },
 ];
 
-export const nav = [
+const allNav = [
   { label: 'Home', href: '/' },
   { label: 'Reference', href: '/reference' },
   { label: 'Cloud', href: 'https://cloud.jevlang.sh', external: true },
 ];
+
+export const nav = showCloud ? allNav : allNav.filter((n) => n.label !== 'Cloud');
 
 export const footerColumns = [
   { title: 'JevLang', links: [
@@ -216,8 +225,6 @@ export const footerColumns = [
   ] },
 ];
 
-export const credit =
-  'Built by linesofcode — open source policy infrastructure for decisions that used to live in prompts.';
 
 // The three mistakes that break a policy, each one a build or decide error the
 // README shows a run of.

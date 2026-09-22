@@ -2,7 +2,7 @@
 // metadata and the sibling artefacts. No copy lives here (icons and markup do).
 import { readFileSync } from 'node:fs';
 import { css } from './styles.js';
-import { sections as contentSections, asides, boundaries, start, links, nav, footerColumns, credit, meta, origin, repo, cloudRepo, copyrightYear, agentsMistakes, agentsGateNote } from './content.js';
+import { sections as contentSections, asides, boundaries, start, links, nav, footerColumns, meta, origin, repo, cloudRepo, copyrightYear, agentsMistakes, agentsGateNote } from './content.js';
 import { esc, tag, isAction, readPolicy, readAnswers, parseExplain, decisionFlow, lifecycle, answerShapes, gateMeter, ruleLadder, toolLadder, doors } from './diagrams.js';
 
 export const version = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
@@ -339,10 +339,9 @@ export function footer() {
   const cols = footerColumns.map((c) => `<div class="foot-col"><h3>${esc(c.title)}</h3>${c.links.map((l) => `<a href="${esc(resolveHref(l.href))}"${l.external ? ' target="_blank" rel="noopener"' : ''}>${esc(l.label)}${l.external ? ' <span class="ext">↗</span>' : ''}</a>`).join('')}</div>`).join('');
   const iconRow = links.filter((l) => l.where.includes('footer')).map(iconLink).join('');
   return `<footer class="site-foot"><div class="shell">
-<p class="credit">${esc(credit)}</p>
 <div class="foot-cols">${cols}</div>
 <div class="foot-icons">${iconRow}</div>
-<p class="copyright">© ${year} linesofcode</p>
+<p class="copyright">© ${year}</p>
 </div></footer>`;
 }
 
@@ -588,7 +587,6 @@ ${boundaries.columns.map((c) => `<div class="boundary"><h3>${esc(c.title)} <span
 <h1 id="top">${esc(meta.h1)}</h1>
 <p class="lede">${inlineMd(meta.lede)}</p>
 ${actions}
-<p class="muted">Currently v${esc(version)}</p>
 </div></section>`;
 
   return `<!doctype html>
@@ -666,7 +664,7 @@ export function llmsText({ readme, cloudReadme }) {
   return [
     `# ${meta.name}`, '',
     `> ${meta.description}`, '',
-    `${inlinePlain(meta.lede)} Install with \`${meta.install}\`. Currently v${version}, ${meta.license} licensed.`, '',
+    `${inlinePlain(meta.lede)} Install with \`${meta.install}\`. ${meta.license} licensed.`, '',
     ...contentSections.flatMap((s) => [capabilityMarkdown(s, ctx)]),
     boundariesMarkdown(r),
     '## Links', '',
@@ -719,7 +717,7 @@ export function pageMarkdown({ readme, cloudReadme }) {
   return [
     `# ${meta.name} — ${meta.h1}`, '',
     inlinePlain(meta.lede), '',
-    `Install: \`${meta.install}\` · Currently v${version}`, '',
+    `Install: \`${meta.install}\``, '',
     ...contentSections.flatMap((s) => [capabilityMarkdown(s, ctx)]),
     boundariesMarkdown(r),
     `## ${start.h2}`, '', inlinePlain(start.p), '', fenceMd('sh', start.install.map((c) => `$ ${c}`).join('\n')),

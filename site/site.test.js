@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
-import { sections, boundaries, start, links, meta, agentsMistakes } from './content.js';
+import { sections, boundaries, start, links, meta, agentsMistakes, showCloud } from './content.js';
 import {
   makeResolver, figure, renderLanding, renderReference, llmsText, agentsMd, pageMarkdown, sitemap, robots, markdownHtml,
   modulesTable, cloudApiTable, readmeTable, readmeList, version, bootScript, url,
@@ -150,7 +150,7 @@ test('hero and capability sections', () => {
   assert.ok(meta.h1.split(/\s+/).length <= 8 && !meta.h1.endsWith('.'), 'H1: at most 8 words, no full stop');
   const hero = index.split('<section class="hero"')[1].split('</section>')[0];
   assert.equal([...hero.matchAll(/<a class="control|<span class="control|<details class="control/g)].length, 3, 'three controls');
-  assert.match(hero, new RegExp(`<p class="muted">Currently v${version.replace(/\./g, '\\.')}</p>`));
+  assert.ok(!hero.includes(`Currently v${version}`), 'no version line in the hero');
   assert.equal([...hero.match(/<p class="lede">([\s\S]*?)<\/p>/)[1].matchAll(/<a href="[^"]+">/g)].length, 2, 'two real links in the lede');
   assert.ok(sections.length >= 4);
   for (const s of sections) {
@@ -206,7 +206,8 @@ test('link table honoured', () => {
   assert.deepEqual(labelsIn(index.split('<footer')[1]), ['JevLang on GitHub', 'linesofcode on X', 'Tim Mikeladze on LinkedIn', 'linesofcode on Discord']);
   assert.ok(header.indexOf('class="head-icons"') > header.indexOf('class="site-nav"'));
   for (const href of ['https://github.com/TimMikeladze/JevLang', 'https://x.com/linesofcode', 'https://www.linkedin.com/in/tim-mikeladze', 'https://discord.com/users/linesofcode']) assert.ok(index.includes(`href="${href}"`), href);
-  assert.match(header, /Cloud <span class="ext">↗<\/span>/);
+  if (showCloud) assert.match(header, /Cloud <span class="ext">↗<\/span>/);
+  else assert.ok(!header.includes('cloud.jevlang.sh'), 'cloud hidden from the appbar');
 });
 
 // extra: enumeration tables come from the docs, and the docs agree with each other.
@@ -255,7 +256,7 @@ test('diagrams render with values read from the docs', () => {
   const options = JSON.parse(r.file('gate-options.json').body);
   const gate = section('tool-gate');
   for (const t of [...options.deny, ...options.allow]) assert.ok(gate.includes(t), t);
-  assert.ok(section('same-engine-hosted').includes('class="flow flow--3"'));
+  if (showCloud) assert.ok(section('same-engine-hosted').includes('class="flow flow--3 flow--angles"'));
 });
 
 // extra: code frames are highlighted, escaped, copyable and labelled; live runs say so.

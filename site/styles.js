@@ -173,6 +173,18 @@ html[data-js] .copy-btn{display:inline-flex}
 .flow-link{position:relative;align-self:center;height:1.5px;background:color-mix(in oklab,var(--body) 42%,transparent);margin-inline:.2rem}
 .flow-link::after{content:"";position:absolute;right:-1px;top:-4px;border:4.5px solid transparent;border-left:7px solid color-mix(in oklab,var(--body) 55%,transparent);border-right:0}
 .flow-link span{position:absolute;left:0;right:0;bottom:.5rem;text-align:center;font:.68rem/1 var(--mono);color:var(--soft)}
+/* angled variant: the connector bends up or down instead of running straight */
+.flow-link--elbow{width:100%;height:5.6rem;background:none}
+.flow-link--elbow i{position:absolute;background:color-mix(in oklab,var(--body) 42%,transparent)}
+.flow-link--elbow .e1{left:0;top:50%;width:38%;height:1.5px}
+.flow-link--elbow .e2{left:38%;width:1.5px;height:36%}
+.flow-link--elbow .e3{left:38%;right:0;height:1.5px}
+.flow-link--elbow--up .e2{top:14%}
+.flow-link--elbow--up .e3{top:14%}
+.flow-link--elbow--up::after{top:calc(14% - 4.5px)}
+.flow-link--elbow--down .e2{top:50%}
+.flow-link--elbow--down .e3{top:86%}
+.flow-link--elbow--down::after{top:calc(86% - 4.5px)}
 /* answers: one ticket, three answers */
 .answers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
 .answer{border:1px solid var(--line);border-radius:.6rem;background:var(--raise);padding:1rem;display:flex;flex-direction:column;gap:.65rem;min-width:0}
@@ -315,6 +327,9 @@ td code{font-size:.8rem}
 .flow-link{width:1.5px;height:2.6rem;justify-self:center;margin:0}
 .flow-link::after{right:auto;left:-4px;top:auto;bottom:-1px;border:4.5px solid transparent;border-top:7px solid color-mix(in oklab,var(--body) 55%,transparent);border-bottom:0}
 .flow-link span{left:.9rem;right:auto;bottom:auto;top:50%;margin-top:-.4rem;text-align:left}
+.flow-link--elbow{width:1.5px;height:2.6rem;margin:0}
+.flow-link--elbow i{display:none}
+.flow-link--elbow::after{top:auto;left:-4px;bottom:-1px;border:4.5px solid transparent;border-top:7px solid color-mix(in oklab,var(--body) 55%,transparent);border-bottom:0}
 .answers{grid-template-columns:minmax(0,1fr)}
 }
 @media (max-width:900px){.ref-layout{grid-template-columns:minmax(0,1fr)}.ref-toc{position:static;max-height:none;border-bottom:1px solid var(--line-soft);padding-bottom:1rem}}

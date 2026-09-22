@@ -2,7 +2,7 @@
 
 > jevlang is a typesafe policy engine for LLM decisions: the model answers small questions in TypeScript, your policy decides, and every decision explains itself.
 
-jevlang is a typesafe policy engine for decisions an LLM used to make inside a prompt: routing, triage, approvals, guarding an agent's tools. You declare the questions the model answers and the rules that act on them, in plain TypeScript (https://github.com/TimMikeladze/JevLang). Mistakes are build errors, and every decision explains itself. Made by linesofcode (https://x.com/linesofcode). Install with `bun add jevlang`. Currently v0.1.0, MIT licensed.
+jevlang is a typesafe policy engine for decisions an LLM used to make inside a prompt: routing, triage, approvals, guarding an agent's tools. You declare the questions the model answers and the rules that act on them, in plain TypeScript (https://github.com/TimMikeladze/JevLang). Mistakes are build errors, and every decision explains itself. Made by linesofcode (https://x.com/linesofcode). Install with `bun add jevlang`. MIT licensed.
 
 ## How one decision works
 
@@ -397,23 +397,6 @@ escalate human-triage  // unclear which team owns this
 | `jevlang/mcp` | serve a policy as MCP tools (decide offline and free, evaluate capped), dual-era protocol. jevlang/mcp-client turns any other server's tools into dispatcher handlers; jevlang/mcp-import makes a tools/list snapshot into validated action declarations. |
 | `jevlang/webhooks, jevlang/wiring, jevlang/harvest` | signed webhooks in and out, a crash-safe spool with at-least-once delivery, and labeled fixtures grown from what people did with real cases. |
 | `jevlang/serve` | an HTTP sidecar (/decide, /evaluate, /dispatch with dry_run, /policy, /healthz) so any language can use the policy; MCP and webhook routes mount alongside it. |
-
-
-## Same engine, hosted
-
-Jev Cloud runs this engine for many tenants over HTTP at cloud.jevlang.sh (https://cloud.jevlang.sh): deploy, promote, evaluate. Every route takes Authorization: Bearer jev_live_…, and the organization comes from the credential, never the path. Deployments never change once published; promote with expect is the only thing that moves production.
-
-| Route | What it does |
-| --- | --- |
-| `POST /api/v1/projects` | create a project ({slug}) |
-| `GET /api/v1/projects` | this organization's projects |
-| `GET /api/v1/projects/:slug` | one project, with its production deployment |
-| `POST /api/v1/projects/:slug/deployments` | publish a policy artifact ({policy, note}) — the first becomes production, later ones are previews |
-| `GET /api/v1/projects/:slug/deployments` | newest first |
-| `POST /api/v1/projects/:slug/promote` | {deployment, expect} moves production; a wrong expect refuses (422) and nothing moves, because two promotions racing cannot both win |
-| `POST /api/v1/projects/:slug/evaluate` | validate the answers, decide on them, and write a trace and a usage row |
-| `GET /api/v1/projects/:slug/traces` | what happened, newest first |
-| `GET /api/v1/usage` | rows, and a total that separates money from estimates |
 
 
 ## What holds, and what doesn't
