@@ -1,121 +1,177 @@
 // The page model. Authored copy lives here; examples live in the repo's docs and
 // are resolved by the renderer at build time. No markup in this file.
+//
+// A demo names what it shows: `source` a README `file=` block, `run` a `$`
+// captured run, `diagram` a component that reads its numbers out of those. A
+// reference that does not resolve — or resolves twice — fails the build.
 
 export const origin = 'https://jevlang.sh';
 export const repo = 'https://github.com/TimMikeladze/JevLang';
 export const cloudRepo = 'https://github.com/TimMikeladze/jevcloud';
+export const copyrightYear = 2026;
 
 export const meta = {
   name: 'JevLang',
-  h1: 'Decide once, trust everywhere',
+  h1: 'The model answers, your policy decides',
   lede:
-    '`jevlang` is an open source policy engine for the decisions that used to live inside a prompt — routing, triage, approvals, guarding an agent\'s tools. Built on plain [TypeScript or Python](REPO), no runtime dependencies. Made by [linesofcode](https://x.com/linesofcode).',
+    '`jevlang` is an open source policy engine for decisions an LLM used to make inside a prompt: routing, triage, approvals, guarding an agent\'s tools. You declare the questions the model answers and the rules that act on them, in plain [TypeScript or Python](REPO). Made by [linesofcode](https://x.com/linesofcode).',
   description:
-    'JevLang is an open source policy engine for decisions that live inside a prompt: routing, triage, approvals and tool gates, journaled and replayable.',
+    'JevLang is an open source policy engine for LLM decisions: the model answers small questions, your policy decides, and every decision explains itself.',
   install: 'npm install jevlang',
   tagline: 'a policy engine for prompt-sized decisions',
   license: 'MIT',
 };
 
-// Which docs each demo quotes. `terminal` matches a `$ command` fence; `snippet`
-// matches a fence containing the marker. Exactly one match, or the build fails.
 export const sections = [
   {
-    id: 'write-the-policy',
-    h2: 'A policy, not a prompt',
-    p: 'Declare each question once with `noul`, `choice` or `score`, then hand `definePolicy({ questions, route })` a list of clauses. A typo like `department.is(\'billling\')` is a construction-time error, and a route with a hole is refused before anything deploys. This is the whole policy — and the decision it actually made.',
-    demos: [
-      { type: 'diagram', name: 'pipeline' },
-      { type: 'code', ref: { kind: 'snippet', marker: "const spam = noul('spam?'" }, label: 'README — Hello, world' },
-      { type: 'terminal', ref: { kind: 'terminal', cmd: 'node examples/hello.mjs' }, figures: [
-        { label: 'Spam reading that decided it', from: /"value":([\d.]+)/ },
-      ] },
-    ],
-    doc: 'Hello, world',
-  },
-  {
-    id: 'uncertainty-escalates',
-    h2: 'Uncertainty escalates',
-    p: 'Every question can carry a gate: `gate(department, 0.8, escalate(\'human-triage\', …))` sends the ticket to a person when confidence drops below the bar — by declaration, not by hoping the model says it is unsure. Clause order is policy, diffable in review.',
-    demos: [
-      { type: 'diagram', name: 'gate-meter', ref: { kind: 'terminal', cmd: 'node examples/ticket-router.mjs' }, data: {
-        bar: /needed confidence >= ([\d.]+)/,
-        passes: /confidence ([\d.]+), then/,
-        fails: /then ([\d.]+)/,
-      } },
-      { type: 'code', ref: { kind: 'snippet', marker: "const department = choice('department'" }, label: 'README — support routing' },
-      { type: 'terminal', ref: { kind: 'terminal', cmd: 'node examples/ticket-router.mjs' }, figures: [
-        { label: 'Gate bar in the captured run', from: /needed confidence >= ([\d.]+)/ },
-      ] },
-      { type: 'diagram', name: 'router-tree' },
-    ],
+    id: 'how-it-works',
+    h2: 'How one decision works',
+    p: 'Your app sends a ticket. A model answers a few small questions about it — `noul`, `choice` or `score` — and `policy.decide()` turns those answers into an action. The model never picks the branch; your code does.',
     doc: 'A real one: support routing',
+    demos: [
+      { type: 'diagram', name: 'decision-flow', policy: 'support.mjs', run: 'node ask.mjs',
+        ticket: { file: 'ask.mjs', from: /const ticket = "(.*)";/ } },
+    ],
   },
   {
-    id: 'guard-an-agents-tools',
+    id: 'quick-start',
+    h2: 'Run it in one file',
+    p: 'Run `npm install jevlang`, save the file as `policy.mjs`, and run it with `node policy.mjs`. It needs no model, account or network: `policy.decide()` reads the answers you hand it and returns the action.',
+    doc: 'Hello, world',
+    demos: [
+      { type: 'steps', steps: [
+        { title: 'Install the package', cmd: 'npm install jevlang' },
+        { title: 'Save this as <code>policy.mjs</code>', file: 'policy.mjs' },
+        { title: 'Run it', run: 'node policy.mjs' },
+      ] },
+    ],
+  },
+  {
+    id: 'questions',
+    h2: 'Three kinds of question',
+    p: 'Declare what you want to know with `noul` for a yes/no, `choice` for one of several options, or `score` for a place on a scale. The model answers each with numbers, and `policy.decide()` refuses an answer that does not fit its question.',
+    doc: 'Three kinds of question',
+    demos: [
+      { type: 'diagram', name: 'answer-shapes', policy: 'support.mjs', decide: 'decide.mjs', case: 'an angry refund request', table: 'Three kinds of question' },
+      { type: 'table', name: 'kinds', table: 'Three kinds of question' },
+    ],
+  },
+  {
+    id: 'gates',
+    h2: 'Low confidence escalates',
+    p: 'Add `gate(department, 0.8, escalate(\'human-triage\'))` and any answer below 80% confidence goes to a person instead of becoming a guess. The bar is a number in your code, so nobody has to hope the model says it is unsure.',
+    doc: 'A real one: support routing',
+    demos: [
+      { type: 'diagram', name: 'gate-meter', run: 'node decide.mjs', pass: 'a clear billing question', fail: 'unsure which team owns it' },
+      { type: 'source', file: 'support.mjs' },
+      { type: 'source', file: 'decide.mjs' },
+      { type: 'run', run: 'node decide.mjs' },
+    ],
+  },
+  {
+    id: 'rules',
+    h2: 'Rules run in order',
+    p: 'Each `rule(when, action)` is checked from the top, and the first match decides — so clause order is policy you can review in a diff. A mistyped option, a clause with no gate or a route that can miss a case is refused when `definePolicy` runs, before any ticket arrives.',
+    doc: 'Mistakes are build errors',
+    demos: [
+      { type: 'diagram', name: 'rule-ladder', policy: 'support.mjs' },
+      { type: 'source', file: 'broken.mjs' },
+      { type: 'run', run: 'node broken.mjs' },
+    ],
+  },
+  {
+    id: 'explain',
+    h2: 'Every decision says why',
+    p: '`explainDecision(decision)` prints the action, the rule that fired and every answer that rule read. Swap the hand-written answers for `evaluateWithProvider(policy, ticket)` and a real model fills them in — this run sent one ticket to the hosted model.',
+    doc: 'A real one: support routing',
+    demos: [
+      { type: 'source', file: 'ask.mjs' },
+      { type: 'annotated', run: 'node ask.mjs' },
+    ],
+  },
+  {
+    id: 'tool-gate',
     h2: 'Guard an agent\'s tools',
-    p: '`jevlang/gate` decides whether a tool call runs — `allow`, `deny` or `ask` — as a Claude Code or Codex PreToolUse hook, or an MCP server standing in front of another one. It fails closed: anything the policy cannot decide denies and says so, and hard rules like `Bash(rm *)` block before the model is ever called.',
-    demos: [
-      { type: 'diagram', name: 'gate-verdict', ref: { kind: 'terminal', cmd: 'node examples/tool-gate.mjs' }, data: {
-        effect: /effect=\w+ @ ([\d.]+)/,
-      } },
-      { type: 'code', ref: { kind: 'snippet', marker: "const effect = choice('effect'" }, label: 'README — tool gate' },
-      { type: 'terminal', ref: { kind: 'terminal', cmd: 'node examples/tool-gate.mjs' } },
-    ],
+    p: '`jev gate hook` decides whether an agent\'s tool call runs — `allow`, `ask` or `deny` — as a Claude Code or Codex `PreToolUse` hook. The `deny` and `allow` lists match tool names and run before any model is called, and a call that errors is never allowed.',
     doc: 'Guard an agent\'s tools',
+    demos: [
+      { type: 'diagram', name: 'tool-ladder', policy: 'gate.mjs', options: 'gate-options.json' },
+      { type: 'steps', steps: [
+        { title: 'Save the policy as <code>gate.mjs</code> and run it', file: 'gate.mjs', run: 'node gate.mjs' },
+        { title: 'Name the tools that need no judgement', file: 'gate-options.json' },
+        { title: 'Add the hook to <code>.claude/settings.json</code>', file: '.claude/settings.json' },
+        { title: 'Try it: a tool on each list, then one on neither', runs: ['"tool_name":"Read"', '"tool_name":"WebFetch"', '"tool_name":"Bash"'] },
+      ] },
+    ],
   },
   {
-    id: 'everything-else-in-the-box',
-    h2: 'Everything else in the box',
-    p: 'The core is small; the surface is what a production decision needs. `jevlang/provider` is the one call that leaves the machine — and a precheck that already decides makes no call at all. Every module ships in the npm package as a subpath export: install once, import what you need.',
+    id: 'anywhere',
+    h2: 'Call it from anywhere',
+    p: 'One policy has five doors: `policy.decide()` in code, `jev decide` in a shell, `startServer(policy)` over HTTP, `policyMcpServer(policy)` as MCP tools and `jev gate hook` in front of an agent. Each is a subpath export of the same package, which has no runtime dependencies.',
+    doc: 'Call it from anywhere',
     demos: [
-      { type: 'modules' },
+      { type: 'diagram', name: 'doors', list: 'Call it from anywhere' },
+      { type: 'steps', steps: [
+        { title: 'Save this as <code>serve.mjs</code> and start it', file: 'serve.mjs', run: 'node serve.mjs' },
+        { title: 'Post it answers from any language; the response carries an <code>explain</code> string', run: 'curl -s http://127.0.0.1:8080/decide' },
+      ] },
+      { type: 'modules', title: 'Every export in the package' },
     ],
-    doc: 'Everything else in the box',
   },
   {
     id: 'same-engine-hosted',
     h2: 'Same engine, hosted',
-    p: '`@jev/cloud` runs this engine for many tenants: deploy, promote, evaluate and replay over HTTP. Every route but `/healthz` takes `Authorization: Bearer jev_live_…`, and the organization comes from the credential, never the path. Deployments are immutable; `promote` with `expect` is the only thing that moves production.',
+    p: 'Jev Cloud runs this engine for many tenants over HTTP at [cloud.jevlang.sh](https://cloud.jevlang.sh): deploy, promote, evaluate and replay. Every route but `/healthz` takes `Authorization: Bearer jev_live_…`, and the organization comes from the credential, never the path. Deployments never change once published; `promote` with `expect` is the only thing that moves production.',
+    doc: null,
     demos: [
-      { type: 'diagram', name: 'cloud-lifecycle' },
+      { type: 'diagram', name: 'lifecycle' },
       { type: 'cloud-api' },
     ],
-    doc: null,
   },
 ];
 
 export const asides = [
   {
     before: 'same-engine-hosted',
-    text: 'Want it deployed instead of embedded? `@jev/cloud` is the same decisions with identity, storage and a dashboard — [cloud.jevlang.sh](https://cloud.jevlang.sh). A hosted product, not open source.',
+    text: 'Want it deployed instead of embedded? [Jev Cloud](https://cloud.jevlang.sh) runs the same decisions with identity, storage and a dashboard. A hosted product, not open source, and not an npm package.',
   },
 ];
 
+// Three counted columns: what holds, what is a judgement, what is not here yet.
+// `{name}` in an item is a figure read out of a captured run.
 export const boundaries = {
-  h2: 'Built for production',
+  h2: 'What holds, and what doesn\'t',
+  intro: 'Proven, judged and missing, in that order — the same honesty the engine ships with. The full evidence table is in [COMPATIBILITY.md](REPO/blob/main/COMPATIBILITY.md).',
   columns: [
     {
-        title: 'Guarantees',
-        items: [
-          'Decisions, wire questions, built state and reports are pinned by differential oracles, and recorded runs replay byte-for-byte.',
-          '`bun test`: 97 tests, 0 failures, offline — the number is read out of the captured run below.',
-          'Pure decisions, validation and replay work fully offline: no account, no network.',
-        ],
+      title: 'What holds',
+      items: [
+        'Every example on this page that is not marked live is re-run by the test suite, and its output must match what the page shows.',
+        'Decisions, wire questions, built state and reports are pinned by differential tests against the Racket reference, and recorded runs replay byte for byte.',
+        '`bun test` here: {pass} pass, {skip} skip, {fail} fail, offline. The skips are the differential tests that need the Racket monorepo beside this package.',
+        'Deciding, validating and replaying need no account and no network.',
+      ],
+      figures: {
+        pass: { run: 'bun install', from: /(\d+) pass/ },
+        skip: { run: 'bun install', from: /(\d+) skip/ },
+        fail: { run: 'bun install', from: /(\d+) fail/ },
+      },
     },
     {
-      title: 'Honest numbers',
+      title: 'A judgement',
       items: [
-        'Cost estimates are fitted to your recorded usage, or a stated ~4-chars-per-token estimate when you have none.',
-        '`calibrate` reports ECE and a reliability table, and tells you when you don\'t have enough labels to trust them.',
+        'Confidence is the model\'s own number. `calibrate` reports ECE and a reliability table over your labels, and says when you have too few to trust them.',
+        'A gate bar like `0.8` is yours to choose. `tune` searches a grid over labelled cases, and under 200 labels it calls the result exploratory.',
+        'Cost estimates are fitted to your recorded usage, or a stated ~4 characters per token when you have none.',
       ],
     },
     {
-      title: 'Ships today',
+      title: 'Not here yet',
       items: [
-          '`npm install jevlang` — MIT licensed, zero runtime dependencies, TypeScript and Python.',
-          'Every module in the table above is a published subpath export of the npm package.',
-          'Need it hosted? `@jev/cloud` is live at [cloud.jevlang.sh](https://cloud.jevlang.sh).',
+        'Code lookup (`jev/code`) needs an SGX executable and is out of scope for now.',
+        'A running JavaScript handler cannot be killed: past its timeout it is abandoned, and the error says it may have acted.',
+        'The Python SDK decides but does not dispatch, because handlers are host functions.',
+        'A stability run\'s statistics are ported; collecting the repeated provider calls is still yours.',
       ],
     },
   ],
@@ -123,13 +179,12 @@ export const boundaries = {
 
 export const start = {
   h2: 'Start',
-  panels: [
-    { title: 'Install', command: meta.install, kind: 'code' },
-    { title: 'Verify', command: null, kind: 'terminal', ref: { kind: 'terminal', cmd: 'bun install' }, figures: [
-      { label: 'Tests passing', from: /(\d+) pass/ },
-      { label: 'Failures', from: /(\d+) fail/ },
-    ] },
-  ],
+  p: 'Install the package, or clone the repo and run the suite yourself. The Verify panel is a real run of that suite, read at build time.',
+  install: ['npm install jevlang', 'pnpm add jevlang', 'bun add jevlang'],
+  verify: { run: 'bun install', figures: [
+    { label: 'Tests passing', from: /(\d+) pass/ },
+    { label: 'Failures', from: /(\d+) fail/ },
+  ] },
 };
 
 // One authored link table drives header and footer. `href: "repo"` follows the
@@ -164,8 +219,13 @@ export const footerColumns = [
 export const credit =
   'Built by linesofcode — open source policy infrastructure for decisions that used to live in prompts.';
 
+// The three mistakes that break a policy, each one a build or decide error the
+// README shows a run of.
 export const agentsMistakes = [
-  'An ungated clause on a runtime question — the validator refuses it; declare a `gate` first.',
-  'A non-exhaustive route — every option must land somewhere or carry `otherwise`.',
-  'A mistyped option or fact name — construction fails with the nearest declared name as the fix.',
+  'A clause on a model answer with no confidence gate — `definePolicy` refuses it; add a `gate`, or read confidence in the clause.',
+  'A route that can miss a case — add `otherwise`, an unconditional clause, or a rule for every option of one `choice`.',
+  'An answer that does not fit its question — `decide` needs one answer per question, and an option that was never declared is an error.',
 ];
+
+export const agentsGateNote =
+  '`deny` and `allow` lists on `jev gate hook` match tool names (`WebFetch`, `mcp__prod__*`), not command text such as `Bash(rm *)`; calls on neither list go to the policy.';

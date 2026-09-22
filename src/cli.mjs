@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFile, readdir } from 'node:fs/promises';
+import { realpathSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createInterface } from 'node:readline';
@@ -134,6 +135,9 @@ async function main(args) {
   console.log(JSON.stringify(result, null, 2));
   if (command === 'replay' && result.some(row => ['error', 'fail', 'stale'].includes(row.status))) process.exitCode = 1;
 }
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+// npm runs a bin through a symlink (node_modules/.bin/jev), and argv[1] keeps the
+// link's path while import.meta.url is the real file, so compare real paths.
+const realPath = path => { try { return realpathSync(path); } catch { return resolve(path); } };
+if (process.argv[1] && import.meta.url === pathToFileURL(realPath(process.argv[1])).href) {
   main(process.argv.slice(2)).catch(error => { console.error(JSON.stringify(error.toJSON?.() ?? { code: 'error', message: error.message })); process.exitCode = 1; });
 }

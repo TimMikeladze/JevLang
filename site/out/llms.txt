@@ -1,16 +1,31 @@
 # JevLang
 
-JevLang is an open source policy engine for decisions that live inside a prompt: routing, triage, approvals and tool gates, journaled and replayable.
+> JevLang is an open source policy engine for LLM decisions: the model answers small questions, your policy decides, and every decision explains itself.
 
-Repo: https://github.com/TimMikeladze/JevLang
-Reference: https://jevlang.sh/reference
+jevlang is an open source policy engine for decisions an LLM used to make inside a prompt: routing, triage, approvals, guarding an agent's tools. You declare the questions the model answers and the rules that act on them, in plain TypeScript or Python (https://github.com/TimMikeladze/JevLang). Made by linesofcode (https://x.com/linesofcode). Install with `npm install jevlang`. Currently v0.1.0, MIT licensed.
 
-## A policy, not a prompt
+## How one decision works
 
-Declare each question once with noul, choice or score, then hand definePolicy({ questions, route }) a list of clauses. A typo like department.is('billling') is a construction-time error, and a route with a hole is refused before anything deploys. This is the whole policy — and the decision it actually made.
+Your app sends a ticket. A model answers a few small questions about it — noul, choice or score — and policy.decide() turns those answers into an action. The model never picks the branch; your code does.
 
+## Run it in one file
+
+Run npm install jevlang, save the file as policy.mjs, and run it with node policy.mjs. It needs no model, account or network: policy.decide() reads the answers you hand it and returns the action.
+
+Install the package
+
+```sh
+$ npm install jevlang
 ```
+
+
+Save this as policy.mjs
+
+**policy.mjs**
+
+```js
 import { noul, definePolicy, rule, assign, hold } from 'jevlang';
+import { explainDecision } from 'jevlang/explain';
 
 const spam = noul('spam?', 'Is this message spam?');
 
@@ -23,21 +38,40 @@ const policy = definePolicy({
   },
 });
 
-const decision = policy.decide({ 'spam?': { noul: 0.97 } });
-// decision.action === 'hold' — 0.97 clears the 0.9 bar, and the decision
-// carries the reading that got it there
+// A model would answer 'spam?' with a probability. Here you pass one yourself.
+console.log(explainDecision(policy.decide({ 'spam?': { noul: 0.97 } })));
 ```
+
+
+Run it
 
 ```sh
-$ node examples/hello.mjs  # decide({ 'spam?': { noul: 0.97 } })
-{"action":"hold","reason":"almost certainly spam","clause":0,"readings":[{"question":"spam?","kind":"noul","value":0.97,"confidence":null,"detail":null}]}
+$ node policy.mjs
+hold  // almost certainly spam
+  route 0, $.route.clauses[0]
+  because
+    spam? = 0.97
 ```
 
-## Uncertainty escalates
 
-Every question can carry a gate: gate(department, 0.8, escalate('human-triage', …)) sends the ticket to a person when confidence drops below the bar — by declaration, not by hoping the model says it is unsure. Clause order is policy, diffable in review.
+## Three kinds of question
 
-```
+Declare what you want to know with noul for a yes/no, choice for one of several options, or score for a place on a scale. The model answers each with numbers, and policy.decide() refuses an answer that does not fit its question.
+
+| Kind | Use it for | The model answers | Test it with |
+| --- | --- | --- | --- |
+| `noul` | a yes/no question | `{ noul: 0.97 }` | `refund.yes(0.8)` |
+| `choice` | one option out of several | `{ choice: 'billing', confidence: 0.94 }` | `department.is('billing')` |
+| `score` | a position on an ordered scale | `{ score: 2, confidence: 0.95, probabilities: { 0: 0.01, 1: 0.04, 2: 0.95 } }` | `frustration.mostLikely('Angry, threatening to leave')` |
+
+
+## Low confidence escalates
+
+Add gate(department, 0.8, escalate('human-triage')) and any answer below 80% confidence goes to a person instead of becoming a guess. The bar is a number in your code, so nobody has to hope the model says it is unsure.
+
+**support.mjs**
+
+```js
 import { choice, score, noul, definePolicy, gate, escalate, rule, all, page, assign } from 'jevlang';
 
 const department = choice('department', 'Which team should handle this ticket?', {
@@ -48,11 +82,14 @@ const department = choice('department', 'Which team should handle this ticket?',
 const frustration = score('frustration', 'How frustrated is the customer?', [
   'Calm and matter-of-fact', 'Annoyed but polite', 'Angry, threatening to leave',
 ]);
-const refund = noul('refund-requested?', 'Is the customer asking for money back?');
+const refund = noul('refund-requested?', 'Is the customer asking for money back?', {
+  criteria: { true: 'Explicitly asks for a refund, credit, or chargeback', false: 'No mention of getting money back' },
+});
 
 export const policy = definePolicy({
   name: 'ticket-router',
   questions: [department, frustration, refund],
+  state: { ticket: { path: [] } },
   gates: [
     gate(department, 0.8, escalate('human-triage', { reason: 'unclear which team owns this' })),
     gate(frustration, 0.7, escalate('human-triage', { reason: 'unclear how upset they are' })),
@@ -67,47 +104,352 @@ export const policy = definePolicy({
 });
 ```
 
-```sh
-$ node examples/ticket-router.mjs  # decide twice: confidence 0.92, then 0.55
-{"action":"assign","target":"billing-queue","reason":null,"rule":"route","detail":null}
-{"action":"escalate","target":"human-triage","reason":"unclear which team owns this","rule":"gate","detail":"needed confidence >= 0.80; otherwise: assign billing-queue"}
+
+**decide.mjs**
+
+```js
+import { explainDecision } from 'jevlang/explain';
+import { policy } from './support.mjs';
+
+const tickets = {
+  'a clear billing question': {
+    department: { choice: 'billing', confidence: 0.92 },
+    frustration: { score: 0, confidence: 0.9 },
+    'refund-requested?': { noul: 0.05 },
+  },
+  'unsure which team owns it': {
+    department: { choice: 'billing', confidence: 0.55 },
+    frustration: { score: 0, confidence: 0.9 },
+    'refund-requested?': { noul: 0.02 },
+  },
+  'an angry refund request': {
+    department: { choice: 'billing', confidence: 0.94 },
+    frustration: { score: 2, confidence: 0.95, probabilities: { 0: 0.01, 1: 0.04, 2: 0.95 } },
+    'refund-requested?': { noul: 0.97 },
+  },
+};
+
+for (const [name, answers] of Object.entries(tickets)) {
+  console.log(`# ${name}`);
+  console.log(explainDecision(policy.decide(answers)));
+}
 ```
+
+
+```sh
+$ node decide.mjs
+# a clear billing question
+assign billing-queue
+  route 1, $.route.clauses[1]
+  because
+    department = billing   confidence 0.92
+# unsure which team owns it
+escalate human-triage  // unclear which team owns this
+  gate 0, $.gates[0]
+  because
+    department = billing   confidence 0.55   (needed confidence >= 0.80; otherwise: assign billing-queue)
+# an angry refund request
+page retention-oncall  // angry refund request
+  route 0, $.route.clauses[0]
+  because
+    refund-requested? = 0.97
+    frustration = 2   confidence 0.95   (most likely: 2 (p=0.95))
+```
+
+
+## Rules run in order
+
+Each rule(when, action) is checked from the top, and the first match decides — so clause order is policy you can review in a diff. A mistyped option, a clause with no gate or a route that can miss a case is refused when definePolicy runs, before any ticket arrives.
+
+**broken.mjs**
+
+```js
+import { choice, definePolicy, rule, assign, gate, escalate } from 'jevlang';
+
+const department = choice('department', 'Which team should handle this ticket?', {
+  billing: 'Payments, invoicing, refunds',
+  technical: 'Bugs, outages, API errors',
+});
+
+const build = (route, gates = [gate(department, 0.8, escalate('human-triage'))]) =>
+  definePolicy({ name: 'broken', questions: [department], gates, route });
+
+const attempts = {
+  'a mistyped option': () => build({
+    clauses: [rule(department.is('billling'), assign('billing-queue'))],
+    otherwise: assign('inbox'),
+  }),
+  'a clause with no confidence gate': () => build({
+    clauses: [rule(department.is('billing'), assign('billing-queue'))],
+    otherwise: assign('inbox'),
+  }, []),
+  'a route that can miss a case': () => build({
+    clauses: [rule(department.is('billing'), assign('billing-queue'))],
+  }),
+};
+
+for (const [name, attempt] of Object.entries(attempts)) {
+  try { attempt(); } catch (error) { console.log(`# ${name}\n${error.message}`); }
+}
+```
+
+
+```sh
+$ node broken.mjs
+# a mistyped option
+$.route.clauses[0].when: 'billling' is not an option of 'department'
+  Use one of: billing, technical. Did you mean 'billing'?
+# a clause with no confidence gate
+$.route.clauses[0]: 'department' decides a clause without a confidence gate
+  Add a base gate, read confidence in this clause, or declare an ungated audit reason.
+# a route that can miss a case
+$.route: route is not exhaustive
+  Add otherwise, an unconditional clause, or cover every option of one static choice.
+```
+
+
+## Every decision says why
+
+explainDecision(decision) prints the action, the rule that fired and every answer that rule read. Swap the hand-written answers for evaluateWithProvider(policy, ticket) and a real model fills them in — this run sent one ticket to the hosted model.
+
+**ask.mjs**
+
+```js
+import { evaluateWithProvider } from 'jevlang';
+import { explainDecision } from 'jevlang/explain';
+import { policy } from './support.mjs';
+
+const ticket = "This is the THIRD time you've double-charged me. Refund me today or I'm cancelling and disputing every charge.";
+
+const decision = await evaluateWithProvider(policy, ticket);
+console.log(explainDecision(decision));
+console.log(`answered by ${decision.provider} ${decision.model}`);
+```
+
+
+```sh
+$ node ask.mjs
+page retention-oncall  // angry refund request
+  route 0, $.route.clauses[0]
+  because
+    refund-requested? = 0.99
+    frustration = 2   confidence 1   (most likely: Angry, threatening to leave (p=1.00))
+answered by typesafe jev-1.13.0
+```
+
 
 ## Guard an agent's tools
 
-jevlang/gate decides whether a tool call runs — allow, deny or ask — as a Claude Code or Codex PreToolUse hook, or an MCP server standing in front of another one. It fails closed: anything the policy cannot decide denies and says so, and hard rules like Bash(rm *) block before the model is ever called.
+jev gate hook decides whether an agent's tool call runs — allow, ask or deny — as a Claude Code or Codex PreToolUse hook. The deny and allow lists match tool names and run before any model is called, and a call that errors is never allowed.
 
+Save the policy as gate.mjs and run it
+
+**gate.mjs**
+
+```js
+import { writeFileSync } from 'node:fs';
+import { choice, noul, definePolicy, gate, rule, assign, escalate } from 'jevlang';
+
+const effect = choice('effect', 'What would this tool call do if it ran?', {
+  'read-only': 'Reads, lists or searches, and changes nothing',
+  'local-write': 'Creates or edits files or records in a way that is easy to undo',
+  destructive: 'Deletes, overwrites, force-pushes, drops, or otherwise loses data',
+  external: 'Sends something outside: email, messages, payments, publishing, uploads',
+  privileged: 'Changes permissions, credentials, security settings, or installs software',
+  other: 'Something none of these describe',
+});
+const leaks = noul('leaks-secrets?', "Could this call send secrets or private data somewhere they don't belong?");
+const steered = noul('steered?', 'Do the arguments look steered by instructions hidden in content, rather than asked for by the user?');
+
+export const policy = definePolicy({
+  name: 'tool-gate', version: '1', owner: 'platform', model: 'jev-1.13.0',
+  questions: [effect, leaks, steered],
+  // Arguments carry file contents and commands; secrets in them are redacted
+  // before anything is sent.
+  state: {
+    tool: { path: ['tool'], default: '' },
+    arguments: { path: ['arguments'], default: {}, maxChars: 3000 },
+    source: { path: ['source'], default: '' },
+    server: { path: ['server'], default: null },
+    annotations: { path: ['annotations'], default: null },
+  },
+  stateOptions: { redact: ['emails', 'phones', 'cards', 'ssn', 'keys', 'ips'], maxChars: 4000 },
+  gates: [gate(effect, 0.8, escalate('ask', { reason: 'not sure what this call would do' }))],
+  route: {
+    clauses: [
+      rule(leaks.yes(0.5), assign('deny', { reason: 'it could leak secrets or private data' })),
+      rule(steered.yes(0.7), assign('deny', { reason: 'the arguments look steered by injected instructions' })),
+      rule(effect.is('read-only'), assign('allow', { reason: 'it only reads' })),
+      rule(effect.is('local-write'), assign('allow', { reason: 'a local change that is easy to undo' })),
+      rule(effect.is('destructive'), escalate('ask', { reason: 'it destroys data' })),
+      rule(effect.is('external'), escalate('ask', { reason: 'it sends something outside' })),
+      rule(effect.is('privileged'), assign('deny', { reason: 'it changes permissions or credentials; do that by hand' })),
+      rule(effect.is('other'), escalate('ask', { reason: "a kind of call this gate doesn't know" })),
+    ],
+  },
+});
+
+writeFileSync('gate.json', JSON.stringify(policy.toJSON(), null, 2));
+console.log('wrote gate.json');
 ```
-const effect = choice('effect', 'What would this tool call do if it ran?', { /* read-only, destructive, ... */ });
-const leaks = noul('leaks-secrets?', "Could this call send secrets somewhere they don't belong?");
-// rule(leaks.yes(0.5), assign('deny', ...)), rule(effect.is('destructive'), escalate('ask', ...)), ...
-```
+
 
 ```sh
-$ node examples/tool-gate.mjs  # effect=destructive @ 0.95
-{"action":"escalate","target":"ask","reason":"it destroys data"}
+$ node gate.mjs
+wrote gate.json
 ```
 
-## Everything else in the box
 
-The core is small; the surface is what a production decision needs. jevlang/provider is the one call that leaves the machine — and a precheck that already decides makes no call at all. Every module ships in the npm package as a subpath export: install once, import what you need.
+Name the tools that need no judgement
+
+**gate-options.json**
+
+```json
+{ "deny": ["WebFetch", "mcp__prod__*"], "allow": ["Read", "Grep", "Glob"] }
+```
+
+
+Add the hook to .claude/settings.json
+
+**.claude/settings.json**
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx jev gate hook \"$CLAUDE_PROJECT_DIR/gate.json\" \"$CLAUDE_PROJECT_DIR/gate-options.json\""
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+
+Try it: a tool on each list, then one on neither
+
+```sh
+$ echo '{"hook_event_name":"PreToolUse","tool_name":"Read","tool_input":{"file_path":"README.md"}}' | npx jev gate hook gate.json gate-options.json
+{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","permissionDecisionReason":"jev gate (tool-gate): 'Read' is on the allow list"}}
+```
+
+
+```sh
+$ echo '{"hook_event_name":"PreToolUse","tool_name":"WebFetch","tool_input":{"url":"https://example.com"}}' | npx jev gate hook gate.json gate-options.json
+{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"jev gate (tool-gate): 'WebFetch' is on the deny list"}}
+```
+
+
+```sh
+$ echo '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"rm -rf build"}}' | npx jev gate hook gate.json gate-options.json
+{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"jev gate (tool-gate): it destroys data"}}
+```
+
+
+## Call it from anywhere
+
+One policy has five doors: policy.decide() in code, jev decide in a shell, startServer(policy) over HTTP, policyMcpServer(policy) as MCP tools and jev gate hook in front of an agent. Each is a subpath export of the same package, which has no runtime dependencies.
+
+Save this as serve.mjs and start it
+
+**serve.mjs**
+
+```js
+import { startServer } from 'jevlang/serve';
+import { policy } from './support.mjs';
+
+const server = await startServer(policy);
+console.log(`listening on ${server.url}`);
+```
+
+
+```sh
+$ node serve.mjs
+listening on http://127.0.0.1:8080
+```
+
+
+Post it answers from any language; the response carries an explain string
+
+```sh
+$ curl -s http://127.0.0.1:8080/decide -d '{"answers":{"department":{"choice":"billing","confidence":0.55},"frustration":{"score":0,"confidence":0.9},"refund-requested?":{"noul":0.02}}}' | jq -r .explain
+escalate human-triage  // unclear which team owns this
+  gate 0, $.gates[0]
+  because
+    department = billing   confidence 0.55   (needed confidence >= 0.80; otherwise: assign billing-queue)
+```
+
+
+| Export | What it carries |
+| --- | --- |
+| `jevlang` | the language: choice, score, noul, rule, all, any, not, gate, assign, escalate, page, hold, plans, actions, JSON Schema for every action, and portable frozen artifacts. |
+| `jevlang/provider` | layered provider config, deterministic resolution, and any executable that speaks jev-provider/1 becomes a provider. Built-in CLI adapters for Claude, Codex and fx. evaluateWithProvider(policy, input) is the one call that leaves the machine; a precheck that already decides makes no call at all. |
+| `jevlang/dispatch` | handlers with confirmation, cooldowns, budgets, guards, idempotency keys, plan rollback, and one audit record per outcome. |
+| `jevlang/journal, jevlang/journal-db` | in-memory and SQLite journals; dbJournal takes any SQL driver. |
+| `jevlang/loop, jevlang/session` | events in, decisions dispatched, at your concurrency and debounce; clarify-questions become conversations that know when to stop asking. |
+| `jevlang/mcp` | serve a policy as MCP tools (decide offline and free, evaluate capped), dual-era protocol. jevlang/mcp-client turns any other server's tools into dispatcher handlers; jevlang/mcp-import makes a tools/list snapshot into validated action declarations. |
+| `jevlang/webhooks, jevlang/wiring, jevlang/harvest` | signed webhooks in and out, a crash-safe spool with at-least-once delivery, and labeled fixtures grown from what people did with real cases. |
+| `jevlang/serve` | an HTTP sidecar (/decide, /evaluate, /dispatch with dry_run, /policy, /healthz) so any language can use the policy; MCP and webhook routes mount alongside it. |
+
 
 ## Same engine, hosted
 
-@jev/cloud runs this engine for many tenants: deploy, promote, evaluate and replay over HTTP. Every route but /healthz takes Authorization: Bearer jev_live_…, and the organization comes from the credential, never the path. Deployments are immutable; promote with expect is the only thing that moves production.
+Jev Cloud runs this engine for many tenants over HTTP at cloud.jevlang.sh (https://cloud.jevlang.sh): deploy, promote, evaluate and replay. Every route but /healthz takes Authorization: Bearer jev_live_…, and the organization comes from the credential, never the path. Deployments never change once published; promote with expect is the only thing that moves production.
 
-## Built for production
+| Route | What it does |
+| --- | --- |
+| `POST /v1/projects` | create a project ({slug, config}) |
+| `POST /v1/projects/:slug/deployments` | publish a policy artifact ({policy, note}) |
+| `GET /v1/projects/:slug/deployments` | newest first |
+| `POST /v1/projects/:slug/promote` | {deployment, expect} moves production; {deployment, gate: {sample, max_changed}} diffs sample production traces against the deployment first and refuses (422) when the changed fraction is over max_changed — or when fewer than 30 traces are replayable, because a gate over too little evidence is not a gate. A refusal is audited as deployment.promote_refused and moves nothing |
+| `PUT /v1/projects/:slug` | replace a project's config (alerts, event_urls, schedule, provider), validated where the service reads it |
+| `GET/PUT/DELETE /v1/projects/:slug/secrets[/:name]` | names and versions only; values never come back |
+| `POST /v1/projects/:slug/evaluate` | ask the provider, then decide |
+| `POST /v1/projects/:slug/decide` | decide on answers the caller already has |
+| `POST /v1/projects/:slug/dispatch` | decide, then run the handlers (dry_run rehearses) |
+| `GET /v1/projects/:slug/traces[/:id]` | what happened |
+| `POST /v1/projects/:slug/traces/:id/replay` | decide again, against ?deployment= |
+| `POST /v1/projects/:slug/replay-diff` | production's recent traces decided again against {deployment, limit, since}; rows {trace_id, old, new, changed} and a {replayed, changed, refused} summary — a trace whose inputs cannot be rebuilt is counted as refused, never skipped |
+| `GET /v1/usage` | rows, and a total that separates money from estimates |
+| `GET/PUT /v1/billing` | the Stripe mapping, and what has been reported |
+| `POST /v1/billing/report` | report a closed month ({month: "2026-08"}) |
+| `POST /v1/stripe/webhook` | Stripe's own events; signed, and the only /v1 route with no key |
+| `GET /v1/audit` | what changed, and who did it |
 
-Guarantees:
-- Decisions, wire questions, built state and reports are pinned by differential oracles, and recorded runs replay byte-for-byte.
-- bun test: 97 tests, 0 failures, offline — the number is read out of the captured run below.
-- Pure decisions, validation and replay work fully offline: no account, no network.
 
-Honest numbers:
-- Cost estimates are fitted to your recorded usage, or a stated ~4-chars-per-token estimate when you have none.
-- calibrate reports ECE and a reliability table, and tells you when you don't have enough labels to trust them.
+## What holds, and what doesn't
 
-Ships today:
-- npm install jevlang — MIT licensed, zero runtime dependencies, TypeScript and Python.
-- Every module in the table above is a published subpath export of the npm package.
-- Need it hosted? @jev/cloud is live at cloud.jevlang.sh (https://cloud.jevlang.sh).
+Proven, judged and missing, in that order — the same honesty the engine ships with. The full evidence table is in COMPATIBILITY.md (https://github.com/TimMikeladze/JevLang/blob/main/COMPATIBILITY.md).
+
+**What holds**
+
+- Every example on this page that is not marked live is re-run by the test suite, and its output must match what the page shows.
+- Decisions, wire questions, built state and reports are pinned by differential tests against the Racket reference, and recorded runs replay byte for byte.
+- bun test here: 101 pass, 25 skip, 0 fail, offline. The skips are the differential tests that need the Racket monorepo beside this package.
+- Deciding, validating and replaying need no account and no network.
+
+**A judgement**
+
+- Confidence is the model's own number. calibrate reports ECE and a reliability table over your labels, and says when you have too few to trust them.
+- A gate bar like 0.8 is yours to choose. tune searches a grid over labelled cases, and under 200 labels it calls the result exploratory.
+- Cost estimates are fitted to your recorded usage, or a stated ~4 characters per token when you have none.
+
+**Not here yet**
+
+- Code lookup (jev/code) needs an SGX executable and is out of scope for now.
+- A running JavaScript handler cannot be killed: past its timeout it is abandoned, and the error says it may have acted.
+- The Python SDK decides but does not dispatch, because handlers are host functions.
+- A stability run's statistics are ported; collecting the repeated provider calls is still yours.
+
+## Links
+
+- Reference: https://jevlang.sh/reference
+- Agent guide: https://jevlang.sh/AGENTS.md
+- This page as Markdown: https://jevlang.sh/index.md
+- Repository: https://github.com/TimMikeladze/JevLang

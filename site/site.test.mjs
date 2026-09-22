@@ -1,51 +1,70 @@
 // Site tests: references resolve, figures match, pages self-contained and
-// current, metadata honest, artefacts present. Run: node --test site/site.test.mjs
+// current, metadata honest, artefacts present. Run: bun test site/site.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
-import { sections, boundaries, start, links, meta } from './content.mjs';
-import { makeResolver, figure, renderLanding, renderReference, modulesTable, cloudApiTable, version } from './render.mjs';
+import { sections, boundaries, start, links, meta, agentsMistakes } from './content.mjs';
+import {
+  makeResolver, figure, renderLanding, renderReference, llmsText, agentsMd, pageMarkdown, sitemap, robots, markdownHtml,
+  modulesTable, cloudApiTable, readmeTable, readmeList, version, bootScript, url,
+} from './render.mjs';
+import { css } from './styles.mjs';
+import { readPolicy, readAnswers, parseExplain } from './diagrams.mjs';
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 const readme = read('../README.md');
 const cloudReadme = read('../docs/cloud-api.md');
 const index = read('./out/index.html');
 const reference = read('./out/reference.html');
+const r = makeResolver(readme);
+const section = (id) => index.split(`<section id="${id}"`)[1].split('</section>')[0];
 
 // 1 + 2. every reference resolves to exactly one block; every figure matches.
 test('references resolve and figures match', () => {
-  const r = makeResolver(readme);
-  for (const s of sections) for (const d of s.demos) {
-    if (d.ref?.kind === 'terminal') {
-      const block = r.terminal(d.ref.cmd);
-      for (const f of d.figures ?? []) figure(block, f.from);
-    }
-    if (d.ref?.kind === 'snippet') r.snippet(d.ref.marker);
-  }
-  const verify = r.terminal(start.panels[1].ref.cmd);
-  for (const f of start.panels[1].figures) figure(verify, f.from);
-  assert.ok(figure(verify, /(\d+) pass/) === '97');
+  const walk = (d) => {
+    if (d.file) r.file(d.file);
+    if (d.run) r.run(d.run);
+    for (const cmd of d.runs ?? []) r.run(cmd);
+    for (const s of d.steps ?? []) walk(s);
+    if (d.ticket) figure(r.file(d.ticket.file).body, d.ticket.from);
+    if (d.policy) r.file(d.policy);
+    if (d.decide) r.file(d.decide);
+    if (d.options) r.file(d.options);
+  };
+  for (const s of sections) for (const d of s.demos) walk(d);
+  const verify = r.run(start.verify.run).output;
+  for (const f of start.verify.figures) figure(verify, f.from);
+  assert.equal(figure(verify, /(\d+) fail/), '0');
+  assert.ok(Number(figure(verify, /(\d+) pass/)) > 0);
+  for (const c of boundaries.columns) for (const f of Object.values(c.figures ?? {})) figure(r.run(f.run).output, f.from);
+  assert.throws(() => r.terminal('no such command'), /expected 1 block/);
+  assert.throws(() => r.file('nope.mjs'), /expected 1 block/);
 });
 
 // 3. self-contained pages; theme machinery present.
 test('pages are self-contained', () => {
   for (const page of [index, reference]) {
     assert.doesNotMatch(page, /<(?:link[^>]*rel="(?:stylesheet|preload|icon)"|script|img)[^>]+(?:src|href)="https?:/);
-    const scripts = [...page.matchAll(/<script[^>]*src=/g)];
-    assert.equal(scripts.length, 0);
-    const inline = [...page.matchAll(/<script(?:\s[^>]*)?>[\s\S]*?<\/script>/g)];
-    const nonLd = inline.filter((m) => !m[0].includes('application/ld+json'));
-    assert.equal(nonLd.length, 1, 'exactly one non-JSON-LD script');
-    assert.ok(nonLd[0][0].length < 2500, 'boot script under size cap');
-    assert.match(page, /:root\[data-theme="?light"?\]/);
-    assert.match(page, /prefers-color-scheme:\s*light/);
-    assert.match(page, /color-scheme:\s*dark/);
+    assert.equal([...page.matchAll(/<script[^>]*src=/g)].length, 0);
+    const inline = [...page.matchAll(/<script(?:\s[^>]*)?>[\s\S]*?<\/script>/g)].filter((m) => !m[0].includes('application/ld+json'));
+    assert.equal(inline.length, 1, 'exactly one non-JSON-LD script');
+    assert.ok(inline[0][0].split('\n').length < 30, 'boot script under 30 lines');
+    const head = page.split('</head>')[0];
+    assert.ok(head.indexOf(inline[0][0]) > 0 && head.indexOf(inline[0][0]) < head.indexOf('<style>'), 'the boot script sits in <head>, before the stylesheet');
+    assert.match(page, /:root\[data-theme=light\]/);
+    assert.match(page, /prefers-color-scheme:light\)\{:root:not\(\[data-theme=dark\]\):not\(\[data-theme=light\]\)/);
+    assert.match(page, /color-scheme:dark/);
     assert.match(page, /jevlang-theme/);
+    assert.match(page, /html\[data-js\] \.copy-btn/, 'copy buttons exist only when the script runs');
   }
-  assert.match(index, /id="theme-toggle"[^>]*aria-label="Theme: system\. Click to change"/);
+  assert.equal(bootScript.match(/matchMedia\('\(prefers-color-scheme: dark\)'\)/).length, 1);
+  const toggle = index.match(/<button id="theme-toggle"[^>]*>([\s\S]*?)<\/button>/);
+  assert.match(toggle[0], /aria-label="Theme: system\. Click to change"/);
+  for (const state of ['system', 'dark', 'light']) assert.match(toggle[1], new RegExp(`i-${state}`));
+  assert.ok(index.split('</header>')[0].includes('id="theme-toggle"'), 'the toggle is in the header');
 });
 
-// contrast: OKLCH -> sRGB -> WCAG ratio
+// contrast: OKLCH -> sRGB -> WCAG ratio, over every text colour on every surface.
 function oklchToRgb(L, C, h) {
   const hr = (h * Math.PI) / 180;
   const a = C * Math.cos(hr), b = C * Math.sin(hr);
@@ -53,146 +72,216 @@ function oklchToRgb(L, C, h) {
   const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
   const s_ = L - 0.0894841775 * a - 1.2914855480 * b;
   const l = l_ ** 3, m = m_ ** 3, s = s_ ** 3;
-  const lin = [
+  return [
     +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
     -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
     -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s,
-  ].map((c) => (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055));
-  return lin.map((c) => Math.min(1, Math.max(0, c)));
+  ].map((c) => Math.min(1, Math.max(0, c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055)));
 }
-const lum = ([r, g, b]) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+const lum = ([r_, g, b]) => {
+  const lin = (c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  return 0.2126 * lin(r_) + 0.7152 * lin(g) + 0.0722 * lin(b);
+};
 const ratio = (fg, bg) => { const [a, c] = [lum(fg), lum(bg)].sort((x, y) => y - x); return (a + 0.05) / (c + 0.05); };
-const gray = (L) => oklchToRgb(L / 100, 0, 0);
+const tokens = (block) => Object.fromEntries([...block.matchAll(/--([\w-]+):oklch\(([\d.]+)%\s*([\d.]*)\s*([\d.]*)\)/g)].map((m) => [m[1], oklchToRgb(+m[2] / 100, +(m[3] || 0), +(m[4] || 0))]));
 
-test('body and soft contrast >= 4.5 in both schemes', () => {
-  for (const [paper, body, soft] of [[12.5, 78, 62], [99, 27, 30]]) {
-    assert.ok(ratio(gray(body), gray(paper)) >= 4.5, `body on ${paper}%`);
-    assert.ok(ratio(gray(soft), gray(paper)) >= 4.5, `soft on ${paper}%`);
+test('text contrast >= 4.5 on every surface, in both schemes', () => {
+  const dark = tokens(css.slice(css.indexOf(':root{'), css.indexOf(':root[data-theme=light]')));
+  const light = tokens(css.slice(css.indexOf(':root[data-theme=light]'), css.indexOf('@media (prefers-color-scheme:light)')));
+  const fallback = tokens(css.slice(css.indexOf('@media (prefers-color-scheme:light)'), css.indexOf('*{box-sizing')));
+  assert.deepEqual(fallback, light, 'the no-script fallback carries the same light tokens');
+  for (const [scheme, t] of [['dark', dark], ['light', light]]) {
+    for (const bg of ['paper', 'band', 'raise']) {
+      for (const fg of ['ink', 'body', 'soft', 'accent', 'add', 'del', 'warn', 'tk-kw', 'tk-str', 'tk-num', 'tk-fn', 'tk-cmt']) {
+        assert.ok(ratio(t[fg], t[bg]) >= 4.5, `${scheme}: ${fg} on ${bg} is ${ratio(t[fg], t[bg]).toFixed(2)}`);
+      }
+    }
   }
 });
 
 // 4. markup in the source doc is escaped, never executed.
 test('source markup escaped', () => {
-  assert.ok(reference.includes('&lt;this repo&gt;'));
-  assert.ok(!reference.includes('<this repo>'));
+  const html = markdownHtml('Run <img src=x onerror=alert(1)> now\n\n```\n<b>x</b>\n```\n\n| a |\n| - |\n| <i> |');
+  assert.doesNotMatch(html, /<img|<b>|<i>/);
+  assert.match(html, /&lt;img/);
+  assert.doesNotMatch(reference, /<script(?![^>]*ld\+json)(?![^>]*>\s*\(function)/);
 });
 
-// 5. committed HTML equals a fresh render.
-test('committed HTML is current', () => {
-  assert.equal(index, renderLanding({ readme, cloudReadme }));
-  assert.equal(reference, renderReference({ readme }));
+// 5. committed files equal a fresh render.
+test('committed output is current', () => {
+  const fresh = {
+    'index.html': renderLanding({ readme, cloudReadme }), 'reference.html': renderReference({ readme }),
+    'index.md': pageMarkdown({ readme, cloudReadme }), 'llms.txt': llmsText({ readme, cloudReadme }),
+    'AGENTS.md': agentsMd({ readme }), 'sitemap.xml': sitemap(), 'robots.txt': robots(),
+  };
+  for (const [name, content] of Object.entries(fresh)) assert.equal(read(`./out/${name}`), content, `${name} is stale: run bun run site`);
 });
 
 // 6. every source section reaches the reference page; anchors land.
 test('reference completeness and anchors', () => {
-  for (const h2 of readme.matchAll(/^## (.+)$/gm)) {
-    const slug = h2[1].toLowerCase().replace(/[^\w]+/g, '-').replace(/^-|-$/g, '');
-    assert.ok(reference.includes(`id="${slug}"`), `missing section ${slug}`);
-  }
-  for (const s of sections) if (s.doc) {
-    const slug = s.doc.toLowerCase().replace(/[^\w]+/g, '-').replace(/^-|-$/g, '');
-    assert.ok(index.includes(`/reference#${slug}`) && reference.includes(`id="${slug}"`), `anchor ${slug}`);
-  }
+  const slug = (h) => h.toLowerCase().replace(/[^\w]+/g, '-').replace(/^-|-$/g, '');
+  for (const h2 of readme.matchAll(/^## (.+)$/gm)) assert.ok(reference.includes(`id="${slug(h2[1])}"`), `missing section ${h2[1]}`);
+  for (const [, anchor] of index.matchAll(/href="\/reference#([^"]+)"/g)) assert.ok(reference.includes(`id="${anchor}"`), `anchor ${anchor}`);
+  for (const s of sections) if (s.doc) assert.ok(index.includes(`/reference#${slug(s.doc)}`), s.doc);
 });
 
 // 7. head metadata.
 test('head metadata', () => {
   const head = index.split('</head>')[0];
-  const title = head.match(/<title>([^<]+)<\/title>/)[1];
-  assert.equal(title, 'JevLang — a policy engine for prompt-sized decisions');
+  assert.equal(head.match(/<title>([^<]+)<\/title>/)[1], `${meta.name} — ${meta.tagline}`);
   const desc = head.match(/name="description" content="([^"]+)"/)[1];
-  assert.ok(desc.length <= 160 && desc.endsWith('.'));
+  assert.ok(desc.length <= 160 && desc.endsWith('.'), `description ${desc.length} chars`);
   assert.match(head, /rel="canonical" href="https:\/\/jevlang\.sh\/"/);
   assert.ok(!head.includes('index.html'));
-  for (const p of ['og:title', 'og:description', 'og:url', 'og:type', 'og:site_name']) assert.ok(head.includes(p));
-  for (const p of ['og:image:width', 'og:image:height', 'og:image:type', 'og:image:alt']) assert.ok(head.includes(p));
-  assert.ok(head.includes('twitter:card'));
+  for (const p of ['og:title', 'og:description', 'og:url', 'og:type', 'og:site_name', 'og:image:width', 'og:image:height', 'og:image:type', 'og:image:alt', 'twitter:card', 'twitter:image']) assert.ok(head.includes(p), p);
+  assert.match(head, /og:image" content="https:\/\/jevlang\.sh\/og\.png"/);
+  assert.match(head, /media="\(prefers-color-scheme: dark\)"/);
+  assert.match(head, /media="\(prefers-color-scheme: light\)"/);
   const ld = JSON.parse(head.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
-  assert.equal(ld.name, 'JevLang');
+  assert.equal(ld.name, meta.name);
   assert.equal(ld.softwareVersion, version);
   assert.equal(ld.applicationCategory, 'DeveloperApplication');
+  assert.equal(ld.url, url('/'));
 });
 
-// 8. capability sections well-formed.
-test('capability sections', () => {
+// 8. hero and capability sections well-formed.
+test('hero and capability sections', () => {
+  assert.equal([...index.matchAll(/<h1[ >]/g)].length, 1);
+  assert.ok(meta.h1.split(/\s+/).length <= 8 && !meta.h1.endsWith('.'), 'H1: at most 8 words, no full stop');
+  const hero = index.split('<section class="hero"')[1].split('</section>')[0];
+  assert.equal([...hero.matchAll(/<a class="control|<span class="control|<details class="control/g)].length, 3, 'three controls');
+  assert.match(hero, new RegExp(`<p class="muted">Currently v${version.replace(/\./g, '\\.')}</p>`));
+  assert.equal([...hero.match(/<p class="lede">([\s\S]*?)<\/p>/)[1].matchAll(/<a href="[^"]+">/g)].length, 2, 'two real links in the lede');
+  assert.ok(sections.length >= 4);
   for (const s of sections) {
-    const sec = index.split(`<section id="${s.id}"`)[1]?.split('</section>')[0];
-    assert.ok(sec, s.id);
-    assert.ok(sec.includes('<h2'));
+    const sec = section(s.id);
+    assert.match(sec.split('\n')[0], new RegExp(`aria-labelledby="${s.id}-h"`));
+    assert.ok(sec.includes(`<h2 id="${s.id}-h">`), `${s.id}: h2`);
+    const words = s.h2.split(/\s+/).length;
+    assert.ok(words <= 6 && !s.h2.endsWith('.'), `${s.id}: H2 is ${words} words`);
     const expl = sec.match(/<p class="expl">([\s\S]*?)<\/p>/)[1].replace(/ <a href="\/reference#[^>]*>[^<]*<\/a>$/, '');
     const sentences = expl.replace(/<[^>]+>/g, '').split(/(?<=\.)\s/).filter(Boolean).length;
     assert.ok(sentences >= 1 && sentences <= 3, `${s.id}: ${sentences} sentences`);
     assert.ok(expl.includes('<code>'), `${s.id}: no inline code`);
   }
+  // Headings descend without skipping: h1, h2 sections, and no h3 outside the boundaries and footer.
+  assert.ok(!/<h4/.test(index));
 });
 
-// 9. artefacts exist; sitemap paths resolve to produced files.
+// 9. artefacts exist and say what the page says; sitemap paths resolve to files.
 test('artefacts and sitemap', () => {
-  for (const f of ['llms.txt', 'AGENTS.md', 'sitemap.xml', 'robots.txt', 'index.md']) {
-    assert.ok(existsSync(new URL(`./out/${f}`, import.meta.url)), f);
-  }
+  for (const f of ['llms.txt', 'AGENTS.md', 'sitemap.xml', 'robots.txt', 'index.md', 'og.png']) assert.ok(existsSync(new URL(`./out/${f}`, import.meta.url)), f);
   const sm = read('./out/sitemap.xml');
   for (const loc of sm.matchAll(/<loc>([^<]+)<\/loc>/g)) {
     const path = new URL(loc[1]).pathname.replace(/\/$/, '');
-    const file = path === '' ? 'index.html' : path.replace(/^\//, '') + '.html';
-    assert.ok(existsSync(new URL(`./out/${file}`, import.meta.url)), `${loc[1]} -> ${file}`);
+    assert.ok(existsSync(new URL(`./out/${path === '' ? 'index' : path.replace(/^\//, '')}.html`, import.meta.url)), loc[1]);
   }
   assert.match(read('./out/robots.txt'), /Sitemap: https:\/\/jevlang\.sh\/sitemap\.xml/);
+  const llms = read('./out/llms.txt');
+  const md = read('./out/index.md');
+  assert.match(llms, /^# JevLang\n\n> /);
+  for (const s of sections) { assert.ok(llms.includes(`## ${s.h2}`), `llms.txt: ${s.h2}`); assert.ok(md.includes(`## ${s.h2}`), `index.md: ${s.h2}`); }
+  assert.ok(llms.includes(url('/reference')) && llms.includes('https://github.com/TimMikeladze/JevLang'));
+  // The examples travel with the text: the file an agent copies is the file the page shows.
+  assert.ok(md.includes(r.file('policy.mjs').body) && llms.includes(r.file('support.mjs').body));
+  const agents = read('./out/AGENTS.md');
+  assert.ok(agents.includes('npm install jevlang') && agents.includes(r.file('policy.mjs').body));
+  for (const m of agentsMistakes) assert.ok(agents.includes(m.replace(/`/g, '').slice(0, 30)), m);
+  assert.ok(agents.includes('WebFetch') && agents.includes('Bash(rm *)'), 'the tool gate note');
 });
 
-// 10. og.png exists and really is 1200x630.
+// 10. og.png exists, and its PNG header really says 1200x630, small enough for every client.
 test('og.png dimensions', () => {
   const png = readFileSync(new URL('./out/og.png', import.meta.url));
   assert.equal(png.readUInt32BE(16), 1200);
   assert.equal(png.readUInt32BE(20), 630);
+  assert.ok(png.length < 300 * 1024, `og.png is ${png.length} bytes`);
 });
 
 // 11. links appear as the model says.
 test('link table honoured', () => {
-  const headerPart = index.split('</header>')[0];
-  const iconLabels = [...headerPart.matchAll(/aria-label="([^"]+)"[^>]*>/g)].map((m) => m[1]).filter((l) => links.some((x) => x.label === l));
-  assert.deepEqual(iconLabels, ['JevLang on GitHub', 'linesofcode on X', 'Tim Mikeladze on LinkedIn']);
-  const footerPart = index.split('<footer')[1];
-  const footerIcons = [...footerPart.matchAll(/aria-label="([^"]+)"/g)].map((m) => m[1]).filter((l) => links.some((x) => x.label === l));
-  assert.deepEqual(footerIcons, ['JevLang on GitHub', 'linesofcode on X', 'Tim Mikeladze on LinkedIn', 'linesofcode on Discord']);
-  assert.ok(headerPart.includes('href="https://github.com/TimMikeladze/JevLang"'));
-  assert.ok(index.includes('href="https://x.com/linesofcode"'));
-  assert.ok(index.includes('href="https://www.linkedin.com/in/tim-mikeladze"'));
-  assert.ok(index.includes('href="https://discord.com/users/linesofcode"'));
+  const labelsIn = (part) => [...part.matchAll(/aria-label="([^"]+)"/g)].map((m) => m[1]).filter((l) => links.some((x) => x.label === l));
+  const header = index.split('</header>')[0];
+  assert.deepEqual(labelsIn(header), ['JevLang on GitHub', 'linesofcode on X', 'Tim Mikeladze on LinkedIn']);
+  assert.deepEqual(labelsIn(index.split('<footer')[1]), ['JevLang on GitHub', 'linesofcode on X', 'Tim Mikeladze on LinkedIn', 'linesofcode on Discord']);
+  assert.ok(header.indexOf('class="head-icons"') > header.indexOf('class="site-nav"'));
+  for (const href of ['https://github.com/TimMikeladze/JevLang', 'https://x.com/linesofcode', 'https://www.linkedin.com/in/tim-mikeladze', 'https://discord.com/users/linesofcode']) assert.ok(index.includes(`href="${href}"`), href);
+  assert.match(header, /Cloud <span class="ext">↗<\/span>/);
 });
 
-// extra: enumeration tables populated from the docs.
+// extra: enumeration tables come from the docs, and the docs agree with each other.
 test('tables read from docs', () => {
   assert.ok(modulesTable(readme).length >= 8);
   assert.ok(cloudApiTable(cloudReadme).length >= 8);
+  const kinds = readmeTable(readme, 'Three kinds of question');
+  assert.deepEqual(kinds.rows.map((row) => row[0]), ['`noul`', '`choice`', '`score`']);
+  // The answers the table promises are the answers decide.mjs hands the policy.
+  const decide = r.file('decide.mjs').body;
+  for (const row of kinds.rows) assert.ok(decide.includes(row[2].replace(/`/g, '')), `decide.mjs does not contain ${row[2]}`);
+  assert.equal(readmeList(readme, 'Call it from anywhere').length, 5);
 });
 
-// extra: diagrams render inside their sections, with values read from runs.
-test('diagrams render with captured values', () => {
-  const r = makeResolver(readme);
-  for (const s of sections) for (const d of s.demos) {
-    if (d.type !== 'diagram') continue;
-    const sec = index.split(`<section id="${s.id}"`)[1].split('</section>')[0];
-    assert.ok(sec.includes('<figure class="diagram'), `${s.id}: ${d.name} missing`);
-    if (d.ref?.kind === 'terminal') {
-      const block = r.terminal(d.ref.cmd);
-      for (const re of Object.values(d.data ?? {})) figure(block, re);
-    }
-  }
-  const routed = r.terminal('node examples/ticket-router.mjs');
-  const bar = figure(routed, /needed confidence >= ([\d.]+)/);
-  assert.ok(index.includes(`gate(department, ${bar}, escalate('`));
-  const gated = r.terminal('node examples/tool-gate.mjs');
-  assert.ok(index.includes(`effect=destructive @ ${figure(gated, /effect=\w+ @ ([\d.]+)/)}`));
+// extra: diagrams read what the docs say, and say it in the right section.
+test('diagrams render with values read from the docs', () => {
+  const support = readPolicy(r.file('support.mjs').body);
+  assert.deepEqual(support.questions.map((q) => q.kind), ['choice', 'score', 'noul']);
+  assert.equal(support.gates.length, 2);
+  assert.equal(support.clauses.length, 4);
+  assert.equal(support.clauses[0].gloss, 'refund-requested? is yes (0.8 or more) and frustration is “Angry, threatening to leave”');
+
+  const answers = readAnswers(r.file('decide.mjs').body, 'an angry refund request', support.questions);
+  assert.deepEqual(answers.frustration.probabilities, [0.01, 0.04, 0.95]);
+
+  const ask = parseExplain(r.run('node ask.mjs').output.split('\n').slice(0, -1).join('\n'))[0];
+  const flow = section('how-it-works');
+  assert.ok(flow.includes('class="flow"'));
+  assert.ok(flow.includes(figure(r.file('ask.mjs').body, /const ticket = "(.*)";/)), 'the ticket is the one ask.mjs sends');
+  for (const reading of ask.readings) assert.ok(flow.includes(reading.question) && flow.includes(reading.value), reading.question);
+  assert.ok(flow.includes(`tag--${ask.action}`) && flow.includes(ask.target));
+
+  const cases = parseExplain(r.run('node decide.mjs').output);
+  assert.equal(cases.length, 3);
+  const bar = figure(r.run('node decide.mjs').output, /needed confidence >= ([\d.]+)/);
+  const meter = section('gates');
+  assert.ok(meter.includes(`gate ${bar}`) && meter.includes('meter-pin--low') && meter.includes('meter-pin--high'));
+  for (const c of cases.slice(0, 2)) assert.ok(meter.includes(String(c.readings[0].confidence)), c.name);
+
+  const ladder = section('rules');
+  assert.equal([...ladder.matchAll(/<li class="rung/g)].length, support.gates.length + support.clauses.length + 1);
+  for (const c of support.clauses) assert.ok(ladder.includes(c.target), c.target);
+
+  assert.equal([...section('questions').matchAll(/<div class="answer">/g)].length, 3);
+  assert.equal([...section('anywhere').matchAll(/<li class="door">/g)].length, 5);
+  const options = JSON.parse(r.file('gate-options.json').body);
+  const gate = section('tool-gate');
+  for (const t of [...options.deny, ...options.allow]) assert.ok(gate.includes(t), t);
+  assert.ok(section('same-engine-hosted').includes('class="flow flow--3"'));
 });
 
-// extra: syntax highlighting is applied and stays escaped.
-test('code frames highlighted and escaped', () => {
-  assert.ok(index.includes('class="tk-kw"'));
-  assert.ok(index.includes('class="tk-str"'));
-  assert.ok(index.includes('class="tk-key"'));
-  assert.ok(index.includes('class="act-assign"') || index.includes('class="act-escalate"'));
-  assert.ok(!index.includes('<pre class="frame-body"><import'));
+// extra: code frames are highlighted, escaped, copyable and labelled; live runs say so.
+test('frames', () => {
+  assert.ok(index.includes('class="tk-kw"') && index.includes('class="tk-str"') && index.includes('class="tk-key"'));
+  assert.ok(index.includes('class="act-page"') && index.includes('class="act-assign"'));
+  assert.ok(!index.includes('<pre class="frame-body"><code><import'));
+  const frames = [...index.matchAll(/<figure class="frame[^"]*">/g)].length;
+  const copies = [...index.matchAll(/class="copy-btn"[^>]*(?:data-copy-code|data-copy=)/g)].length;
+  assert.equal(copies, frames + 1, `${copies} copy buttons for ${frames} frames and the install chip`);
+  assert.ok(index.includes('<b>live run</b>'));
+  // Copying a code frame copies its text: no highlight markup in the copied source.
+  assert.ok(!/data-copy-code[^>]*>[^<]*<span class="tk-/.test(index));
+  // A README `file=` block is shown exactly as written.
+  const shown = index.match(/<pre class="frame-body"><code>([\s\S]*?)<\/code><\/pre>/)[1].replace(/<[^>]+>/g, '');
+  assert.ok(shown.length > 100);
+});
+
+// extra: boundaries are three counted columns with their figures filled in.
+test('boundaries', () => {
+  const sec = section('boundaries');
+  assert.equal([...sec.matchAll(/<div class="boundary">/g)].length, 3);
+  assert.doesNotMatch(sec, /\{\w+\}/);
+  const verify = r.run(start.verify.run).output;
+  assert.ok(sec.includes(`${figure(verify, /(\d+) pass/)} pass`));
+  for (const c of boundaries.columns) assert.ok(sec.includes(`<span>${c.items.length}</span>`));
 });
 
 // extra: the vendored cloud API table matches the sibling repo when present.

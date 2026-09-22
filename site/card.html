@@ -6,7 +6,7 @@
 <style>
 :root{
   --paper:oklch(12.5% 0 0);--band:oklch(15.5% 0 0);--raise:oklch(18.5% 0 0);
-  --ink:oklch(98.5% 0 0);--body:oklch(78% 0 0);--soft:oklch(62% 0 0);
+  --ink:oklch(98.5% 0 0);--body:oklch(78% 0 0);--soft:oklch(63% 0 0);
   --line:oklch(100% 0 0/.11);--accent:oklch(70% .16 250);
   --add:oklch(72% .17 150);--del:oklch(68% .19 20);--warn:oklch(78% .15 85);
   --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
@@ -16,9 +16,7 @@
 body{width:1200px;height:630px;background:var(--paper);color:var(--body);font-family:var(--sans);padding:72px 80px;display:flex;flex-direction:column}
 .markrow{display:flex;align-items:center;gap:22px;margin-bottom:38px}
 .mark{width:64px;height:64px}
-.gate{display:flex;align-items:center;gap:12px;font:500 17px/1 var(--mono)}
-.gate .dot{width:13px;height:13px;border-radius:50%}
-h1{color:var(--ink);font-size:76px;line-height:1.05;letter-spacing:-.04em;font-weight:700;max-width:15ch}
+h1{color:var(--ink);font-size:80px;line-height:1.05;letter-spacing:-.04em;font-weight:700}
 h1 em{font-style:normal;color:var(--accent)}
 .lede{margin-top:28px;font-size:24px;line-height:1.45;max-width:46ch;color:var(--body)}
 .lede code{font-family:var(--mono);color:var(--ink);background:var(--raise);padding:.06em .3em;border-radius:.35em;font-size:.85em}
@@ -29,18 +27,13 @@ h1 em{font-style:normal;color:var(--accent)}
 </head>
 <body>
 <div class="markrow">
-<svg class="mark" viewBox="0 0 48 48" width="64" height="64" aria-hidden="true"><rect width="48" height="48" rx="11" fill="oklch(18.5% 0 0)"/><path d="M30 12v16.5c0 4.5-3 7.5-7.5 7.5S15 33 15 29.5" fill="none" stroke="oklch(70% .16 250)" stroke-width="3.4" stroke-linecap="round"/></svg>
-<div class="gate" aria-hidden="true">
-<span class="dot" style="background:var(--del)"></span>
-<span class="dot" style="background:var(--warn)"></span>
-<span class="dot" style="background:var(--add)"></span>
-<span style="color:var(--soft)">deny · ask · allow</span>
+<svg class="mark" viewBox="0 0 48 48" width="64" height="64" aria-hidden="true"><rect width="48" height="48" rx="11" fill="oklch(18.5% 0 0)"/><path d="M30 12v16.5c0 4.5-3 7.5-7.5 7.5S15 33 15 29.5" fill="none" stroke="oklch(98.5% 0 0)" stroke-width="3.4" stroke-linecap="round"/></svg>
 </div>
-</div>
-<h1>Decide once, <em>trust</em> everywhere</h1>
-<p class="lede">A policy engine for the decisions that used to live inside a prompt. Gates escalate, actions are <code>allow · ask · deny</code>, every decision is journaled and replayable.</p>
+<h1>The model answers,<br><em>your policy</em> decides</h1>
+<p class="lede">An open source policy engine for the decisions that used to live inside a prompt.</p>
 <div class="row">
 <span class="chip">npm install jevlang</span>
+<span class="sep">·</span>
 <span>a policy engine for prompt-sized decisions</span>
 <span class="sep">·</span>
 <span>jevlang.sh</span>

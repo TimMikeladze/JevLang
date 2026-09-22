@@ -12,8 +12,8 @@ mkdirSync(outDir, { recursive: true });
 const files = {
   'index.html': renderLanding({ readme, cloudReadme }),
   'reference.html': renderReference({ readme }),
-  'index.md': pageMarkdown(),
-  'llms.txt': llmsText({ readme }),
+  'index.md': pageMarkdown({ readme, cloudReadme }),
+  'llms.txt': llmsText({ readme, cloudReadme }),
   'AGENTS.md': agentsMd({ readme }),
   'sitemap.xml': sitemap(),
   'robots.txt': robots(),

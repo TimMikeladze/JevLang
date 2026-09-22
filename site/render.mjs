@@ -1,49 +1,82 @@
-// Renderer: parses the source docs, resolves references, emits HTML, CSS, head
+// Renderer: parses the source docs, resolves references, emits HTML, the head
 // metadata and the sibling artefacts. No copy lives here (icons and markup do).
 import { readFileSync } from 'node:fs';
-import { sections as contentSections, asides, boundaries, start, links, nav, footerColumns, credit, meta, origin, repo, cloudRepo, agentsMistakes } from './content.mjs';
+import { css } from './styles.mjs';
+import { sections as contentSections, asides, boundaries, start, links, nav, footerColumns, credit, meta, origin, repo, cloudRepo, copyrightYear, agentsMistakes, agentsGateNote } from './content.mjs';
+import { esc, tag, isAction, readPolicy, readAnswers, parseExplain, decisionFlow, lifecycle, answerShapes, gateMeter, ruleLadder, toolLadder, doors } from './diagrams.mjs';
 
 export const version = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
-export const year = new Date().getFullYear();
+export const year = copyrightYear;
 
+// One rule for every absolute URL: the origin, a trailing slash on the home
+// page, and clean paths (no .html) for everything else.
 export const url = (path) => (path === '/' ? origin + '/' : origin + path.replace(/\.html$/, ''));
-
-const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 // ---------- doc parsing ----------
 
-export function fences(md) {
+// Every fenced block: its language, its `file=` attribute, its body.
+export function readBlocks(md) {
   const out = [];
-  const re = /^```[\w-]*\n([\s\S]*?)^```\s*$/gm;
+  const re = /^```([\w-]*)([^\n]*)\n([\s\S]*?)^```[ \t]*$/gm;
   let m;
-  while ((m = re.exec(md))) out.push(m[1].replace(/\n$/, ''));
+  while ((m = re.exec(md))) out.push({ lang: m[1], file: /(?:^|\s)file=(\S+)/.exec(m[2])?.[1] ?? null, body: m[3].replace(/\n$/, '') });
   return out;
 }
 
+export const fences = (md) => readBlocks(md).map((b) => b.body);
+
+// A captured run: `$ command  # comment` then the output.
+const capture = (body) => {
+  const [first, ...rest] = body.split('\n');
+  const [command, comment = ''] = first.slice(2).split('  #');
+  const c = comment.trim();
+  return { command, comment: c, live: c.startsWith('live'), output: rest.join('\n'), body };
+};
+
 export function makeResolver(md) {
-  const blocks = fences(md);
-  const terminal = (cmd) => {
-    const hits = blocks.filter((b) => {
-      const line = b.split('\n')[0];
-      if (!line.startsWith('$ ')) return false;
-      const rest = line.slice(2).split('  #')[0];
-      return rest === cmd || rest.startsWith(cmd + ' ');
-    });
-    if (hits.length !== 1) throw new Error(`terminal(${cmd}): expected 1 block, found ${hits.length}`);
+  const blocks = readBlocks(md);
+  const one = (hits, what) => {
+    if (hits.length !== 1) throw new Error(`${what}: expected 1 block, found ${hits.length}`);
     return hits[0];
   };
-  const snippet = (marker) => {
-    const hits = blocks.filter((b) => b.includes(marker));
-    if (hits.length !== 1) throw new Error(`snippet(${marker}): expected 1 block, found ${hits.length}`);
-    return hits[0];
-  };
-  return { terminal, snippet };
+  // terminal(cmd) matches a `$ command` block whose command contains cmd.
+  const terminal = (cmd) => one(blocks.filter((b) => b.body.startsWith('$ ') && capture(b.body).command.includes(cmd)), `terminal(${cmd})`).body;
+  const snippet = (marker) => one(blocks.filter((b) => b.body.includes(marker)), `snippet(${marker})`).body;
+  const file = (name) => one(blocks.filter((b) => b.file === name), `file(${name})`);
+  return { terminal, snippet, file, run: (cmd) => capture(terminal(cmd)) };
 }
 
+// A figure is read out of a block by regex, never retyped.
 export function figure(block, re) {
   const m = re.exec(block);
   if (!m) throw new Error(`figure ${re} not found in block`);
   return m[1] ?? m[0];
+}
+
+const section = (md, heading) => {
+  const at = md.search(new RegExp(`^## ${heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'm'));
+  if (at < 0) throw new Error(`README has no section '${heading}'`);
+  return md.slice(at).split(/^## /m)[1].split('\n').slice(1).join('\n');
+};
+
+// The first table under a README heading -> { head, rows } of raw cells.
+export function readmeTable(md, heading) {
+  const lines = section(md, heading).split('\n').filter((l) => l.startsWith('|'));
+  const cells = (l) => l.split('|').slice(1, -1).map((c) => c.trim());
+  if (lines.length < 3) throw new Error(`section '${heading}' has no table`);
+  return { head: cells(lines[0]), rows: lines.slice(2).map(cells) };
+}
+
+// The bullets under a heading: `- **Label** — text` -> { label, call, text }.
+export function readmeList(md, heading) {
+  const items = [...section(md, heading).matchAll(/^- \*\*(.+?)\*\* — (.+)$/gm)].map((m) => {
+    const call = /^`([^`]+)`/.exec(m[2])?.[1];
+    if (!call) throw new Error(`list item '${m[1]}' does not start with a call`);
+    const rest = m[2].replace(/^`[^`]+`[,;:\s]*/, '');
+    return { label: m[1], call, text: inlineMd(rest.charAt(0).toUpperCase() + rest.slice(1)) };
+  });
+  if (items.length < 3) throw new Error(`section '${heading}' has only ${items.length} bullets`);
+  return items;
 }
 
 // Parse the README's module bullets: - **`jevlang/x`** — description
@@ -66,10 +99,8 @@ export function cloudApiTable(cloudReadme) {
 
 // ---------- inline markdown ----------
 
-const linkTargets = { REPO: repo, CLOUDREPO: cloudRepo };
 export function inlineMd(text) {
-  let s = esc(text);
-  for (const [k, v] of Object.entries(linkTargets)) s = s.split(`(${k})`).join(`(${v})`);
+  let s = esc(text).replace(/\(REPO/g, `(${repo}`).replace(/\(CLOUDREPO/g, `(${cloudRepo}`);
   const codes = [];
   s = s.replace(/`([^`]+)`/g, (_, c) => { codes.push(c); return `\u0000${codes.length - 1}\u0000`; });
   s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, t, h) => `<a href="${h}">${t}</a>`);
@@ -82,14 +113,15 @@ export function inlineMd(text) {
 export function markdownHtml(md) {
   const out = [];
   const lines = md.split('\n');
-  let i = 0, inCode = false, codeBuf = [], list = null, table = null, para = [];
+  let i = 0, inCode = false, lang = '', codeBuf = [], list = null, item = null, table = null, para = [];
   const flushPara = () => { if (para.length) { out.push(`<p>${inlineMd(para.join(' '))}</p>`); para = []; } };
-  const flushList = () => { if (list) { out.push(`</${list}>`); list = null; } };
+  const flushItem = () => { if (item !== null) { out.push(`<li>${inlineMd(item)}</li>`); item = null; } };
+  const flushList = () => { flushItem(); if (list) { out.push(`</${list}>`); list = null; } };
   const flushTable = () => {
     if (table) {
       const [head, ...rows] = table;
-      out.push('<table><thead><tr>' + head.map((c) => `<th>${inlineMd(c)}</th>`).join('') + '</tr></thead><tbody>'
-        + rows.map((r) => '<tr>' + r.map((c) => `<td>${inlineMd(c)}</td>`).join('') + '</tr>').join('') + '</tbody></table>');
+      out.push('<div class="tablewrap"><table><thead><tr>' + head.map((c) => `<th>${inlineMd(c)}</th>`).join('') + '</tr></thead><tbody>'
+        + rows.map((r) => '<tr>' + r.map((c, i) => `<td${head.length > 2 ? ` data-label="${esc(head[i])}"` : ''}>${inlineMd(c)}</td>`).join('') + '</tr>').join('') + '</tbody></table></div>');
       table = null;
     }
   };
@@ -97,7 +129,11 @@ export function markdownHtml(md) {
     const line = lines[i];
     if (line.startsWith('```')) {
       flushPara(); flushList(); flushTable();
-      if (!inCode) { inCode = true; codeBuf = []; } else { inCode = false; out.push(`<pre><code>${esc(codeBuf.join('\n'))}</code></pre>`); }
+      if (!inCode) { inCode = true; codeBuf = []; lang = line.slice(3).split(' ')[0]; } else {
+        inCode = false;
+        const code = codeBuf.join('\n');
+        out.push(`<pre><code>${code.startsWith('$ ') ? outputHtml(code) : highlightCode(code, lang)}</code></pre>`);
+      }
       i++; continue;
     }
     if (inCode) { codeBuf.push(line); i++; continue; }
@@ -117,8 +153,10 @@ export function markdownHtml(md) {
     if (li) {
       flushPara();
       if (list !== 'ul') { flushList(); out.push('<ul>'); list = 'ul'; }
-      out.push(`<li>${inlineMd(li[1])}</li>`); i++; continue;
+      flushItem(); item = li[1]; i++; continue;
     }
+    // A wrapped bullet: an indented line continues the item above it.
+    if (list && item !== null && /^\s{2,}\S/.test(line)) { item += ' ' + line.trim(); i++; continue; }
     flushList();
     para.push(line.trim());
     i++;
@@ -132,7 +170,7 @@ export const slug = (s) => s.toLowerCase().replace(/[^\w]+/g, '-').replace(/^-|-
 // ---------- icons ----------
 
 const glyph = (d) => `<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>`;
-const brand = (d, extra = '') => `<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">${extra}<path d="${d}"/></svg>`;
+const brand = (d) => `<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="${d}"/></svg>`;
 
 const icons = {
   book: () => glyph('M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 1 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z'),
@@ -153,203 +191,40 @@ export function icon(name) {
   return f();
 }
 
-export const productMark = `<svg aria-hidden="true" width="44" height="44" viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="oklch(18.5% 0 0)"/><path d="M30 12v16.5c0 4.5-3 7.5-7.5 7.5S15 33 15 29.5" fill="none" stroke="oklch(98.5% 0 0)" stroke-width="3.4" stroke-linecap="round"/></svg>`;
+// The mark follows the theme: a raised tile with the glyph in ink. The favicon
+// below is a data URI, which cannot read the page's tokens, so it stays dark.
+export const productMark = `<svg aria-hidden="true" width="44" height="44" viewBox="0 0 48 48"><rect class="mark-tile" x=".5" y=".5" width="47" height="47" rx="11"/><path class="mark-glyph" d="M30 12v16.5c0 4.5-3 7.5-7.5 7.5S15 33 15 29.5" fill="none" stroke-width="3.4" stroke-linecap="round"/></svg>`;
 
 export const favicon = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#1c1c1c"/><path d="M30 12v16.5c0 4.5-3 7.5-7.5 7.5S15 33 15 29.5" fill="none" stroke="#f7f7f7" stroke-width="3.4" stroke-linecap="round"/></svg>`)}`;
 
-// ---------- CSS ----------
-
-export const css = String.raw`:root{color-scheme:dark;
---paper:oklch(12.5% 0 0);--band:oklch(15.5% 0 0);--raise:oklch(18.5% 0 0);
---ink:oklch(98.5% 0 0);--body:oklch(78% 0 0);--soft:oklch(62% 0 0);
---line:oklch(100% 0 0/.11);--line-soft:oklch(100% 0 0/.06);
- --accent:oklch(70% .16 250);--add:oklch(72% .17 150);--del:oklch(68% .19 20);--warn:oklch(78% .15 85);
- --violet:oklch(76% .14 300);
- --tk-kw:oklch(73% .13 250);--tk-str:oklch(74% .15 150);--tk-num:oklch(80% .13 85);--tk-fn:oklch(76% .13 300);--tk-cmt:oklch(58% 0 0);
- --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
- --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
-:root[data-theme=light]{color-scheme:light;
- --paper:oklch(99% 0 0);--band:oklch(97% 0 0);--raise:oklch(100% 0 0);
- --ink:oklch(14.5% 0 0);--body:oklch(27% 0 0);--soft:oklch(30% 0 0);
- --line:oklch(0% 0 0/.12);--line-soft:oklch(0% 0 0/.06);
- --accent:oklch(52% .18 250);--add:oklch(50% .16 150);--del:oklch(50% .19 25);--warn:oklch(55% .13 80);
- --violet:oklch(50% .15 300);
- --tk-kw:oklch(52% .14 250);--tk-str:oklch(50% .15 150);--tk-num:oklch(55% .13 80);--tk-fn:oklch(52% .14 300);--tk-cmt:oklch(48% 0 0)}
-@media (prefers-color-scheme:light){:root:not([data-theme=dark]):not([data-theme=light]){color-scheme:light;
- --paper:oklch(99% 0 0);--band:oklch(97% 0 0);--raise:oklch(100% 0 0);
- --ink:oklch(14.5% 0 0);--body:oklch(27% 0 0);--soft:oklch(30% 0 0);
- --line:oklch(0% 0 0/.12);--line-soft:oklch(0% 0 0/.06);
- --accent:oklch(52% .18 250);--add:oklch(50% .16 150);--del:oklch(50% .19 25);--warn:oklch(55% .13 80);
- --violet:oklch(50% .15 300);
- --tk-kw:oklch(52% .14 250);--tk-str:oklch(50% .15 150);--tk-num:oklch(55% .13 80);--tk-fn:oklch(52% .14 300);--tk-cmt:oklch(48% 0 0)}}
-*{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{margin:0;background:var(--paper);color:var(--body);font:1rem/1.6 var(--sans)}
-.shell{width:min(1180px,calc(100% - 3rem));margin-inline:auto}
-a{color:var(--ink);text-decoration:underline;text-underline-offset:.18em;text-decoration-color:var(--line)}
-a:hover{text-decoration-color:var(--accent)}
-code{font-family:var(--mono);font-size:.9em;color:var(--ink);background:var(--raise);padding:.1em .32em;border-radius:.28rem}
-h1,h2,h3{color:var(--ink);font-weight:700}
-h1{font-size:clamp(2.6rem,6vw,4.2rem);line-height:1.03;letter-spacing:-.04em;max-width:16ch;margin:1.1rem 0 1.2rem}
-h2{font-size:clamp(1.35rem,2.4vw,1.7rem);line-height:1.2;font-weight:650;letter-spacing:-.02em;margin:0}
-.lede{font-size:clamp(1.05rem,1.6vw,1.2rem);line-height:1.55;max-width:58ch;margin:0 0 1.6rem}
-.muted{color:var(--soft);font-size:.875rem}
-.section{padding-block:clamp(3.5rem,7vw,6rem);scroll-margin-top:4.5rem}
-.section--band{background:var(--band)}
-.section h2+.expl{margin-top:.6rem}
-.expl{max-width:68ch;margin:0}
-.demo{margin-top:1.6rem}
-.skip{position:absolute;left:-9999px}
-.skip:focus{left:1rem;top:1rem;z-index:99;background:var(--raise);color:var(--ink);padding:.5rem .8rem;border-radius:.4rem}
-:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-/* header */
-.site-head{position:sticky;top:0;z-index:10;min-height:3.75rem;background:color-mix(in oklab,var(--paper) 82%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
-.site-head .shell{display:flex;align-items:center;gap:1rem;min-height:3.75rem}
-.brand{font-weight:700;font-size:1.05rem;color:var(--ink);text-decoration:none}
-.site-nav{display:flex;gap:1.1rem}
-.site-nav a{font-size:.875rem;color:var(--soft);text-decoration:none}
-.site-nav a:hover,.site-nav a[aria-current=page]{color:var(--ink)}
-.head-icons{margin-left:auto;display:flex;align-items:center;gap:.75rem}
-.icon-link{color:var(--soft);display:inline-flex}
-.icon-link:hover{color:var(--ink)}
-.ext{font-size:.75em;opacity:.5}
-/* hero */
-.hero{padding-block:clamp(3.5rem,7vw,6rem) 0}
-.hero .mark{display:inline-block}
-.actions{display:flex;flex-wrap:wrap;gap:.7rem;align-items:center;margin:0 0 1rem}
-.control{display:inline-flex;align-items:center;gap:.5rem;padding:.62rem .85rem;border-radius:.6rem;border:1px solid var(--line);background:var(--raise);color:var(--ink);font:500 .9rem/1.15 var(--sans);text-decoration:none;transition:background .14s ease,border-color .14s ease;cursor:pointer}
-.control:hover{border-color:var(--line);background:color-mix(in oklab,var(--raise) 80%,var(--ink) 4%)}
-.control code{font:.88rem/1 var(--mono);background:none;padding:0}
-.control--solid{background:var(--ink);color:var(--paper);border-color:transparent;font-weight:550}
-.control--solid:hover{background:color-mix(in oklab,var(--ink) 88%,var(--paper))}
-details.control{position:relative}
-details.control summary{list-style:none;display:inline-flex;align-items:center;gap:.5rem;cursor:pointer}
-details.control summary::-webkit-details-marker{display:none}
-details.menu{position:absolute;top:calc(100% + .5rem);left:0;background:var(--raise);border:1px solid var(--line);border-radius:.6rem;padding:.4rem;display:grid;gap:.1rem;min-width:16rem;z-index:5}
-details.menu a,details.menu button{display:flex;width:100%;text-align:left;padding:.45rem .6rem;border-radius:.4rem;color:var(--body);text-decoration:none;font-size:.875rem;background:none;border:0;cursor:pointer}
-details.menu a:hover,details.menu button:hover{background:var(--band);color:var(--ink)}
-/* theme toggle */
-.theme-toggle{background:none;border:0;color:var(--soft);cursor:pointer;padding:.2rem;display:inline-flex;border-radius:.4rem}
-.theme-toggle:hover{color:var(--ink)}
-.theme-toggle .i{display:none;line-height:0}
-:root[data-theme=dark] .theme-toggle .i-dark{display:inline-flex}
-:root[data-theme=light] .theme-toggle .i-light{display:inline-flex}
-:root[data-theme=system] .theme-toggle .i-system,:root:not([data-theme]) .theme-toggle .i-system{display:inline-flex}
-/* demo frames */
-.frame{border:1px solid var(--line);border-radius:.7rem;overflow:hidden;background:var(--paper);margin-inline:0}
-.frame--stacked+.frame--stacked{margin-top:1rem}
-.frame-bar{display:flex;align-items:center;gap:.75rem;background:var(--band);border-bottom:1px solid var(--line-soft);padding:.55rem .9rem;font:500 .8rem/1 var(--mono);color:var(--soft)}
-.frame-bar .dots{display:flex;gap:6px}
-.dot{width:10px;height:10px;border-radius:50%}
-.dot:nth-child(1){background:oklch(66% .19 25)}
-.dot:nth-child(2){background:oklch(78% .15 85)}
-.dot:nth-child(3){background:oklch(70% .17 150)}
-.frame-bar .chip{margin-left:auto;border:1px solid var(--line-soft);border-radius:.4rem;padding:.2rem .5rem;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em}
-.frame-bar .chip--captured{color:var(--add)}
-.frame-body{margin:0;padding:1rem .9rem;font:.8rem/1.6 var(--mono);color:var(--body);overflow-x:auto;background:var(--paper);white-space:pre-wrap;word-break:break-word}
-.frame-body .cmd{color:var(--ink);font-weight:600}
-.tk-kw{color:var(--tk-kw)}.tk-str{color:var(--tk-str)}.tk-num{color:var(--tk-num)}.tk-fn{color:var(--tk-fn)}.tk-cmt{color:var(--tk-cmt);font-style:italic}
-.tk-key{color:var(--accent)}
-.act-assign{color:var(--add);font-weight:600}.act-escalate{color:var(--warn);font-weight:600}.act-page{color:var(--warn);font-weight:600}.act-hold{color:var(--del);font-weight:600}.act-deny{color:var(--del);font-weight:600}.act-ask{color:var(--warn);font-weight:600}.act-allow{color:var(--add);font-weight:600}
-.demo+.demo{margin-top:1rem}
-/* diagrams */
-.diagram{border:1px solid var(--line);border-radius:.7rem;background:var(--paper);padding:1.4rem 1.2rem 1rem;margin-inline:0;overflow-x:auto}
-.diagram svg{display:block;width:100%;height:auto;min-width:640px}
-.diagram figcaption{margin-top:.7rem;font:.72rem/1.5 var(--mono);color:var(--soft);letter-spacing:.02em}
-.dg-box{fill:var(--raise);stroke:color-mix(in oklab,var(--body) 38%,transparent);stroke-width:1}
-text.dg-node{font-family:var(--mono);fill:var(--ink);font-size:15px;font-weight:600}
-.dg-sub{font-family:var(--mono);fill:var(--body);font-size:11.5px;font-weight:400}
-.dg-note{font-family:var(--mono);fill:var(--body);font-size:11.5px}
-.dg-edge{stroke:color-mix(in oklab,var(--body) 48%,transparent);stroke-width:1.4;fill:none}
-.dg-arrow{fill:color-mix(in oklab,var(--body) 58%,transparent)}
-.dg-axis{stroke:color-mix(in oklab,var(--body) 60%,transparent)}
-.dg-tick{stroke:color-mix(in oklab,var(--body) 48%,transparent)}
-.dg-accent{stroke:var(--accent)}.dg-add{stroke:var(--add)}.dg-warn{stroke:var(--warn)}.dg-del{stroke:var(--del)}
-.dg-tint-add{fill:color-mix(in oklab,var(--add) 13%,transparent)}
-.dg-tint-del{fill:color-mix(in oklab,var(--del) 14%,transparent)}
-.dg-lane{stroke:var(--accent);stroke-dasharray:3 5;stroke-width:1.2}
-/* figures */
-.figures{display:flex;gap:2rem;flex-wrap:wrap;margin:0 0 .8rem}
-.figure b{display:block;font:650 1.15rem/1.2 var(--mono);color:var(--accent)}
-.figure span{font:.8rem/1.4 var(--mono);color:var(--soft)}
-/* tables */
-.tablewrap{margin-top:1.6rem;overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:.9rem}
-th{font:600 .72rem/1.4 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--soft);text-align:left;padding:.55rem .9rem .35rem}
-td{padding:.55rem .9rem;border-top:1px solid var(--line-soft);color:var(--body);vertical-align:top}
-td:first-child{font-family:var(--mono);font-size:.82rem;color:var(--ink);white-space:nowrap}
-/* boundaries */
-.boundaries{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line-soft);border:1px solid var(--line-soft);border-radius:.7rem;overflow:hidden;margin-top:1.6rem}
-.boundary{background:var(--paper);padding:1.4rem 1.3rem;border-top:3px solid transparent}
-.boundary:nth-child(1){border-top-color:var(--add)}
-.boundary:nth-child(2){border-top-color:var(--warn)}
-.boundary:nth-child(3){border-top-color:var(--del)}
-.boundary:nth-child(1) h3{color:var(--add)}
-.boundary:nth-child(2) h3{color:var(--warn)}
-.boundary:nth-child(3) h3{color:var(--del)}
-.boundary h3{font:600 .85rem/1.2 var(--sans);margin:0 0 .8rem;color:var(--ink)}
-.boundary li{margin:.5rem 0;font-size:.9rem;line-height:1.5}
-.boundary ul{margin:0;padding-left:1.1rem}
-/* aside */
-.aside{padding-block:1.4rem;border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft);background:var(--paper)}
-.aside p{margin:0;max-width:68ch;font-size:.95rem}
-/* start */
-.panels{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:1.6rem}
-.panels>*{min-width:0}
-.panels .frame{height:100%}
-/* footer */
-.site-foot{border-top:1px solid var(--line);padding-block:3rem 2rem;margin-top:clamp(3.5rem,7vw,6rem)}
-.site-foot .credit{max-width:60ch;color:var(--soft);font-size:.9rem;margin:0 0 2rem}
-.foot-cols{display:flex;gap:4rem;flex-wrap:wrap}
-.foot-col h3{font:600 .85rem/1.3 var(--sans);margin:0 0 .6rem}
-.foot-col a{display:block;font-size:.85rem;color:var(--soft);text-decoration:none;padding:.18rem 0}
-.foot-col a:hover{color:var(--ink)}
-.foot-icons{display:flex;gap:.9rem;margin:2rem 0 0}
-.copyright{margin-top:2.2rem;font-size:.8rem;color:var(--soft)}
-/* reference page */
-.ref-layout{display:grid;grid-template-columns:230px minmax(0,1fr);gap:3rem;padding-block:clamp(2.5rem,5vw,4rem)}
-.ref-layout>*{min-width:0}
-.ref-toc{position:sticky;top:4.5rem;align-self:start;max-height:calc(100vh - 6rem);overflow:auto}
-.ref-toc a{display:block;font-size:.8rem;color:var(--soft);text-decoration:none;padding:.22rem 0}
-.ref-toc a:hover{color:var(--ink)}
-.ref-toc .toc-title{font:600 .72rem/1.4 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--soft);margin:0 0 .6rem}
-.ref-doc{max-width:76ch}
-.ref-doc h1{font-size:clamp(2rem,4vw,2.8rem)}
-.ref-doc h2{font-size:1.4rem;margin:2.4rem 0 .8rem;scroll-margin-top:4.5rem}
-.ref-doc pre{background:var(--raise);border:1px solid var(--line-soft);border-radius:.6rem;padding:1rem;overflow-x:auto}
-.ref-doc pre code{background:none;padding:0;font-size:.82rem;line-height:1.6}
-.ref-doc table td:first-child{white-space:normal}
-.ref-doc li{margin:.3rem 0}
-@media (max-width:900px){.ref-layout{grid-template-columns:1fr}.ref-toc{position:static;max-height:none;border-bottom:1px solid var(--line-soft);padding-bottom:1rem}}
-@media (max-width:720px){
-.site-nav{display:none}
-.panels{grid-template-columns:1fr}
-.boundaries{grid-template-columns:1fr}
-h1{font-size:2.6rem}
-.frame{border-radius:0;border-left:0;border-right:0}
-}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto}}`;
-
 // ---------- script ----------
 
+// The one script: it resolves the stored theme before first paint (it sits in
+// <head>), cycles system, dark, light on the toggle, and copies text. With it
+// removed the page is dark, follows the OS through the media query, and only
+// the copy buttons (which exist only when this runs) go away.
 export const bootScript = `<script>
 (function(){
-var KEY='jevlang-theme',root=document.documentElement,mq=matchMedia('(prefers-color-scheme: dark)');
-function apply(t){root.dataset.theme=t;var b=document.getElementById('theme-toggle');if(b)b.setAttribute('aria-label','Theme: '+t+'. Click to change');}
-var stored=null;try{stored=localStorage.getItem(KEY)}catch(e){}
-apply(stored&&['dark','light'].includes(stored)?stored:'system');
-mq.addEventListener('change',function(){if(!localStorage.getItem(KEY))apply('system')});
+var K='jevlang-theme',r=document.documentElement,mq=matchMedia('(prefers-color-scheme: dark)');
+function saved(){try{var s=localStorage.getItem(K);return s==='dark'||s==='light'?s:'system'}catch(e){return'system'}}
+function set(p){r.dataset.pref=p;r.dataset.theme=p==='system'?(mq.matches?'dark':'light'):p;var b=document.getElementById('theme-toggle');if(b)b.setAttribute('aria-label','Theme: '+p+'. Click to change')}
+set(saved());r.dataset.js='';
+document.addEventListener('DOMContentLoaded',function(){set(r.dataset.pref)});
+mq.addEventListener('change',function(){if(r.dataset.pref==='system')set('system')});
 document.addEventListener('click',function(e){
-var t=e.target.closest('#theme-toggle');if(t){var cur=root.dataset.theme;var next={system:'dark',dark:'light',light:'system'}[cur];try{localStorage.setItem(KEY,next)}catch(_){}apply(next);return;}
-var c=e.target.closest('[data-copy]');if(c&&navigator.clipboard){navigator.clipboard.writeText(c.dataset.copy).then(function(){var s=c.querySelector('.copy-state');if(s){s.textContent=' copied'}setTimeout(function(){if(s)s.textContent=''},1200)});return;}
-var m=e.target.closest('[data-copy-markdown]');if(m&&navigator.clipboard){fetch('/index.md').then(function(r){return r.text()}).then(function(t){navigator.clipboard.writeText(t);m.textContent='Copied';setTimeout(function(){m.textContent='Copy page as Markdown'},1200);});}
+var t=e.target.closest('#theme-toggle');
+if(t){var n={system:'dark',dark:'light',light:'system'}[r.dataset.pref];try{n==='system'?localStorage.removeItem(K):localStorage.setItem(K,n)}catch(x){}set(n);return}
+var c=e.target.closest('[data-copy],[data-copy-code],[data-copy-markdown]');
+if(!c||!navigator.clipboard)return;
+var f=c.hasAttribute('data-copy-markdown')?fetch('/index.md').then(function(x){return x.text()}):Promise.resolve(c.hasAttribute('data-copy')?c.dataset.copy:c.closest('figure').querySelector('.frame-body').textContent);
+f.then(function(v){return navigator.clipboard.writeText(v)}).then(function(){c.dataset.done='';setTimeout(function(){delete c.dataset.done},1400)})
 });
 })();
 </script>`;
 
 // ---------- head ----------
 
-export function head({ title, description, canonical, activeNav, bodyId }) {
+export function head({ title, description, canonical }) {
   return `<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -372,6 +247,7 @@ export function head({ title, description, canonical, activeNav, bodyId }) {
 <meta name="twitter:image" content="${origin}/og.png">
 <link rel="icon" href="${favicon}">
 <script type="application/ld+json">${JSON.stringify(jsonLd())}</script>
+${bootScript}
 <style>${css}</style>
 </head>`;
 }
@@ -387,25 +263,24 @@ function jsonLd() {
 
 // ---------- header / footer ----------
 
+const resolveHref = (h) => (h === 'repo' ? repo : h);
 const iconLink = (l) => `<a class="icon-link" href="${esc(resolveHref(l.href))}" aria-label="${esc(l.label)}">${icon(l.icon)}</a>`;
 
-function resolveHref(h) { return h === 'repo' ? repo : h; }
-
 export function header(active) {
-  const navLinks = nav.map((n) => `<a href="${esc(n.href)}"${n.external ? ` class="ext" target="_blank" rel="noopener"` : ''}${n.href === active ? ' aria-current="page"' : ''}>${esc(n.label)}${n.external ? ' <span class="ext">↗</span>' : ''}</a>`).join('');
+  const navLinks = nav.map((n) => `<a href="${esc(n.href)}"${n.external ? ' target="_blank" rel="noopener"' : ''}${n.href === active ? ' aria-current="page"' : ''}>${esc(n.label)}${n.external ? ' <span class="ext">↗</span>' : ''}</a>`).join('');
   const iconsRight = links.filter((l) => l.where.includes('header')).map(iconLink).join('');
   return `<a class="skip" href="#main">Skip to content</a>
 <header class="site-head"><div class="shell">
-<a class="brand" href="/">JevLang</a>
+<a class="brand" href="/">${esc(meta.name)}</a>
 <nav class="site-nav" aria-label="Site">${navLinks}</nav>
 <div class="head-icons">${iconsRight}
-<button id="theme-toggle" class="theme-toggle" aria-label="Theme: system. Click to change"><span class="i i-system">${icon('monitor')}</span><span class="i i-dark">${icon('moon')}</span><span class="i i-light">${icon('sun')}</span></button>
+<button id="theme-toggle" class="theme-toggle" type="button" aria-label="Theme: system. Click to change"><span class="i i-system">${icon('monitor')}</span><span class="i i-dark">${icon('moon')}</span><span class="i i-light">${icon('sun')}</span></button>
 </div>
 </div></header>`;
 }
 
 export function footer() {
-  const cols = footerColumns.map((c) => `<div class="foot-col"><h3>${esc(c.title)}</h3>${c.links.map((l) => `<a href="${esc(resolveHref(l.href))}">${esc(l.label)}${l.external ? ' <span class="ext">↗</span>' : ''}</a>`).join('')}</div>`).join('');
+  const cols = footerColumns.map((c) => `<div class="foot-col"><h3>${esc(c.title)}</h3>${c.links.map((l) => `<a href="${esc(resolveHref(l.href))}"${l.external ? ' target="_blank" rel="noopener"' : ''}>${esc(l.label)}${l.external ? ' <span class="ext">↗</span>' : ''}</a>`).join('')}</div>`).join('');
   const iconRow = links.filter((l) => l.where.includes('footer')).map(iconLink).join('');
   return `<footer class="site-foot"><div class="shell">
 <p class="credit">${esc(credit)}</p>
@@ -415,11 +290,9 @@ export function footer() {
 </div></footer>`;
 }
 
-// ---------- demo renderers ----------
+// ---------- syntax colour (deterministic) ----------
 
-// ---------- syntax highlighting (deterministic) ----------
-
-const TS_KEYWORDS = new Set(['import', 'from', 'export', 'const', 'let', 'return', 'if', 'else', 'new', 'true', 'false', 'null', 'undefined', 'function', 'await', 'async', 'of', 'in', 'for', 'while', 'type', 'interface']);
+const TS_KEYWORDS = new Set(['import', 'from', 'export', 'const', 'let', 'return', 'if', 'else', 'new', 'true', 'false', 'null', 'undefined', 'function', 'await', 'async', 'of', 'in', 'for', 'while', 'type', 'interface', 'try', 'catch']);
 
 export function highlightTs(src) {
   let out = '';
@@ -428,9 +301,9 @@ export function highlightTs(src) {
   while (i < src.length) {
     const rest = src.slice(i);
     let m;
-    if ((m = rest.match(/^\/\/[^\n]*/))) { push('cmt', m[0]); }
-    else if ((m = rest.match(/^'(?:[^'\\\n]|\\.)*'?|^"(?:[^"\\\n]|\\.)*"?/))) { push('str', m[0]); }
-    else if ((m = rest.match(/^\d[\d.]*/))) { push('num', m[0]); }
+    if ((m = rest.match(/^\/\/[^\n]*/))) push('cmt', m[0]);
+    else if ((m = rest.match(/^'(?:[^'\\\n]|\\.)*'?|^"(?:[^"\\\n]|\\.)*"?|^`(?:[^`\\]|\\.)*`?/))) push('str', m[0]);
+    else if ((m = rest.match(/^\d[\d.]*/))) push('num', m[0]);
     else if ((m = rest.match(/^[A-Za-z_$][\w$]*/))) {
       const w = m[0];
       if (TS_KEYWORDS.has(w)) push('kw', w);
@@ -442,243 +315,224 @@ export function highlightTs(src) {
   return out;
 }
 
-const ACTION_CLASS = { assign: 'act-assign', escalate: 'act-escalate', page: 'act-page', hold: 'act-hold', deny: 'act-deny', ask: 'act-ask', allow: 'act-allow' };
+export function highlightJson(src) {
+  return src.replace(/("(?:[^"\\\n]|\\.)*")(\s*:)?|\b(true|false|null)\b|(-?\d[\d.]*)|([\s\S])/g, (all, str, colon, kw, num, other) => {
+    if (str) return colon ? `<span class="tk-key">${esc(str)}</span>${colon}` : `<span class="tk-str">${esc(str)}</span>`;
+    if (kw) return `<span class="tk-kw">${kw}</span>`;
+    if (num) return `<span class="tk-num">${num}</span>`;
+    return esc(other);
+  });
+}
 
-function terminalLine(raw) {
+export function highlightCode(code, lang) {
+  if (['js', 'mjs', 'ts', 'typescript', 'javascript'].includes(lang)) return highlightTs(code);
+  if (lang === 'json') return highlightJson(code);
+  return esc(code);
+}
+
+// Captured output, coloured by meaning: the action an explain run names, the
+// fix line under an error, the keys of a JSON answer.
+export function outputHtml(text) {
+  let afterError = false;
+  return text.split('\n').map((line) => {
+    let m;
+    if (line.startsWith('$ ')) { afterError = false; return `<span class="cmd">${esc(line)}</span>`; }
+    if (/^# /.test(line)) { afterError = false; return `<span class="tk-cmt">${esc(line)}</span>`; }
+    if ((m = /^(\w+)( [^\s/]\S*)?( {2}\/\/ .*)?$/.exec(line)) && isAction(m[1])) {
+      return `<span class="act-${m[1]}">${m[1]}</span>${m[2] ? `<span class="tk-ink">${esc(m[2])}</span>` : ''}${m[3] ? `<span class="tk-cmt">${esc(m[3])}</span>` : ''}`;
+    }
+    if (/^ {2}(route|gate) \d+/.test(line) || /^ {2}because$/.test(line)) return `<span class="tk-dim">${esc(line)}</span>`;
+    if ((m = /^( {4})(\S+) = (\S+)(.*)$/.exec(line))) return `${m[1]}<span class="tk-ink">${esc(m[2])}</span> = ${/^-?[\d.]+$/.test(m[3]) ? `<span class="tk-num">${esc(m[3])}</span>` : `<span class="tk-ink">${esc(m[3])}</span>`}<span class="tk-dim">${esc(m[4])}</span>`;
+    if ((m = /^(\$\.[^:]*:)(.*)$/.exec(line))) { afterError = true; return `<span class="tk-dim">${esc(m[1])}</span>${esc(m[2])}`; }
+    if (afterError && /^ {2}\S/.test(line)) return `<span class="tk-fix">${esc(line)}</span>`;
+    if (/^answered by /.test(line)) return `<span class="tk-dim">${esc(line)}</span>`;
+    if (line.startsWith('{')) return jsonLine(line);
+    return esc(line);
+  }).join('\n');
+}
+
+function jsonLine(raw) {
   let s = esc(raw);
   const Q = '&quot;';
-  s = s.replace(new RegExp(`${Q}action${Q}:${Q}(\\w+)${Q}`, 'g'), (_, a) => `${Q}action${Q}:<span class="${ACTION_CLASS[a] ?? ''}">${Q}${a}${Q}</span>`);
-  s = s.replace(new RegExp(`${Q}(\\w+[?]?|\\?[\\w-]+)${Q}:`, 'g'), `<span class="tk-key">${Q}$1${Q}</span>:`);
+  s = s.replace(new RegExp(`${Q}(action|permissionDecision)${Q}:${Q}(\\w+)${Q}`, 'g'), (_, k, a) => `<span class="tk-key">${Q}${k}${Q}</span>:<span class="act-${a}">${Q}${a}${Q}</span>`);
+  s = s.replace(new RegExp(`(?<!class=)${Q}([\\w?]+)${Q}:`, 'g'), `<span class="tk-key">${Q}$1${Q}</span>:`);
   s = s.replace(/:(-?\d+\.?\d*)([,}\]])/g, ':<span class="tk-num">$1</span>$2');
   return s;
 }
 
-function codeFrame(label, text) {
-  return `<figure class="frame frame--stacked demo">
-<div class="frame-bar"><span class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span><span>${esc(label)}</span><span class="chip">source</span></div>
-<pre class="frame-body">${highlightTs(text)}</pre>
+// ---------- frames ----------
+
+const dots = '<span class="dots" aria-hidden="true"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>';
+const copyCode = (label) => `<button class="copy-btn" type="button" data-copy-code aria-label="Copy ${esc(label)}">${icon('copy')}<span class="lbl">Copy</span><span class="lbl-done">Copied</span></button>`;
+const copyText = (text, label) => `<button class="copy-btn" type="button" data-copy="${esc(text)}" aria-label="Copy ${esc(label)}">${icon('copy')}<span class="lbl">Copy</span><span class="lbl-done">Copied</span></button>`;
+
+function codeFrame({ name, code, lang }) {
+  return `<figure class="frame">
+<div class="frame-bar">${dots}<span class="name">${esc(name)}</span>${copyCode(name)}</div>
+<pre class="frame-body"><code>${highlightCode(code, lang)}</code></pre>
 </figure>`;
 }
 
-function terminalFrame(cmd, text) {
-  const body = text.split('\n').map((l) => (l.startsWith('$ ') ? `<span class="cmd">${esc(l)}</span>` : terminalLine(l))).join('\n');
-  return `<figure class="frame frame--stacked demo">
-<div class="frame-bar"><span>$ ${esc(cmd)}</span><span class="chip chip--captured">captured output</span></div>
-<pre class="frame-body">${body}</pre>
+const noteHtml = (cap) => {
+  if (!cap.comment) return '';
+  const text = cap.live ? `<b>live run</b> · ${esc(cap.comment.replace(/^live:\s*/, ''))}` : esc(cap.comment);
+  return `<figcaption class="frame-note">${text}</figcaption>`;
+};
+
+function commandFrame(command) {
+  return `<figure class="frame cmdline"><div class="frame-bar frame-bar--cmd"><span class="name"><b>$</b> ${esc(command)}</span>${copyText(command, 'command')}</div></figure>`;
+}
+
+function runFrame(cap) {
+  return `<figure class="frame">
+<div class="frame-bar frame-bar--cmd"><span class="name"><b>$</b> ${esc(cap.command)}</span>${copyText(cap.command, 'command')}<span class="chip chip--captured">captured output</span></div>
+<pre class="frame-body frame-body--out">${outputHtml(cap.output)}</pre>
+${noteHtml(cap)}
 </figure>`;
 }
 
-// ---------- diagrams ----------
-// Named, drawn here, data injected from captured runs by the caller. The title
-// bar is reserved for captured artefacts, so diagrams render as plain figures.
-
-const DG_DEFS = (id) => `<defs><marker id="${id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dg-arrow" d="M0 0L10 5L0 10z"/></marker></defs>`;
-const DG_NODE = (x, y, w, h, cls = '') => `<rect class="dg-box ${cls}" x="${x}" y="${y}" width="${w}" height="${h}" rx="10"/>`;
-const DG_TEXT = (x, y, t, cls = '') => `<text x="${x}" y="${y}" text-anchor="middle" ${cls ? `class="${cls}"` : 'class="dg-node"'}>${esc(t)}</text>`;
-const DG_EDGE = (d, marker = true) => `<path class="dg-edge" d="${d}"${marker ? ` marker-end="url(#dg)"` : ''}/>`;
-
-const diagramDrawers = {
-  pipeline() {
-    return `<svg viewBox="0 0 1040 216" role="img" aria-label="How a decision flows: answers in, questions asked and validated, gates checked, route clauses evaluated, action out, journal signed. The provider is the only optional call that leaves the machine.">
-${DG_DEFS('dg')}
-${DG_NODE(8, 56, 118, 60)}${DG_TEXT(67, 82, 'answers')}${DG_TEXT(67, 101, 'decide(input)', 'dg-sub')}
-${DG_NODE(166, 56, 200, 60, 'dg-accent')}${DG_TEXT(266, 82, 'questions')}${DG_TEXT(266, 101, 'noul · choice · score', 'dg-sub')}
-${DG_NODE(410, 56, 150, 60, 'dg-warn')}${DG_TEXT(485, 82, 'gates')}${DG_TEXT(485, 101, 'gate(q, bar)', 'dg-sub')}
-${DG_NODE(604, 56, 150, 60, 'dg-add')}${DG_TEXT(679, 82, 'route')}${DG_TEXT(679, 101, 'rule → action', 'dg-sub')}
-${DG_NODE(798, 56, 234, 60)}${DG_TEXT(915, 82, 'journal')}${DG_TEXT(915, 101, 'signed · replayable', 'dg-sub')}
-${DG_TEXT(266, 44, 'validated', 'dg-note')}${DG_TEXT(485, 44, 'fail safe', 'dg-note')}${DG_TEXT(679, 44, 'first match wins', 'dg-note')}${DG_TEXT(915, 44, 'byte-for-byte fixtures', 'dg-note')}
-${DG_EDGE('M126 86L162 86')}${DG_EDGE('M366 86L406 86')}${DG_EDGE('M560 86L600 86')}${DG_EDGE('M754 86L794 86')}
-${DG_NODE(166, 160, 200, 46, 'dg-accent')}${DG_TEXT(266, 181, 'provider', 'dg-node')}${DG_TEXT(266, 198, 'evaluateWithProvider', 'dg-sub')}
-<path class="dg-lane" d="M266 160V122" marker-end="url(#dg)"/>
-<text x="798" y="181" class="dg-note" text-anchor="start">the one call that leaves the machine — a precheck that already decides makes no call at all</text>
-</svg>`;
-  },
-
-  'gate-meter'({ bar, passes, fails }) {
-    const X = (v) => 80 + 900 * v;
-    return `<svg viewBox="0 0 1040 168" role="img" aria-label="Confidence axis from 0 to 1. The gate bar at ${bar} divides it: at or above, the ticket routes; below, it escalates to a human. The captured run tried ${passes}, which routed, and ${fails}, which escalated.">
-${DG_DEFS('dg')}
-<rect class="dg-tint-del" x="80" y="86" width="${X(bar) - 80}" height="28"/>
-<rect class="dg-tint-add" x="${X(bar)}" y="86" width="${980 - X(bar)}" height="28"/>
-<text x="${(80 + X(bar)) / 2}" y="80" text-anchor="middle" class="dg-note" fill="var(--del)">escalate</text>
-<text x="${(X(bar) + 980) / 2}" y="80" text-anchor="middle" class="dg-note" fill="var(--add)">route</text>
-<line class="dg-axis" x1="80" y1="100" x2="980" y2="100" stroke-width="1.4"/>
-${[0, 0.25, 0.5, 0.75, 1].map((t) => `<line class="dg-tick" x1="${X(t)}" y1="96" x2="${X(t)}" y2="104"/><text x="${X(t)}" y="126" text-anchor="middle" class="dg-note">${t}</text>`).join('')}
-<line x1="${X(bar)}" y1="58" x2="${X(bar)}" y2="114" class="dg-accent" stroke="var(--accent)" stroke-width="2"/>
-<text x="${X(bar)}" y="44" text-anchor="middle" class="dg-note" fill="var(--accent)">gate(department, ${bar}, escalate('human-triage'))</text>
-<circle cx="${X(passes)}" cy="100" r="6" fill="var(--add)"/>
-<text x="${X(passes)}" y="70" text-anchor="middle" class="dg-note" fill="var(--add)">${passes} → assign 'billing-queue'</text>
-<circle cx="${X(fails)}" cy="100" r="6" fill="var(--del)"/>
-<text x="${X(fails)}" y="152" text-anchor="middle" class="dg-note" fill="var(--del)">${fails} → escalate 'human-triage'</text>
-</svg>`;
-  },
-
-  'router-tree'() {
-    const rows = [20, 80, 140, 200];
-    const clauses = ["1 · all(refund ≥ 0.8, angry)", "2 · department.is('billing')", "3 · department.is('technical')", "4 · department.is('sales')"];
-    const targets = [["page('retention-oncall')", 'dg-warn'], ["assign('billing-queue')", 'dg-add'], ["assign('engineering-oncall')", 'dg-add'], ["assign('sales-inbox')", 'dg-add']];
-    const edge = (y) => `M128 160C190 160 190 ${y + 22} 246 ${y + 22}`;
-    return `<svg viewBox="0 0 1040 316" role="img" aria-label="The ticket router as a tree: a ticket enters, four ordered clauses are tried in order, and the first match decides the target. Below either gate bar, the ticket escalates to human triage instead.">
-${DG_DEFS('dg')}
-${DG_NODE(8, 136, 120, 48)}${DG_TEXT(68, 165, 'ticket')}
-${clauses.map((c, i) => DG_NODE(250, rows[i], 300, 44) + DG_TEXT(400, rows[i] + 27, c, 'dg-sub')).join('')}
-${targets.map(([t, cls], i) => DG_NODE(680, rows[i], 352, 44, cls) + DG_TEXT(856, rows[i] + 27, t, 'dg-sub')).join('')}
-${rows.map((y) => DG_EDGE(edge(y))).join('')}
-${rows.map((y) => DG_EDGE(`M550 ${y + 22}L676 ${y + 22}`)).join('')}
-${DG_NODE(680, 268, 352, 44, 'dg-warn')}${DG_TEXT(856, 295, "escalate('human-triage')", 'dg-sub')}
-${DG_EDGE('M68 184C68 296 400 290 676 290')}
-<text x="250" y="300" class="dg-note" text-anchor="start">below gate(0.8) or gate(0.7)</text>
-</svg>`;
-  },
-
-  'gate-verdict'({ effect }) {
-    return `<svg viewBox="0 0 1040 252" role="img" aria-label="A tool call is checked two ways: hard rules deny before the model is ever called, and questions about effect and secret leaks are asked of the model. The verdict is allow, ask or deny — and anything the policy cannot decide denies.">
-${DG_DEFS('dg')}
-${DG_NODE(8, 60, 250, 52)}${DG_TEXT(133, 92, 'Bash(rm -rf build)', 'dg-sub')}
-${DG_NODE(330, 16, 250, 52, 'dg-del')}${DG_TEXT(455, 38, 'hard rules — no model')}${DG_TEXT(455, 56, "Bash(rm *) → deny", 'dg-sub')}
-${DG_NODE(330, 120, 250, 52, 'dg-accent')}${DG_TEXT(455, 142, 'questions')}${DG_TEXT(455, 160, "effect · leaks-secrets?  effect=destructive @ ${effect}", 'dg-sub')}
-${DG_NODE(680, 16, 180, 48, 'dg-add')}${DG_TEXT(770, 45, 'allow')}
-${DG_NODE(680, 98, 180, 48, 'dg-warn')}${DG_TEXT(770, 127, 'ask')}
-${DG_NODE(680, 180, 180, 48, 'dg-del')}${DG_TEXT(770, 209, 'deny')}
-${DG_EDGE('M258 78C290 70 296 42 326 42')}${DG_EDGE('M258 94C290 106 296 146 326 146')}
-${DG_EDGE('M580 42C620 42 630 190 676 198')}
-${DG_EDGE('M580 140C620 132 630 130 676 126')}
-${DG_EDGE('M580 160C620 176 630 214 676 218')}
-<text x="680" y="243" class="dg-note" text-anchor="start" fill="var(--del)">fails closed — anything the policy can't decide denies and says so</text>
-</svg>`;
-  },
-
-  'cloud-lifecycle'() {
-    return `<svg viewBox="0 0 1040 150" role="img" aria-label="The hosted lifecycle: deploy produces an immutable snapshot, promote with an expected fingerprint is the only thing that moves production, and recorded cases replay against it.">
-${DG_DEFS('dg')}
-${DG_NODE(8, 40, 190, 56, 'dg-accent')}${DG_TEXT(103, 63, 'jev deploy')}${DG_TEXT(103, 82, 'immutable snapshot', 'dg-sub')}
-${DG_NODE(300, 40, 210, 56, 'dg-warn')}${DG_TEXT(405, 63, 'jev promote')}${DG_TEXT(405, 82, 'expect: fingerprint', 'dg-sub')}
-${DG_NODE(612, 40, 180, 56, 'dg-add')}${DG_TEXT(702, 63, 'production')}${DG_TEXT(702, 82, 'the running policy', 'dg-sub')}
-${DG_NODE(852, 40, 180, 56)}${DG_TEXT(942, 63, 'replay')}${DG_TEXT(942, 82, 'recorded cases', 'dg-sub')}
-${DG_EDGE('M198 68L296 68')}${DG_EDGE('M510 68L608 68')}${DG_EDGE('M792 68L848 68')}
-<text x="103" y="122" class="dg-note" text-anchor="middle">frozen artifact</text>
-<text x="405" y="122" class="dg-note" text-anchor="middle" fill="var(--warn)">the only thing that moves production</text>
-<text x="942" y="122" class="dg-note" text-anchor="middle">byte-for-byte</text>
-</svg>`;
-  },
-};
-
-const diagramCaptions = {
-  pipeline: 'diagram · how a decision flows; the dotted lane is the optional provider call',
-  'gate-meter': 'diagram · gate bar and both readings come from the captured run above',
-  'router-tree': 'diagram · examples/ticket-router.mjs as declared — clause order is policy',
-  'gate-verdict': 'diagram · jevlang/gate as a PreToolUse hook; effect confidence from the captured run',
-  'cloud-lifecycle': 'diagram · @jev/cloud: deployments are immutable, promote is the only move',
-};
-
-export function diagram(name, ctx = {}) {
-  const f = diagramDrawers[name];
-  if (!f) throw new Error(`unknown diagram: ${name}`);
-  return `<figure class="diagram demo">${f(ctx)}<figcaption>${esc(diagramCaptions[name] ?? '')}</figcaption></figure>`;
+// The run under the same frame, with a note beside each part of the output.
+function annotatedFrame(cap) {
+  const lines = cap.output.split('\n');
+  const answered = lines.at(-1);
+  if (!/^answered by /.test(answered)) throw new Error('annotated run: the last line must say who answered');
+  const [d] = parseExplain(lines.slice(0, -1).join('\n'));
+  if (lines[1].trim() !== `${d.rule} ${d.clause}, ${d.source}`) throw new Error('annotated run: line 2 is not the rule line');
+  const rows = [
+    { code: lines[0], note: '<b>The action</b>, and the reason the policy gave for it.' },
+    { code: lines[1], note: `<b>The rule that fired:</b> ${esc(d.rule)} ${esc(String(d.clause))}, a line of your policy, so every decision traces back to code.` },
+    { code: lines.slice(2, -1).join('\n'), note: '<b>What the model answered</b> for each question that rule read, with its confidence.' },
+    { code: answered, note: '<b>Who answered:</b> the provider and model that sent the answers back.' },
+  ];
+  return `<figure class="frame annotated">
+<div class="frame-bar frame-bar--cmd"><span class="name"><b>$</b> ${esc(cap.command)}</span>${copyText(cap.command, 'command')}<span class="chip chip--captured">captured output</span></div>
+<div class="frame-body">${rows.map((r) => `<div class="ann-row"><pre class="ann-code">${outputHtml(r.code)}</pre><p class="ann-note">${r.note}</p></div>`).join('\n')}</div>
+${noteHtml(cap)}
+</figure>`;
 }
+
+function stepsHtml(steps, r) {
+  const frames = (s) => {
+    const out = [];
+    if (s.cmd) out.push(commandFrame(s.cmd));
+    if (s.file) { const b = r.file(s.file); out.push(codeFrame({ name: s.file, code: b.body, lang: b.lang })); }
+    if (s.run) out.push(runFrame(r.run(s.run)));
+    for (const cmd of s.runs ?? []) out.push(runFrame(r.run(cmd)));
+    return out.join('\n');
+  };
+  return `<ol class="steps">${steps.map((s, i) => `<li class="step"><span class="step-n" aria-hidden="true">${i + 1}</span><div class="step-body"><p class="step-title">${s.title}</p>\n${frames(s)}</div></li>`).join('\n')}</ol>`;
+}
+
+// Wider tables label each cell, so a phone can stack them as cards.
+const table = (head, rows, cell = inlineMd) => `<div class="tablewrap"><table><thead><tr>${head.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((c, i) => `<td${head.length > 2 ? ` data-label="${esc(head[i])}"` : ''}>${i === 0 && head.length === 2 ? inlineMd('`' + c + '`') : cell(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 
 function figuresRow(figs) {
   if (!figs?.length) return '';
   return `<div class="figures">${figs.map((f) => `<div class="figure"><b>${esc(f.value)}</b><span>${esc(f.label)}</span></div>`).join('')}</div>`;
 }
 
-function moduleTable(rows) {
-  return `<div class="tablewrap"><table><thead><tr><th>Export</th><th>What it carries</th></tr></thead><tbody>${rows.map(([a, b]) => `<tr><td>${inlineMd('`' + a + '`')}</td><td>${inlineMd(b)}</td></tr>`).join('')}</tbody></table></div>`;
-}
-
-function cloudTable(rows) {
-  return `<div class="tablewrap"><table><thead><tr><th>Route</th><th>What it does</th></tr></thead><tbody>${rows.map(([a, b]) => `<tr><td>${inlineMd('`' + a + '`')}</td><td>${inlineMd(b)}</td></tr>`).join('')}</tbody></table></div>`;
-}
-
 // ---------- landing page ----------
 
-export function renderLanding({ readme, cloudReadme }) {
-  const resolve = makeResolver(readme);
-  const modules = modulesTable(readme);
-  const cloudApi = cloudApiTable(cloudReadme);
+export function renderDemo(d, ctx) {
+  const { r, readme, cloudReadme } = ctx;
+  switch (d.type) {
+    case 'source': { const b = r.file(d.file); return codeFrame({ name: d.file, code: b.body, lang: b.lang }); }
+    case 'run': return runFrame(r.run(d.run));
+    case 'annotated': return annotatedFrame(r.run(d.run));
+    case 'steps': return stepsHtml(d.steps, r);
+    case 'table': { const t = readmeTable(readme, d.table); return table(t.head, t.rows); }
+    case 'modules': return `${d.title ? `<p class="table-title">${esc(d.title)}</p>` : ''}${table(['Export', 'What it carries'], modulesTable(readme))}`;
+    case 'cloud-api': return `<p class="table-title">The API</p>${table(['Route', 'What it does'], cloudApiTable(cloudReadme))}`;
+    case 'diagram': return diagramHtml(d, ctx);
+    default: throw new Error(`unknown demo type ${d.type}`);
+  }
+}
 
-  const sectionHtml = contentSections.map((s) => {
-    const demos = s.demos.map((d) => {
-      if (d.type === 'code') return codeFrame(d.label, resolve.snippet(d.ref.marker));
-      if (d.type === 'diagram') {
-        const ctx = {};
-        if (d.ref?.kind === 'terminal') {
-          const block = resolve.terminal(d.ref.cmd);
-          for (const [k, re] of Object.entries(d.data ?? {})) ctx[k] = figure(block, re);
-        }
-        return diagram(d.name, ctx);
-      }
-      if (d.type === 'terminal') {
-        const block = resolve.terminal(d.ref.cmd);
-        const figs = d.figures?.map((f) => ({ label: f.label, value: figure(block, f.from) }));
-        return figuresRow(figs) + terminalFrame(d.ref.cmd, block);
-      }
-      if (d.type === 'modules') return moduleTable(modules);
-      if (d.type === 'cloud-api') return cloudTable(cloudApi);
-      throw new Error(`unknown demo type ${d.type}`);
-    }).join('\n');
-    const more = s.more ? `<p class="expl" style="margin-top:.6rem">${inlineMd(s.more)}</p>` : '';
-    return `<section id="${s.id}" class="section section--band" aria-labelledby="${s.id}-h">
+function diagramHtml(d, { r, readme, cloudReadme }) {
+  const policy = () => readPolicy(r.file(d.policy).body);
+  switch (d.name) {
+    case 'decision-flow': return decisionFlow({ ticket: unescapeJs(figure(r.file(d.ticket.file).body, d.ticket.from)), run: r.run(d.run).output, policy: policy() });
+    case 'answer-shapes': {
+      const p = policy();
+      const t = readmeTable(readme, d.table);
+      const kinds = t.rows.map((row) => ({ kind: row[0].replace(/`/g, ''), use: inlineMd(row[1]), answer: row[2].replace(/^`|`$/g, '') }));
+      return answerShapes({ policy: p, answers: readAnswers(r.file(d.decide).body, d.case, p.questions), kinds });
+    }
+    case 'gate-meter': return gateMeter({ cases: parseExplain(r.run(d.run).output), pass: d.pass, fail: d.fail });
+    case 'rule-ladder': return ruleLadder({ policy: policy() });
+    case 'tool-ladder': return toolLadder({ options: JSON.parse(r.file(d.options).body), questions: policy().questions.map((q) => q.id) });
+    case 'doors': return doors({ items: readmeList(readme, d.list).map((x) => ({ label: x.label, call: x.call, text: x.text })) });
+    case 'lifecycle': return lifecycle({ api: cloudApiTable(cloudReadme) });
+    default: throw new Error(`unknown diagram: ${d.name}`);
+  }
+}
+
+const unescapeJs = (s) => s.replace(/\\(["'\\])/g, '$1');
+
+// `{name}` in a boundary item is a figure from a captured run.
+const fill = (text, figs, r) => text.replace(/\{(\w+)\}/g, (_, k) => {
+  const f = figs?.[k];
+  if (!f) throw new Error(`boundary item uses {${k}} but names no figure for it`);
+  return figure(r.run(f.run).output, f.from);
+});
+
+export function renderLanding({ readme, cloudReadme }) {
+  const r = makeResolver(readme);
+  const ctx = { r, readme, cloudReadme };
+
+  const sectionHtml = contentSections.map((s, i) => {
+    const demos = s.demos.map((d) => `<div class="demo">${renderDemo(d, ctx)}</div>`).join('\n');
+    const aside = asides.filter((a) => a.before === s.id).map((a) => `<div class="aside"><div class="shell"><p>${inlineMd(a.text)}</p></div></div>`).join('\n');
+    return `${aside}<section id="${s.id}" class="section${i % 2 === 0 ? ' section--band' : ''}" aria-labelledby="${s.id}-h">
 <div class="shell">
 <h2 id="${s.id}-h">${esc(s.h2)}</h2>
 <p class="expl">${inlineMd(s.p)}${s.doc ? ` <a href="/reference#${slug(s.doc)}">Read the section.</a>` : ''}</p>
-${more}
 ${demos}
 </div>
 </section>`;
   }).join('\n');
 
-  const asideHtml = asides.map((a) => `<div class="aside"><div class="shell"><p>${inlineMd(a.text)}${a.href ? ` <a href="${esc(a.href)}">${esc(a.label)} <span class="ext">↗</span></a>` : ''}</p></div></div>`).join('\n');
-
-  // splices asides before their section
-  let body = sectionHtml;
-  for (const a of asides) {
-    body = body.replace(`<section id="${a.before}"`, `${asideHtml}<section id="${a.before}"`);
-  }
-
   const boundaryHtml = `<section id="boundaries" class="section" aria-labelledby="boundaries-h">
 <div class="shell">
 <h2 id="boundaries-h">${esc(boundaries.h2)}</h2>
-<p class="expl">What is proven, what is a judgement, and what is not here yet — the same honesty the engine ships with.</p>
+<p class="expl">${inlineMd(boundaries.intro)}</p>
 <div class="boundaries">
-${boundaries.columns.map((c) => `<div class="boundary"><h3>${esc(c.title)}</h3><ul>${c.items.map((i) => `<li>${inlineMd(i)}</li>`).join('')}</ul></div>`).join('')}
+${boundaries.columns.map((c) => `<div class="boundary"><h3>${esc(c.title)} <span>${c.items.length}</span></h3><ul>${c.items.map((i) => `<li>${inlineMd(fill(i, c.figures, r))}</li>`).join('')}</ul></div>`).join('')}
 </div>
 </div>
 </section>`;
 
+  const verify = r.run(start.verify.run);
   const startHtml = `<section id="start" class="section section--band" aria-labelledby="start-h">
 <div class="shell">
 <h2 id="start-h">${esc(start.h2)}</h2>
-<p class="expl">Two panels: install, then verify. The right one is a real run from this checkout.</p>
+<p class="expl">${inlineMd(start.p)}</p>
 <div class="panels">
-<div>
-${figuresRow(start.panels[1].figures.map((f) => ({ label: f.label, value: figure(resolve.terminal(start.panels[1].ref.cmd), f.from) })))}
-${codeFrame('shell', '$ ' + start.panels[0].command)}
-${terminalFrame(start.panels[1].ref.cmd, resolve.terminal(start.panels[1].ref.cmd))}
-</div>
+<div><p class="panel-title">Install</p>${start.install.map((c) => `<div class="demo">${commandFrame(c)}</div>`).join('')}</div>
+<div><p class="panel-title">Verify</p>${figuresRow(start.verify.figures.map((f) => ({ label: f.label, value: figure(verify.output, f.from) })))}${runFrame(verify)}</div>
 </div>
 </div>
 </section>`;
 
   const actions = `<div class="actions">
-<button class="control" data-copy="${esc(meta.install)}" aria-label="Copy install command">${icon('copy')} <code>${esc(meta.install)}</code> <span class="copy-state" aria-live="polite"></span></button>
+<span class="control control--chip"><code>${esc(meta.install)}</code><button class="copy-btn" type="button" data-copy="${esc(meta.install)}" aria-label="Copy install command">${icon('copy')}</button></span>
 <details class="control">
 <summary>${icon('chevron')} For agents</summary>
-<div class="menu">
+<div class="menu"><div class="menu-items">
 <a href="/llms.txt">llms.txt</a>
 <a href="/AGENTS.md">AGENTS.md</a>
-<button data-copy-markdown aria-label="Copy page as Markdown">Copy page as Markdown</button>
-</div>
+<button type="button" data-copy-markdown aria-label="Copy page as Markdown"><span class="lbl">Copy page as Markdown</span><span class="lbl-done">Copied</span></button>
+</div></div>
 </details>
 <a class="control control--solid" href="/reference">${icon('book')} Documentation</a>
 </div>`;
 
-  const hero = `<section class="hero"><div class="shell">
+  const hero = `<section class="hero" aria-labelledby="top"><div class="shell">
 <span class="mark">${productMark}</span>
-<h1>${esc(meta.h1)}</h1>
+<h1 id="top">${esc(meta.h1)}</h1>
 <p class="lede">${inlineMd(meta.lede)}</p>
 ${actions}
-<p class="muted">Currently v${esc(version)} · MIT license</p>
+<p class="muted">Currently v${esc(version)}</p>
 </div></section>`;
 
   return `<!doctype html>
@@ -688,12 +542,11 @@ ${head({ title: `${meta.name} — ${meta.tagline}`, description: meta.descriptio
 ${header('/')}
 <main id="main">
 ${hero}
-${body}
+${sectionHtml}
 ${boundaryHtml}
 ${startHtml}
 </main>
 ${footer()}
-${bootScript}
 </body>
 </html>`;
 }
@@ -715,49 +568,74 @@ ${html}
 </article>
 </div></main>
 ${footer()}
-${bootScript}
 </body>
 </html>`;
 }
 
 // ---------- sibling artefacts ----------
 
-export function llmsText({ readme }) {
-  const resolve = makeResolver(readme);
-  const parts = [`# ${meta.name}`, '', meta.description, '', `Repo: ${repo}`, `Reference: ${url('/reference')}`, ''];
-  for (const s of contentSections) {
-    parts.push(`## ${s.h2}`, '', inlinePlain(s.p), '');
-    for (const d of s.demos) {
-      if (d.type === 'code') parts.push('```', resolve.snippet(d.ref.marker), '```', '');
-      if (d.type === 'terminal') parts.push('```sh', resolve.terminal(d.ref.cmd), '```', '');
-    }
-  }
-  parts.push(`## ${boundaries.h2}`, '');
-  for (const c of boundaries.columns) parts.push(`${c.title}:`, ...c.items.map((i) => `- ${inlinePlain(i)}`), '');
-  return parts.join('\n');
-}
-
 const inlinePlain = (t) => t
-  .replace(/\((?:REPO|CLOUDREPO)\)/g, (m) => `(${m === '(REPO)' ? repo : cloudRepo})`)
+  .replace(/\(REPO/g, `(${repo}`)
+  .replace(/\(CLOUDREPO/g, `(${cloudRepo}`)
   .replace(/`([^`]+)`/g, '$1')
   .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)');
 
+const mdTable = (head, rows) => [`| ${head.join(' | ')} |`, `| ${head.map(() => '---').join(' | ')} |`, ...rows.map((row) => `| ${row.join(' | ')} |`)].join('\n');
+const fenceMd = (lang, body) => ['```' + lang, body, '```', ''].join('\n');
+
+// One demo as Markdown, for llms.txt and index.md. Diagrams are pictures of
+// what the frames beside them already say, so they add nothing here.
+function demoMarkdown(d, ctx) {
+  const { r, readme, cloudReadme } = ctx;
+  const source = (name) => { const b = r.file(name); return `**${name}**\n\n${fenceMd(b.lang, b.body)}`; };
+  const run = (cmd) => { const c = r.run(cmd); return fenceMd('sh', `$ ${c.command}${c.output ? '\n' + c.output : ''}`); };
+  switch (d.type) {
+    case 'source': return source(d.file);
+    case 'run': case 'annotated': return run(d.run);
+    case 'steps': return d.steps.map((s) => [s.title.replace(/<[^>]+>/g, ''), s.cmd ? fenceMd('sh', `$ ${s.cmd}`) : '', s.file ? source(s.file) : '', s.run ? run(s.run) : '', ...(s.runs ?? []).map(run)].filter(Boolean).join('\n\n')).join('\n\n');
+    case 'table': { const t = readmeTable(readme, d.table); return mdTable(t.head, t.rows) + '\n'; }
+    case 'modules': return mdTable(['Export', 'What it carries'], modulesTable(readme).map(([a, b]) => [`\`${a}\``, inlinePlain(b)])) + '\n';
+    case 'cloud-api': return mdTable(['Route', 'What it does'], cloudApiTable(cloudReadme).map(([a, b]) => [`\`${a}\``, inlinePlain(b)])) + '\n';
+    default: return '';
+  }
+}
+
+const capabilityMarkdown = (s, ctx) => [`## ${s.h2}`, '', inlinePlain(s.p), '', ...s.demos.map((d) => demoMarkdown(d, ctx)).filter(Boolean).flatMap((x) => [x, ''])].join('\n');
+
+const boundariesMarkdown = (r) => [`## ${boundaries.h2}`, '', inlinePlain(boundaries.intro), '', ...boundaries.columns.flatMap((c) => [`**${c.title}**`, '', ...c.items.map((i) => `- ${inlinePlain(fill(i, c.figures, r))}`), ''])].join('\n');
+
+export function llmsText({ readme, cloudReadme }) {
+  const r = makeResolver(readme);
+  const ctx = { r, readme, cloudReadme };
+  return [
+    `# ${meta.name}`, '',
+    `> ${meta.description}`, '',
+    `${inlinePlain(meta.lede)} Install with \`${meta.install}\`. Currently v${version}, ${meta.license} licensed.`, '',
+    ...contentSections.flatMap((s) => [capabilityMarkdown(s, ctx)]),
+    boundariesMarkdown(r),
+    '## Links', '',
+    `- Reference: ${url('/reference')}`,
+    `- Agent guide: ${url('/AGENTS.md')}`,
+    `- This page as Markdown: ${url('/index.md')}`,
+    `- Repository: ${repo}`, '',
+  ].join('\n');
+}
+
 export function agentsMd({ readme }) {
-  const resolve = makeResolver(readme);
-  const snippetHello = resolve.snippet("const spam = noul('spam?'");
+  const r = makeResolver(readme);
+  const hello = r.file('policy.mjs');
   return `# AGENTS.md — using ${meta.name} from an agent
 
-Install: \`npm install jevlang\`. Node 22+,
-no runtime dependencies. Pure decisions, validation and replay work offline.
+Install: \`${meta.install}\`. Node 22+, no runtime dependencies. Deciding, validating
+and replaying work offline; only \`evaluateWithProvider\` and \`jev gate hook\`
+(for calls on neither list) reach a model.
 
-Minimal working policy (from the README, verified by the captured runs there):
+Minimal working policy — save it as \`policy.mjs\` and run \`node policy.mjs\`
+(this exact file is re-run by the test suite):
 
-\`\`\`typescript
-${snippetHello}
-\`\`\`
-
-Decide with \`policy.decide({ 'spam?': { noul: 0.97 } })\` — every question needs an
-answer; \`choice\` answers carry \`{ choice, confidence }\`, \`noul\` answers \`{ noul }\`.
+${fenceMd('js', hello.body)}
+Every question needs an answer: \`noul\` answers are \`{ noul: 0.97 }\`, \`choice\` answers
+\`{ choice: 'billing', confidence: 0.94 }\`, \`score\` answers a level with its \`probabilities\`.
 
 ## Options that matter
 
@@ -765,25 +643,31 @@ answer; \`choice\` answers carry \`{ choice, confidence }\`, \`noul\` answers \`
 | --- | --- |
 | \`questions\` | declared \`noul\` / \`choice\` / \`score\` questions; answers are validated against them |
 | \`gates\` | \`gate(question, bar, escalate(...))\` — below the bar, escalate instead of guessing |
-| \`route.clauses\` | ordered rules; first match wins, clause order is policy |
+| \`route.clauses\` | ordered rules; the first match wins, so clause order is policy |
 | \`route.otherwise\` | the no-match action; a route with a hole is refused |
-| \`state\` / \`stateOptions\` | what the decision may see, redacted and capped |
+| \`state\` | what the decision may see, mapped from the input, redacted and capped |
 
 ## Three mistakes that break it
 
-${agentsMistakes.map((m) => `- ${m}`).join('\n')}
+${agentsMistakes.map((m) => `- ${inlinePlain(m)}`).join('\n')}
+
+Guarding tool calls: ${inlinePlain(agentsGateNote)}
 
 Full reference: ${url('/reference')}. Repo: ${repo}.
 `;
 }
 
-export function pageMarkdown() {
-  const parts = [`# ${meta.name} — ${meta.h1}`, '', inlinePlain(meta.lede), '', `Install: \`${meta.install}\` · Currently v${version}`, ''];
-  for (const s of contentSections) parts.push(`## ${s.h2}`, '', inlinePlain(s.p), '');
-  parts.push(`## ${boundaries.h2}`, '');
-  for (const c of boundaries.columns) parts.push(`**${c.title}**`, ...c.items.map((i) => `- ${inlinePlain(i)}`), '');
-  parts.push(`## ${start.h2}`, '', `\`\`\`sh\n$ ${start.panels[0].command}\n\`\`\``, '');
-  return parts.join('\n');
+export function pageMarkdown({ readme, cloudReadme }) {
+  const r = makeResolver(readme);
+  const ctx = { r, readme, cloudReadme };
+  return [
+    `# ${meta.name} — ${meta.h1}`, '',
+    inlinePlain(meta.lede), '',
+    `Install: \`${meta.install}\` · Currently v${version}`, '',
+    ...contentSections.flatMap((s) => [capabilityMarkdown(s, ctx)]),
+    boundariesMarkdown(r),
+    `## ${start.h2}`, '', inlinePlain(start.p), '', fenceMd('sh', start.install.map((c) => `$ ${c}`).join('\n')),
+  ].join('\n');
 }
 
 export function sitemap() {
@@ -802,3 +686,5 @@ Allow: /
 Sitemap: ${url('/sitemap.xml')}
 `;
 }
+
+export { esc, tag };
