@@ -151,7 +151,7 @@ test('hero and capability sections', () => {
   const hero = index.split('<section class="hero"')[1].split('</section>')[0];
   assert.equal([...hero.matchAll(/<a class="control|<span class="control|<details class="control/g)].length, 3, 'three controls');
   assert.ok(!hero.includes(`Currently v${version}`), 'no version line in the hero');
-  assert.equal([...hero.match(/<p class="lede">([\s\S]*?)<\/p>/)[1].matchAll(/<a href="[^"]+">/g)].length, 2, 'two real links in the lede');
+  assert.equal([...hero.match(/<p class="lede">([\s\S]*?)<\/p>/)[1].matchAll(/<a href="[^"]+">/g)].length, 1, 'one real link in the lede');
   assert.ok(sections.length >= 4);
   for (const s of sections) {
     const sec = section(s.id);
