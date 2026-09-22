@@ -12,11 +12,11 @@ export const copyrightYear = 2026;
 
 export const meta = {
   name: 'JevLang',
-  h1: 'The model answers, your policy decides',
+  h1: 'Typesafe policy for LLM decisions',
   lede:
-    '`jevlang` is an open source policy engine for decisions an LLM used to make inside a prompt: routing, triage, approvals, guarding an agent\'s tools. You declare the questions the model answers and the rules that act on them, in plain [TypeScript or Python](REPO). Made by [linesofcode](https://x.com/linesofcode).',
+    '`jevlang` is a typesafe policy engine for decisions an LLM used to make inside a prompt: routing, triage, approvals, guarding an agent\'s tools. You declare the questions the model answers and the rules that act on them, in plain [TypeScript](REPO). Mistakes are build errors, and every decision explains itself. Made by [linesofcode](https://x.com/linesofcode).',
   description:
-    'JevLang is an open source policy engine for LLM decisions: the model answers small questions, your policy decides, and every decision explains itself.',
+    'jevlang is a typesafe policy engine for LLM decisions: the model answers small questions in TypeScript, your policy decides, and every decision explains itself.',
   install: 'bun add jevlang',
   tagline: 'a policy engine for prompt-sized decisions',
   license: 'MIT',
@@ -121,7 +121,7 @@ export const sections = [
   {
     id: 'same-engine-hosted',
     h2: 'Same engine, hosted',
-    p: 'Jev Cloud runs this engine for many tenants over HTTP at [cloud.jevlang.sh](https://cloud.jevlang.sh): deploy, promote, evaluate and replay. Every route but `/healthz` takes `Authorization: Bearer jev_live_…`, and the organization comes from the credential, never the path. Deployments never change once published; `promote` with `expect` is the only thing that moves production.',
+    p: 'Jev Cloud runs this engine for many tenants over HTTP at [cloud.jevlang.sh](https://cloud.jevlang.sh): deploy, promote, evaluate. Every route takes `Authorization: Bearer jev_live_…`, and the organization comes from the credential, never the path. Deployments never change once published; `promote` with `expect` is the only thing that moves production.',
     doc: null,
     demos: [
       { type: 'diagram', name: 'lifecycle' },
@@ -133,7 +133,7 @@ export const sections = [
 export const asides = [
   {
     before: 'same-engine-hosted',
-    text: 'Want it deployed instead of embedded? [Jev Cloud](https://cloud.jevlang.sh) runs the same decisions with identity, storage and a dashboard. A hosted product, not open source, and not something you `bun add`.',
+    text: 'Want it deployed instead of embedded? [Jev Cloud](https://cloud.jevlang.sh) runs the same decisions with identity, storage and a dashboard: organizations by default, keys shown once and stored hashed, every decision a trace. A hosted product, and not something you `bun add`.',
   },
 ];
 

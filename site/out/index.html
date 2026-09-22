@@ -4,24 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>JevLang — a policy engine for prompt-sized decisions</title>
-<meta name="description" content="JevLang is an open source policy engine for LLM decisions: the model answers small questions, your policy decides, and every decision explains itself.">
+<meta name="description" content="jevlang is a typesafe policy engine for LLM decisions: the model answers small questions in TypeScript, your policy decides, and every decision explains itself.">
 <link rel="canonical" href="https://jevlang.sh/">
 <meta name="theme-color" content="#1f1f1f" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#fcfcfc" media="(prefers-color-scheme: light)">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="JevLang">
 <meta property="og:title" content="JevLang — a policy engine for prompt-sized decisions">
-<meta property="og:description" content="JevLang is an open source policy engine for LLM decisions: the model answers small questions, your policy decides, and every decision explains itself.">
+<meta property="og:description" content="jevlang is a typesafe policy engine for LLM decisions: the model answers small questions in TypeScript, your policy decides, and every decision explains itself.">
 <meta property="og:url" content="https://jevlang.sh/">
 <meta property="og:image" content="https://jevlang.sh/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:type" content="image/png">
-<meta property="og:image:alt" content="JevLang — The model answers, your policy decides">
+<meta property="og:image:alt" content="JevLang — Typesafe policy for LLM decisions">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://jevlang.sh/og.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2048%2048%22%3E%3Crect%20width%3D%2248%22%20height%3D%2248%22%20rx%3D%2211%22%20fill%3D%22%231c1c1c%22%2F%3E%3Cpath%20d%3D%22M30%2012v16.5c0%204.5-3%207.5-7.5%207.5S15%2033%2015%2029.5%22%20fill%3D%22none%22%20stroke%3D%22%23f7f7f7%22%20stroke-width%3D%223.4%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"JevLang","description":"JevLang is an open source policy engine for LLM decisions: the model answers small questions, your policy decides, and every decision explains itself.","url":"https://jevlang.sh/","applicationCategory":"DeveloperApplication","softwareVersion":"0.1.0","offers":{"@type":"Offer","price":"0"},"license":"https://opensource.org/licenses/MIT"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"JevLang","description":"jevlang is a typesafe policy engine for LLM decisions: the model answers small questions in TypeScript, your policy decides, and every decision explains itself.","url":"https://jevlang.sh/","applicationCategory":"DeveloperApplication","softwareVersion":"0.1.0","offers":{"@type":"Offer","price":"0"},"license":"https://opensource.org/licenses/MIT"}</script>
 <script>
 (function(){
 var K='jevlang-theme',r=document.documentElement,mq=matchMedia('(prefers-color-scheme: dark)');
@@ -441,8 +441,8 @@ h1{font-size:2.6rem}
 </g>
 </svg><div class="shell">
 <span class="mark"><svg aria-hidden="true" width="44" height="44" viewBox="0 0 48 48"><rect class="mark-tile" x=".5" y=".5" width="47" height="47" rx="11"/><path class="mark-glyph" d="M30 12v16.5c0 4.5-3 7.5-7.5 7.5S15 33 15 29.5" fill="none" stroke-width="3.4" stroke-linecap="round"/></svg></span>
-<h1 id="top">The model answers, your policy decides</h1>
-<p class="lede"><code>jevlang</code> is an open source policy engine for decisions an LLM used to make inside a prompt: routing, triage, approvals, guarding an agent's tools. You declare the questions the model answers and the rules that act on them, in plain <a href="https://github.com/TimMikeladze/JevLang">TypeScript or Python</a>. Made by <a href="https://x.com/linesofcode">linesofcode</a>.</p>
+<h1 id="top">Typesafe policy for LLM decisions</h1>
+<p class="lede"><code>jevlang</code> is a typesafe policy engine for decisions an LLM used to make inside a prompt: routing, triage, approvals, guarding an agent's tools. You declare the questions the model answers and the rules that act on them, in plain <a href="https://github.com/TimMikeladze/JevLang">TypeScript</a>. Mistakes are build errors, and every decision explains itself. Made by <a href="https://x.com/linesofcode">linesofcode</a>.</p>
 <div class="actions">
 <span class="control control--chip"><code>bun add jevlang</code><button class="copy-btn" type="button" data-copy="bun add jevlang" aria-label="Copy install command"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 9h-9a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2zM5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></span>
 <details class="control">
@@ -941,34 +941,34 @@ console.<span class="tk-fn">log</span>(<span class="tk-str">`listening on ${serv
 <div class="demo"><p class="table-title">Every export in the package</p><div class="tablewrap"><table><thead><tr><th>Export</th><th>What it carries</th></tr></thead><tbody><tr><td><code>jevlang</code></td><td>the language: <code>choice</code>, <code>score</code>, <code>noul</code>, <code>rule</code>, <code>all</code>, <code>any</code>, <code>not</code>, <code>gate</code>, <code>assign</code>, <code>escalate</code>, <code>page</code>, <code>hold</code>, plans, actions, JSON Schema for every action, and portable frozen artifacts.</td></tr><tr><td><code>jevlang/provider</code></td><td>layered provider config, deterministic resolution, and any executable that speaks <code>jev-provider/1</code> becomes a provider. Built-in CLI adapters for Claude, Codex and fx. <code>evaluateWithProvider(policy, input)</code> is the one call that leaves the machine; a precheck that already decides makes no call at all.</td></tr><tr><td><code>jevlang/dispatch</code></td><td>handlers with confirmation, cooldowns, budgets, guards, idempotency keys, plan rollback, and one audit record per outcome.</td></tr><tr><td><code>jevlang/journal, jevlang/journal-db</code></td><td>in-memory and SQLite journals; <code>dbJournal</code> takes any SQL driver.</td></tr><tr><td><code>jevlang/loop, jevlang/session</code></td><td>events in, decisions dispatched, at your concurrency and debounce; clarify-questions become conversations that know when to stop asking.</td></tr><tr><td><code>jevlang/mcp</code></td><td>serve a policy as MCP tools (<code>decide</code> offline and free, <code>evaluate</code> capped), dual-era protocol. <code>jevlang/mcp-client</code> turns any other server's tools into dispatcher handlers; <code>jevlang/mcp-import</code> makes a <code>tools/list</code> snapshot into validated action declarations.</td></tr><tr><td><code>jevlang/webhooks, jevlang/wiring, jevlang/harvest</code></td><td>signed webhooks in and out, a crash-safe spool with at-least-once delivery, and labeled fixtures grown from what people did with real cases.</td></tr><tr><td><code>jevlang/serve</code></td><td>an HTTP sidecar (<code>/decide</code>, <code>/evaluate</code>, <code>/dispatch</code> with <code>dry_run</code>, <code>/policy</code>, <code>/healthz</code>) so any language can use the policy; MCP and webhook routes mount alongside it.</td></tr></tbody></table></div></div>
 </div>
 </section>
-<div class="aside"><div class="shell"><p>Want it deployed instead of embedded? <a href="https://cloud.jevlang.sh">Jev Cloud</a> runs the same decisions with identity, storage and a dashboard. A hosted product, not open source, and not something you <code>bun add</code>.</p></div></div><section id="same-engine-hosted" class="section section--band" aria-labelledby="same-engine-hosted-h">
+<div class="aside"><div class="shell"><p>Want it deployed instead of embedded? <a href="https://cloud.jevlang.sh">Jev Cloud</a> runs the same decisions with identity, storage and a dashboard: organizations by default, keys shown once and stored hashed, every decision a trace. A hosted product, and not something you <code>bun add</code>.</p></div></div><section id="same-engine-hosted" class="section section--band" aria-labelledby="same-engine-hosted-h">
 <div class="shell">
 <h2 id="same-engine-hosted-h">Same engine, hosted</h2>
-<p class="expl">Jev Cloud runs this engine for many tenants over HTTP at <a href="https://cloud.jevlang.sh">cloud.jevlang.sh</a>: deploy, promote, evaluate and replay. Every route but <code>/healthz</code> takes <code>Authorization: Bearer jev_live_…</code>, and the organization comes from the credential, never the path. Deployments never change once published; <code>promote</code> with <code>expect</code> is the only thing that moves production.</p>
-<div class="demo"><figure class="diagram" aria-label="The hosted lifecycle: a deployment is published and never changes, promote with an expected version is the only thing that moves production, and replay decides recent traces again against a candidate.">
+<p class="expl">Jev Cloud runs this engine for many tenants over HTTP at <a href="https://cloud.jevlang.sh">cloud.jevlang.sh</a>: deploy, promote, evaluate. Every route takes <code>Authorization: Bearer jev_live_…</code>, and the organization comes from the credential, never the path. Deployments never change once published; <code>promote</code> with <code>expect</code> is the only thing that moves production.</p>
+<div class="demo"><figure class="diagram" aria-label="The hosted lifecycle: a deployment is published and never changes, promote with an expected version is the only thing that moves production, and every evaluation is recorded as a trace.">
 <div class="flow flow--3"><div class="flow-step">
 <span class="flow-n">1</span>
 <strong class="flow-title">Deploy</strong>
-<span class="flow-api"><code>POST /v1/projects/:slug/deployments</code></span>
+<span class="flow-api"><code>POST /api/v1/projects/:slug/deployments</code></span>
 <div class="flow-data"><p>Publish a policy. The first deployment becomes production; later ones wait as previews. None can be edited.</p></div>
 </div>
 <div class="flow-link" aria-hidden="true"><span>artifact</span></div>
 <div class="flow-step">
 <span class="flow-n">2</span>
 <strong class="flow-title">Promote</strong>
-<span class="flow-api"><code>POST /v1/projects/:slug/promote</code></span>
+<span class="flow-api"><code>POST /api/v1/projects/:slug/promote</code></span>
 <div class="flow-data"><p><span class="q">expect</span> names the version you believe production is, so two promotions cannot both win. A rollback is a promotion back.</p></div>
 </div>
-<div class="flow-link" aria-hidden="true"><span>diff first</span></div>
+<div class="flow-link" aria-hidden="true"><span>pinned</span></div>
 <div class="flow-step">
 <span class="flow-n">3</span>
-<strong class="flow-title">Replay</strong>
-<span class="flow-api"><code>POST /v1/projects/:slug/replay-diff</code></span>
-<div class="flow-data"><p>Production’s recent traces are decided again against a candidate. A promote can refuse when too many would change.</p></div>
+<strong class="flow-title">Evaluate</strong>
+<span class="flow-api"><code>POST /api/v1/projects/:slug/evaluate</code></span>
+<div class="flow-data"><p>Answers go in, a decision comes out, and the whole exchange is written down: input, answers, the clause that fired, a trace.</p></div>
 </div></div>
 <figcaption><b>Promote is the only thing that moves production.</b> A deployment is a frozen artifact; nothing it did is undone by a rollback.</figcaption>
 </figure></div>
-<div class="demo"><p class="table-title">The API</p><div class="tablewrap"><table><thead><tr><th>Route</th><th>What it does</th></tr></thead><tbody><tr><td><code>POST /v1/projects</code></td><td>create a project (<code>{slug, config}</code>)</td></tr><tr><td><code>POST /v1/projects/:slug/deployments</code></td><td>publish a policy artifact (<code>{policy, note}</code>)</td></tr><tr><td><code>GET /v1/projects/:slug/deployments</code></td><td>newest first</td></tr><tr><td><code>POST /v1/projects/:slug/promote</code></td><td><code>{deployment, expect}</code> moves production; <code>{deployment, gate: {sample, max_changed}}</code> diffs <code>sample</code> production traces against the deployment first and refuses (422) when the changed fraction is over <code>max_changed</code> — or when fewer than 30 traces are replayable, because a gate over too little evidence is not a gate. A refusal is audited as <code>deployment.promote_refused</code> and moves nothing</td></tr><tr><td><code>PUT /v1/projects/:slug</code></td><td>replace a project's <code>config</code> (<code>alerts</code>, <code>event_urls</code>, <code>schedule</code>, <code>provider</code>), validated where the service reads it</td></tr><tr><td><code>GET/PUT/DELETE /v1/projects/:slug/secrets[/:name]</code></td><td>names and versions only; values never come back</td></tr><tr><td><code>POST /v1/projects/:slug/evaluate</code></td><td>ask the provider, then decide</td></tr><tr><td><code>POST /v1/projects/:slug/decide</code></td><td>decide on answers the caller already has</td></tr><tr><td><code>POST /v1/projects/:slug/dispatch</code></td><td>decide, then run the handlers (<code>dry_run</code> rehearses)</td></tr><tr><td><code>GET /v1/projects/:slug/traces[/:id]</code></td><td>what happened</td></tr><tr><td><code>POST /v1/projects/:slug/traces/:id/replay</code></td><td>decide again, against <code>?deployment=</code></td></tr><tr><td><code>POST /v1/projects/:slug/replay-diff</code></td><td>production's recent traces decided again against <code>{deployment, limit, since}</code>; rows <code>{trace_id, old, new, changed}</code> and a <code>{replayed, changed, refused}</code> summary — a trace whose inputs cannot be rebuilt is counted as <code>refused</code>, never skipped</td></tr><tr><td><code>GET /v1/usage</code></td><td>rows, and a total that separates money from estimates</td></tr><tr><td><code>GET/PUT /v1/billing</code></td><td>the Stripe mapping, and what has been reported</td></tr><tr><td><code>POST /v1/billing/report</code></td><td>report a closed month (<code>{month: &quot;2026-08&quot;}</code>)</td></tr><tr><td><code>POST /v1/stripe/webhook</code></td><td>Stripe's own events; signed, and the only <code>/v1</code> route with no key</td></tr><tr><td><code>GET /v1/audit</code></td><td>what changed, and who did it</td></tr></tbody></table></div></div>
+<div class="demo"><p class="table-title">The API</p><div class="tablewrap"><table><thead><tr><th>Route</th><th>What it does</th></tr></thead><tbody><tr><td><code>POST /api/v1/projects</code></td><td>create a project (<code>{slug}</code>)</td></tr><tr><td><code>GET /api/v1/projects</code></td><td>this organization's projects</td></tr><tr><td><code>GET /api/v1/projects/:slug</code></td><td>one project, with its production deployment</td></tr><tr><td><code>POST /api/v1/projects/:slug/deployments</code></td><td>publish a policy artifact (<code>{policy, note}</code>) — the first becomes production, later ones are previews</td></tr><tr><td><code>GET /api/v1/projects/:slug/deployments</code></td><td>newest first</td></tr><tr><td><code>POST /api/v1/projects/:slug/promote</code></td><td><code>{deployment, expect}</code> moves production; a wrong <code>expect</code> refuses (422) and nothing moves, because two promotions racing cannot both win</td></tr><tr><td><code>POST /api/v1/projects/:slug/evaluate</code></td><td>validate the answers, decide on them, and write a trace and a usage row</td></tr><tr><td><code>GET /api/v1/projects/:slug/traces</code></td><td>what happened, newest first</td></tr><tr><td><code>GET /api/v1/usage</code></td><td>rows, and a total that separates money from estimates</td></tr></tbody></table></div></div>
 </div>
 </section>
 <section id="boundaries" class="section" aria-labelledby="boundaries-h">

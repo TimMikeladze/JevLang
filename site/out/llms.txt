@@ -1,8 +1,8 @@
 # JevLang
 
-> JevLang is an open source policy engine for LLM decisions: the model answers small questions, your policy decides, and every decision explains itself.
+> jevlang is a typesafe policy engine for LLM decisions: the model answers small questions in TypeScript, your policy decides, and every decision explains itself.
 
-jevlang is an open source policy engine for decisions an LLM used to make inside a prompt: routing, triage, approvals, guarding an agent's tools. You declare the questions the model answers and the rules that act on them, in plain TypeScript or Python (https://github.com/TimMikeladze/JevLang). Made by linesofcode (https://x.com/linesofcode). Install with `bun add jevlang`. Currently v0.1.0, MIT licensed.
+jevlang is a typesafe policy engine for decisions an LLM used to make inside a prompt: routing, triage, approvals, guarding an agent's tools. You declare the questions the model answers and the rules that act on them, in plain TypeScript (https://github.com/TimMikeladze/JevLang). Mistakes are build errors, and every decision explains itself. Made by linesofcode (https://x.com/linesofcode). Install with `bun add jevlang`. Currently v0.1.0, MIT licensed.
 
 ## How one decision works
 
@@ -400,27 +400,19 @@ escalate human-triage  // unclear which team owns this
 
 ## Same engine, hosted
 
-Jev Cloud runs this engine for many tenants over HTTP at cloud.jevlang.sh (https://cloud.jevlang.sh): deploy, promote, evaluate and replay. Every route but /healthz takes Authorization: Bearer jev_live_…, and the organization comes from the credential, never the path. Deployments never change once published; promote with expect is the only thing that moves production.
+Jev Cloud runs this engine for many tenants over HTTP at cloud.jevlang.sh (https://cloud.jevlang.sh): deploy, promote, evaluate. Every route takes Authorization: Bearer jev_live_…, and the organization comes from the credential, never the path. Deployments never change once published; promote with expect is the only thing that moves production.
 
 | Route | What it does |
 | --- | --- |
-| `POST /v1/projects` | create a project ({slug, config}) |
-| `POST /v1/projects/:slug/deployments` | publish a policy artifact ({policy, note}) |
-| `GET /v1/projects/:slug/deployments` | newest first |
-| `POST /v1/projects/:slug/promote` | {deployment, expect} moves production; {deployment, gate: {sample, max_changed}} diffs sample production traces against the deployment first and refuses (422) when the changed fraction is over max_changed — or when fewer than 30 traces are replayable, because a gate over too little evidence is not a gate. A refusal is audited as deployment.promote_refused and moves nothing |
-| `PUT /v1/projects/:slug` | replace a project's config (alerts, event_urls, schedule, provider), validated where the service reads it |
-| `GET/PUT/DELETE /v1/projects/:slug/secrets[/:name]` | names and versions only; values never come back |
-| `POST /v1/projects/:slug/evaluate` | ask the provider, then decide |
-| `POST /v1/projects/:slug/decide` | decide on answers the caller already has |
-| `POST /v1/projects/:slug/dispatch` | decide, then run the handlers (dry_run rehearses) |
-| `GET /v1/projects/:slug/traces[/:id]` | what happened |
-| `POST /v1/projects/:slug/traces/:id/replay` | decide again, against ?deployment= |
-| `POST /v1/projects/:slug/replay-diff` | production's recent traces decided again against {deployment, limit, since}; rows {trace_id, old, new, changed} and a {replayed, changed, refused} summary — a trace whose inputs cannot be rebuilt is counted as refused, never skipped |
-| `GET /v1/usage` | rows, and a total that separates money from estimates |
-| `GET/PUT /v1/billing` | the Stripe mapping, and what has been reported |
-| `POST /v1/billing/report` | report a closed month ({month: "2026-08"}) |
-| `POST /v1/stripe/webhook` | Stripe's own events; signed, and the only /v1 route with no key |
-| `GET /v1/audit` | what changed, and who did it |
+| `POST /api/v1/projects` | create a project ({slug}) |
+| `GET /api/v1/projects` | this organization's projects |
+| `GET /api/v1/projects/:slug` | one project, with its production deployment |
+| `POST /api/v1/projects/:slug/deployments` | publish a policy artifact ({policy, note}) — the first becomes production, later ones are previews |
+| `GET /api/v1/projects/:slug/deployments` | newest first |
+| `POST /api/v1/projects/:slug/promote` | {deployment, expect} moves production; a wrong expect refuses (422) and nothing moves, because two promotions racing cannot both win |
+| `POST /api/v1/projects/:slug/evaluate` | validate the answers, decide on them, and write a trace and a usage row |
+| `GET /api/v1/projects/:slug/traces` | what happened, newest first |
+| `GET /api/v1/usage` | rows, and a total that separates money from estimates |
 
 
 ## What holds, and what doesn't
