@@ -98,7 +98,7 @@ from PATH.
 
 13. **Every reference policy, and every broken one.** The differential now
    covers all of `jev-lang/examples/` but the two code-lookup examples, and
-   `test/broken.test.mjs` shows each mistake in `examples/broken/` refused here
+   `test/broken.test.js` shows each mistake in `examples/broken/` refused here
    with the same fix named, while Racket still refuses all eleven files.
 
 14. **Installed evidence.** `tools/verify-portable.py` now also proves that every

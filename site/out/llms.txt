@@ -2,7 +2,7 @@
 
 > JevLang is an open source policy engine for LLM decisions: the model answers small questions, your policy decides, and every decision explains itself.
 
-jevlang is an open source policy engine for decisions an LLM used to make inside a prompt: routing, triage, approvals, guarding an agent's tools. You declare the questions the model answers and the rules that act on them, in plain TypeScript or Python (https://github.com/TimMikeladze/JevLang). Made by linesofcode (https://x.com/linesofcode). Install with `npm install jevlang`. Currently v0.1.0, MIT licensed.
+jevlang is an open source policy engine for decisions an LLM used to make inside a prompt: routing, triage, approvals, guarding an agent's tools. You declare the questions the model answers and the rules that act on them, in plain TypeScript or Python (https://github.com/TimMikeladze/JevLang). Made by linesofcode (https://x.com/linesofcode). Install with `bun add jevlang`. Currently v0.1.0, MIT licensed.
 
 ## How one decision works
 
@@ -10,18 +10,18 @@ Your app sends a ticket. A model answers a few small questions about it — noul
 
 ## Run it in one file
 
-Run npm install jevlang, save the file as policy.mjs, and run it with node policy.mjs. It needs no model, account or network: policy.decide() reads the answers you hand it and returns the action.
+Run bun add jevlang, save the file as policy.js, and run it with node policy.js. It needs no model, account or network: policy.decide() reads the answers you hand it and returns the action.
 
 Install the package
 
 ```sh
-$ npm install jevlang
+$ bun add jevlang
 ```
 
 
-Save this as policy.mjs
+Save this as policy.js
 
-**policy.mjs**
+**policy.js**
 
 ```js
 import { noul, definePolicy, rule, assign, hold } from 'jevlang';
@@ -46,7 +46,7 @@ console.log(explainDecision(policy.decide({ 'spam?': { noul: 0.97 } })));
 Run it
 
 ```sh
-$ node policy.mjs
+$ node policy.js
 hold  // almost certainly spam
   route 0, $.route.clauses[0]
   because
@@ -69,7 +69,7 @@ Declare what you want to know with noul for a yes/no, choice for one of several 
 
 Add gate(department, 0.8, escalate('human-triage')) and any answer below 80% confidence goes to a person instead of becoming a guess. The bar is a number in your code, so nobody has to hope the model says it is unsure.
 
-**support.mjs**
+**support.js**
 
 ```js
 import { choice, score, noul, definePolicy, gate, escalate, rule, all, page, assign } from 'jevlang';
@@ -105,11 +105,11 @@ export const policy = definePolicy({
 ```
 
 
-**decide.mjs**
+**decide.js**
 
 ```js
 import { explainDecision } from 'jevlang/explain';
-import { policy } from './support.mjs';
+import { policy } from './support.js';
 
 const tickets = {
   'a clear billing question': {
@@ -137,7 +137,7 @@ for (const [name, answers] of Object.entries(tickets)) {
 
 
 ```sh
-$ node decide.mjs
+$ node decide.js
 # a clear billing question
 assign billing-queue
   route 1, $.route.clauses[1]
@@ -161,7 +161,7 @@ page retention-oncall  // angry refund request
 
 Each rule(when, action) is checked from the top, and the first match decides — so clause order is policy you can review in a diff. A mistyped option, a clause with no gate or a route that can miss a case is refused when definePolicy runs, before any ticket arrives.
 
-**broken.mjs**
+**broken.js**
 
 ```js
 import { choice, definePolicy, rule, assign, gate, escalate } from 'jevlang';
@@ -195,7 +195,7 @@ for (const [name, attempt] of Object.entries(attempts)) {
 
 
 ```sh
-$ node broken.mjs
+$ node broken.js
 # a mistyped option
 $.route.clauses[0].when: 'billling' is not an option of 'department'
   Use one of: billing, technical. Did you mean 'billing'?
@@ -212,12 +212,12 @@ $.route: route is not exhaustive
 
 explainDecision(decision) prints the action, the rule that fired and every answer that rule read. Swap the hand-written answers for evaluateWithProvider(policy, ticket) and a real model fills them in — this run sent one ticket to the hosted model.
 
-**ask.mjs**
+**ask.js**
 
 ```js
 import { evaluateWithProvider } from 'jevlang';
 import { explainDecision } from 'jevlang/explain';
-import { policy } from './support.mjs';
+import { policy } from './support.js';
 
 const ticket = "This is the THIRD time you've double-charged me. Refund me today or I'm cancelling and disputing every charge.";
 
@@ -228,7 +228,7 @@ console.log(`answered by ${decision.provider} ${decision.model}`);
 
 
 ```sh
-$ node ask.mjs
+$ node ask.js
 page retention-oncall  // angry refund request
   route 0, $.route.clauses[0]
   because
@@ -242,9 +242,9 @@ answered by typesafe jev-1.13.0
 
 jev gate hook decides whether an agent's tool call runs — allow, ask or deny — as a Claude Code or Codex PreToolUse hook. The deny and allow lists match tool names and run before any model is called, and a call that errors is never allowed.
 
-Save the policy as gate.mjs and run it
+Save the policy as gate.js and run it
 
-**gate.mjs**
+**gate.js**
 
 ```js
 import { writeFileSync } from 'node:fs';
@@ -295,7 +295,7 @@ console.log('wrote gate.json');
 
 
 ```sh
-$ node gate.mjs
+$ node gate.js
 wrote gate.json
 ```
 
@@ -322,7 +322,7 @@ Add the hook to .claude/settings.json
         "hooks": [
           {
             "type": "command",
-            "command": "npx jev gate hook \"$CLAUDE_PROJECT_DIR/gate.json\" \"$CLAUDE_PROJECT_DIR/gate-options.json\""
+            "command": "bunx jev gate hook \"$CLAUDE_PROJECT_DIR/gate.json\" \"$CLAUDE_PROJECT_DIR/gate-options.json\""
           }
         ]
       }
@@ -335,19 +335,19 @@ Add the hook to .claude/settings.json
 Try it: a tool on each list, then one on neither
 
 ```sh
-$ echo '{"hook_event_name":"PreToolUse","tool_name":"Read","tool_input":{"file_path":"README.md"}}' | npx jev gate hook gate.json gate-options.json
+$ echo '{"hook_event_name":"PreToolUse","tool_name":"Read","tool_input":{"file_path":"README.md"}}' | bunx jev gate hook gate.json gate-options.json
 {"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","permissionDecisionReason":"jev gate (tool-gate): 'Read' is on the allow list"}}
 ```
 
 
 ```sh
-$ echo '{"hook_event_name":"PreToolUse","tool_name":"WebFetch","tool_input":{"url":"https://example.com"}}' | npx jev gate hook gate.json gate-options.json
+$ echo '{"hook_event_name":"PreToolUse","tool_name":"WebFetch","tool_input":{"url":"https://example.com"}}' | bunx jev gate hook gate.json gate-options.json
 {"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"jev gate (tool-gate): 'WebFetch' is on the deny list"}}
 ```
 
 
 ```sh
-$ echo '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"rm -rf build"}}' | npx jev gate hook gate.json gate-options.json
+$ echo '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"rm -rf build"}}' | bunx jev gate hook gate.json gate-options.json
 {"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"jev gate (tool-gate): it destroys data"}}
 ```
 
@@ -356,13 +356,13 @@ $ echo '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"comman
 
 One policy has five doors: policy.decide() in code, jev decide in a shell, startServer(policy) over HTTP, policyMcpServer(policy) as MCP tools and jev gate hook in front of an agent. Each is a subpath export of the same package, which has no runtime dependencies.
 
-Save this as serve.mjs and start it
+Save this as serve.js and start it
 
-**serve.mjs**
+**serve.js**
 
 ```js
 import { startServer } from 'jevlang/serve';
-import { policy } from './support.mjs';
+import { policy } from './support.js';
 
 const server = await startServer(policy);
 console.log(`listening on ${server.url}`);
@@ -370,7 +370,7 @@ console.log(`listening on ${server.url}`);
 
 
 ```sh
-$ node serve.mjs
+$ node serve.js
 listening on http://127.0.0.1:8080
 ```
 

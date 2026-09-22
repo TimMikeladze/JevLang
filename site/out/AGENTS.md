@@ -1,10 +1,10 @@
 # AGENTS.md — using JevLang from an agent
 
-Install: `npm install jevlang`. Node 22+, no runtime dependencies. Deciding, validating
+Install: `bun add jevlang`. Node 22+, no runtime dependencies. Deciding, validating
 and replaying work offline; only `evaluateWithProvider` and `jev gate hook`
 (for calls on neither list) reach a model.
 
-Minimal working policy — save it as `policy.mjs` and run `node policy.mjs`
+Minimal working policy — save it as `policy.js` and run `node policy.js`
 (this exact file is re-run by the test suite):
 
 ```js

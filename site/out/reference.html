@@ -81,13 +81,19 @@ h2{font-size:clamp(1.35rem,2.4vw,1.7rem);line-height:1.2;font-weight:650;letter-
 /* header */
 .site-head{position:sticky;top:0;z-index:10;min-height:3.75rem;background:color-mix(in oklab,var(--paper) 82%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
 .site-head .shell{display:flex;align-items:center;gap:1.1rem;min-height:3.75rem}
-.brand{font-weight:700;font-size:1.05rem;color:var(--ink);text-decoration:none}
-.site-nav{display:flex;gap:1.1rem}
-.site-nav a{font-size:.875rem;color:var(--soft);text-decoration:none;transition:color .14s ease}
+.brand{display:inline-flex;align-items:center;gap:.55rem;font-weight:700;font-size:1.05rem;color:var(--ink);text-decoration:none}
+.brand-mark{display:inline-flex;width:1.65rem;height:1.65rem;flex:none}
+.brand-mark svg{width:100%;height:100%}
+.brand-word{letter-spacing:-.01em}
+.site-nav{display:flex;gap:1.3rem}
+.site-nav a{position:relative;padding-block:.3rem;font-size:.875rem;color:var(--soft);text-decoration:none;transition:color .14s ease}
+.site-nav a::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--accent);border-radius:1px;transform:scaleX(0);transition:transform .16s ease}
 .site-nav a:hover,.site-nav a[aria-current=page]{color:var(--ink)}
+.site-nav a:hover::after,.site-nav a[aria-current=page]::after{transform:scaleX(1)}
 .head-icons{margin-left:auto;display:flex;align-items:center;gap:.75rem}
 .icon-link{color:var(--soft);display:inline-flex;transition:color .14s ease}
 .icon-link:hover{color:var(--ink)}
+.head-div{width:1px;height:1.15rem;background:var(--line);flex:none}
 .ext{font-size:.75em;opacity:.5}
 /* theme toggle */
 .theme-toggle{background:none;border:0;color:var(--soft);cursor:pointer;padding:.2rem;display:inline-flex;border-radius:.4rem;transition:color .14s ease}
@@ -366,9 +372,9 @@ h1{font-size:2.6rem}
 <body id="reference">
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-head"><div class="shell">
-<a class="brand" href="/">JevLang</a>
+<a class="brand" href="/"><span class="brand-mark"><svg aria-hidden="true" width="44" height="44" viewBox="0 0 48 48"><rect class="mark-tile" x=".5" y=".5" width="47" height="47" rx="11"/><path class="mark-glyph" d="M30 12v16.5c0 4.5-3 7.5-7.5 7.5S15 33 15 29.5" fill="none" stroke-width="3.4" stroke-linecap="round"/></svg></span><span class="brand-word">JevLang</span></a>
 <nav class="site-nav" aria-label="Site"><a href="/">Home</a><a href="/reference" aria-current="page">Reference</a><a href="https://cloud.jevlang.sh" target="_blank" rel="noopener">Cloud <span class="ext">↗</span></a></nav>
-<div class="head-icons"><a class="icon-link" href="https://github.com/TimMikeladze/JevLang" aria-label="JevLang on GitHub"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a><a class="icon-link" href="https://x.com/linesofcode" aria-label="linesofcode on X"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg></a><a class="icon-link" href="https://www.linkedin.com/in/tim-mikeladze" aria-label="Tim Mikeladze on LinkedIn"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
+<div class="head-icons"><a class="icon-link" href="https://github.com/TimMikeladze/JevLang" aria-label="JevLang on GitHub"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a><a class="icon-link" href="https://x.com/linesofcode" aria-label="linesofcode on X"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg></a><a class="icon-link" href="https://www.linkedin.com/in/tim-mikeladze" aria-label="Tim Mikeladze on LinkedIn"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a><span class="head-div" aria-hidden="true"></span>
 <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Theme: system. Click to change"><span class="i i-system"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM8 21h8M12 17v4"/></svg></span><span class="i i-dark"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span><span class="i i-light"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></span></button>
 </div>
 </div></header>
@@ -377,7 +383,7 @@ h1{font-size:2.6rem}
 <article class="ref-doc">
 <h1 id="jevlang">JevLang</h1>
 <p><strong>Decide once, trust everywhere.</strong> JevLang is a policy engine for decisions that used to live inside a prompt: routing, triage, approvals, escalation, guarding an agent's tools. You write the policy once in plain TypeScript (or Python); JevLang asks the model only the questions the policy needs, checks the answers, decides — and can prove, from a signed journal, exactly why it decided that.</p>
-<pre><code>npm install jevlang</code></pre>
+<pre><code>bun add jevlang</code></pre>
 <p>No runtime dependencies. Node 22+. Pure decisions, validation and replay work fully offline — no Racket, no account, no network.</p>
 <h2 id="why-you-need-this">Why you need this</h2>
 <p>If an LLM picks a branch in your product today, you probably have some version of these problems:</p>
@@ -396,7 +402,7 @@ h1{font-size:2.6rem}
 <li><strong>It's portable.</strong> <code>policy.toJSON()</code> is a frozen artifact with a fingerprint; <code>compile(json)</code> loads it in the other language. One policy, verified identical in TypeScript and Python.</li>
 </ul>
 <h2 id="hello-world">Hello, world</h2>
-<p>The smallest useful policy: one question, one branch. If the model is at least 90% sure the message is spam, hold it; otherwise it goes to the inbox. Save this as <code>policy.mjs</code>:</p>
+<p>The smallest useful policy: one question, one branch. If the model is at least 90% sure the message is spam, hold it; otherwise it goes to the inbox. Save this as <code>policy.js</code>:</p>
 <pre><code><span class="tk-kw">import</span> { noul, definePolicy, rule, assign, hold } <span class="tk-kw">from</span> <span class="tk-str">'jevlang'</span>;
 <span class="tk-kw">import</span> { explainDecision } <span class="tk-kw">from</span> <span class="tk-str">'jevlang/explain'</span>;
 
@@ -413,7 +419,7 @@ h1{font-size:2.6rem}
 
 <span class="tk-cmt">// A model would answer 'spam?' with a probability. Here you pass one yourself.</span>
 console.<span class="tk-fn">log</span>(<span class="tk-fn">explainDecision</span>(policy.<span class="tk-fn">decide</span>({ <span class="tk-str">'spam?'</span>: { noul: <span class="tk-num">0.97</span> } })));</code></pre>
-<pre><code><span class="cmd">$ node policy.mjs  # 0.97 clears the 0.9 bar, so the message is held</span>
+<pre><code><span class="cmd">$ node policy.js  # 0.97 clears the 0.9 bar, so the message is held</span>
 <span class="act-hold">hold</span><span class="tk-cmt">  // almost certainly spam</span>
 <span class="tk-dim">  route 0, $.route.clauses[0]</span>
 <span class="tk-dim">  because</span>
@@ -423,7 +429,7 @@ console.<span class="tk-fn">log</span>(<span class="tk-fn">explainDecision</span
 <p>Every question is one of three kinds. The model answers each one with a number, and <code>decide</code> checks the answer against the question before any rule reads it — an option that was never declared, or a confidence outside 0 to 1, is an error.</p>
 <div class="tablewrap"><table><thead><tr><th>Kind</th><th>Use it for</th><th>The model answers</th><th>Test it with</th></tr></thead><tbody><tr><td data-label="Kind"><code>noul</code></td><td data-label="Use it for">a yes/no question</td><td data-label="The model answers"><code>{ noul: 0.97 }</code></td><td data-label="Test it with"><code>refund.yes(0.8)</code></td></tr><tr><td data-label="Kind"><code>choice</code></td><td data-label="Use it for">one option out of several</td><td data-label="The model answers"><code>{ choice: 'billing', confidence: 0.94 }</code></td><td data-label="Test it with"><code>department.is('billing')</code></td></tr><tr><td data-label="Kind"><code>score</code></td><td data-label="Use it for">a position on an ordered scale</td><td data-label="The model answers"><code>{ score: 2, confidence: 0.95, probabilities: { 0: 0.01, 1: 0.04, 2: 0.95 } }</code></td><td data-label="Test it with"><code>frustration.mostLikely('Angry, threatening to leave')</code></td></tr></tbody></table></div>
 <h2 id="a-real-one-support-routing">A real one: support routing</h2>
-<p>Three questions, two confidence gates, and a route where every ticket lands somewhere on purpose. Save the policy as <code>support.mjs</code>:</p>
+<p>Three questions, two confidence gates, and a route where every ticket lands somewhere on purpose. Save the policy as <code>support.js</code>:</p>
 <pre><code><span class="tk-kw">import</span> { choice, score, noul, definePolicy, gate, escalate, rule, all, page, assign } <span class="tk-kw">from</span> <span class="tk-str">'jevlang'</span>;
 
 <span class="tk-kw">const</span> department = <span class="tk-fn">choice</span>(<span class="tk-str">'department'</span>, <span class="tk-str">'Which team should handle this ticket?'</span>, {
@@ -460,9 +466,9 @@ console.<span class="tk-fn">log</span>(<span class="tk-fn">explainDecision</span
 <li><strong>The angry-refund rule is first for a reason.</strong> Clause order is policy, visible and diffable in review.</li>
 <li><strong><code>mostLikely</code>, <code>is</code>, <code>yes</code> are checked.</strong> Mismatched option names, missing levels, ungated clauses and non-exhaustive routes are all construction-time errors.</li>
 </ul>
-<p>Decide three tickets, with the model's answers written by hand. Save this as <code>decide.mjs</code>:</p>
+<p>Decide three tickets, with the model's answers written by hand. Save this as <code>decide.js</code>:</p>
 <pre><code><span class="tk-kw">import</span> { explainDecision } <span class="tk-kw">from</span> <span class="tk-str">'jevlang/explain'</span>;
-<span class="tk-kw">import</span> { policy } <span class="tk-kw">from</span> <span class="tk-str">'./support.mjs'</span>;
+<span class="tk-kw">import</span> { policy } <span class="tk-kw">from</span> <span class="tk-str">'./support.js'</span>;
 
 <span class="tk-kw">const</span> tickets = {
   <span class="tk-str">'a clear billing question'</span>: {
@@ -486,7 +492,7 @@ console.<span class="tk-fn">log</span>(<span class="tk-fn">explainDecision</span
   console.<span class="tk-fn">log</span>(<span class="tk-str">`# ${name}`</span>);
   console.<span class="tk-fn">log</span>(<span class="tk-fn">explainDecision</span>(policy.<span class="tk-fn">decide</span>(answers)));
 }</code></pre>
-<pre><code><span class="cmd">$ node decide.mjs  # three tickets, three different decisions</span>
+<pre><code><span class="cmd">$ node decide.js  # three tickets, three different decisions</span>
 <span class="tk-cmt"># a clear billing question</span>
 <span class="act-assign">assign</span><span class="tk-ink"> billing-queue</span>
 <span class="tk-dim">  route 1, $.route.clauses[1]</span>
@@ -503,17 +509,17 @@ console.<span class="tk-fn">log</span>(<span class="tk-fn">explainDecision</span
 <span class="tk-dim">  because</span>
     <span class="tk-ink">refund-requested?</span> = <span class="tk-num">0.97</span><span class="tk-dim"></span>
     <span class="tk-ink">frustration</span> = <span class="tk-num">2</span><span class="tk-dim">   confidence 0.95   (most likely: 2 (p=0.95))</span></code></pre>
-<p>Now let a model answer instead. <code>evaluateWithProvider</code> sends the input to a model, validates its answers and decides. It uses the hosted <code>jev-latest</code> model when <code>TYPESAFE_API_KEY</code> is set, and a logged-in <code>claude</code> or <code>codex</code> CLI otherwise. Save this as <code>ask.mjs</code>:</p>
+<p>Now let a model answer instead. <code>evaluateWithProvider</code> sends the input to a model, validates its answers and decides. It uses the hosted <code>jev-latest</code> model when <code>TYPESAFE_API_KEY</code> is set, and a logged-in <code>claude</code> or <code>codex</code> CLI otherwise. Save this as <code>ask.js</code>:</p>
 <pre><code><span class="tk-kw">import</span> { evaluateWithProvider } <span class="tk-kw">from</span> <span class="tk-str">'jevlang'</span>;
 <span class="tk-kw">import</span> { explainDecision } <span class="tk-kw">from</span> <span class="tk-str">'jevlang/explain'</span>;
-<span class="tk-kw">import</span> { policy } <span class="tk-kw">from</span> <span class="tk-str">'./support.mjs'</span>;
+<span class="tk-kw">import</span> { policy } <span class="tk-kw">from</span> <span class="tk-str">'./support.js'</span>;
 
 <span class="tk-kw">const</span> ticket = <span class="tk-str">&quot;This is the THIRD time you've double-charged me. Refund me today or I'm cancelling and disputing every charge.&quot;</span>;
 
 <span class="tk-kw">const</span> decision = <span class="tk-kw">await</span> <span class="tk-fn">evaluateWithProvider</span>(policy, ticket);
 console.<span class="tk-fn">log</span>(<span class="tk-fn">explainDecision</span>(decision));
 console.<span class="tk-fn">log</span>(<span class="tk-str">`answered by ${decision.provider} ${decision.model}`</span>);</code></pre>
-<pre><code><span class="cmd">$ node ask.mjs  # live: one real ticket sent to the hosted model</span>
+<pre><code><span class="cmd">$ node ask.js  # live: one real ticket sent to the hosted model</span>
 <span class="act-page">page</span><span class="tk-ink"> retention-oncall</span><span class="tk-cmt">  // angry refund request</span>
 <span class="tk-dim">  route 0, $.route.clauses[0]</span>
 <span class="tk-dim">  because</span>
@@ -521,7 +527,7 @@ console.<span class="tk-fn">log</span>(<span class="tk-str">`answered by ${decis
     <span class="tk-ink">frustration</span> = <span class="tk-num">2</span><span class="tk-dim">   confidence 1   (most likely: Angry, threatening to leave (p=1.00))</span>
 <span class="tk-dim">answered by typesafe jev-1.13.0</span></code></pre>
 <h2 id="mistakes-are-build-errors">Mistakes are build errors</h2>
-<p>A mistyped option, a clause with no confidence gate and a route that can miss a case are all refused when <code>definePolicy</code> runs, with the fix named, so they never reach a customer. Save this as <code>broken.mjs</code>:</p>
+<p>A mistyped option, a clause with no confidence gate and a route that can miss a case are all refused when <code>definePolicy</code> runs, with the fix named, so they never reach a customer. Save this as <code>broken.js</code>:</p>
 <pre><code><span class="tk-kw">import</span> { choice, definePolicy, rule, assign, gate, escalate } <span class="tk-kw">from</span> <span class="tk-str">'jevlang'</span>;
 
 <span class="tk-kw">const</span> department = <span class="tk-fn">choice</span>(<span class="tk-str">'department'</span>, <span class="tk-str">'Which team should handle this ticket?'</span>, {
@@ -549,7 +555,7 @@ console.<span class="tk-fn">log</span>(<span class="tk-str">`answered by ${decis
 <span class="tk-kw">for</span> (<span class="tk-kw">const</span> [name, attempt] <span class="tk-kw">of</span> Object.<span class="tk-fn">entries</span>(attempts)) {
   <span class="tk-kw">try</span> { <span class="tk-fn">attempt</span>(); } <span class="tk-kw">catch</span> (error) { console.<span class="tk-fn">log</span>(<span class="tk-str">`# ${name}\n${error.message}`</span>); }
 }</code></pre>
-<pre><code><span class="cmd">$ node broken.mjs  # each mistake is refused, with the fix</span>
+<pre><code><span class="cmd">$ node broken.js  # each mistake is refused, with the fix</span>
 <span class="tk-cmt"># a mistyped option</span>
 <span class="tk-dim">$.route.clauses[0].when:</span> 'billling' is not an option of 'department'
 <span class="tk-fix">  Use one of: billing, technical. Did you mean 'billing'?</span>
@@ -561,7 +567,7 @@ console.<span class="tk-fn">log</span>(<span class="tk-str">`answered by ${decis
 <span class="tk-fix">  Add otherwise, an unconditional clause, or cover every option of one static choice.</span></code></pre>
 <h2 id="guard-an-agent-s-tools">Guard an agent's tools</h2>
 <p><code>jevlang/gate</code> is a policy that decides whether an agent's tool call runs — as a Claude Code / Codex PreToolUse hook, or an MCP server standing in front of another one. The verdict is <code>allow</code>, <code>ask</code> or <code>deny</code>; a call that errors is never allowed — it asks or denies, and says why. Two lists run before the model is ever called: <code>deny</code> and <code>allow</code> match tool names (<code>WebFetch</code>, <code>mcp__prod__*</code>), so <code>Read</code> needs no judgement and <code>mcp__prod__*</code> is blocked in code. Every other call goes to the policy. Arguments are redacted (emails, keys, cards, ...) before they leave the machine, and the verdict log records arguments only as digests.</p>
-<p>Save the policy as <code>gate.mjs</code>; running it writes <code>gate.json</code>, the file the hook loads:</p>
+<p>Save the policy as <code>gate.js</code>; running it writes <code>gate.json</code>, the file the hook loads:</p>
 <pre><code><span class="tk-kw">import</span> { writeFileSync } <span class="tk-kw">from</span> <span class="tk-str">'node:fs'</span>;
 <span class="tk-kw">import</span> { choice, noul, definePolicy, gate, rule, assign, escalate } <span class="tk-kw">from</span> <span class="tk-str">'jevlang'</span>;
 
@@ -606,7 +612,7 @@ console.<span class="tk-fn">log</span>(<span class="tk-str">`answered by ${decis
 
 <span class="tk-fn">writeFileSync</span>(<span class="tk-str">'gate.json'</span>, JSON.<span class="tk-fn">stringify</span>(policy.<span class="tk-fn">toJSON</span>(), <span class="tk-kw">null</span>, <span class="tk-num">2</span>));
 console.<span class="tk-fn">log</span>(<span class="tk-str">'wrote gate.json'</span>);</code></pre>
-<pre><code><span class="cmd">$ node gate.mjs</span>
+<pre><code><span class="cmd">$ node gate.js</span>
 wrote gate.json</code></pre>
 <p>Name the tools that need no judgement in <code>gate-options.json</code>:</p>
 <pre><code>{ <span class="tk-key">&quot;deny&quot;</span>: [<span class="tk-str">&quot;WebFetch&quot;</span>, <span class="tk-str">&quot;mcp__prod__*&quot;</span>], <span class="tk-key">&quot;allow&quot;</span>: [<span class="tk-str">&quot;Read&quot;</span>, <span class="tk-str">&quot;Grep&quot;</span>, <span class="tk-str">&quot;Glob&quot;</span>] }</code></pre>
@@ -619,7 +625,7 @@ wrote gate.json</code></pre>
         <span class="tk-key">&quot;hooks&quot;</span>: [
           {
             <span class="tk-key">&quot;type&quot;</span>: <span class="tk-str">&quot;command&quot;</span>,
-            <span class="tk-key">&quot;command&quot;</span>: <span class="tk-str">&quot;npx jev gate hook \&quot;$CLAUDE_PROJECT_DIR/gate.json\&quot; \&quot;$CLAUDE_PROJECT_DIR/gate-options.json\&quot;&quot;</span>
+            <span class="tk-key">&quot;command&quot;</span>: <span class="tk-str">&quot;bunx jev gate hook \&quot;$CLAUDE_PROJECT_DIR/gate.json\&quot; \&quot;$CLAUDE_PROJECT_DIR/gate-options.json\&quot;&quot;</span>
           }
         ]
       }
@@ -627,30 +633,30 @@ wrote gate.json</code></pre>
   }
 }</code></pre>
 <p>The hook reads the tool call on stdin and answers with the verdict. A tool on the <code>allow</code> list, and one on the <code>deny</code> list, are decided without any model:</p>
-<pre><code><span class="cmd">$ echo '{&quot;hook_event_name&quot;:&quot;PreToolUse&quot;,&quot;tool_name&quot;:&quot;Read&quot;,&quot;tool_input&quot;:{&quot;file_path&quot;:&quot;README.md&quot;}}' | npx jev gate hook gate.json gate-options.json  # allow list, no model call</span>
+<pre><code><span class="cmd">$ echo '{&quot;hook_event_name&quot;:&quot;PreToolUse&quot;,&quot;tool_name&quot;:&quot;Read&quot;,&quot;tool_input&quot;:{&quot;file_path&quot;:&quot;README.md&quot;}}' | bunx jev gate hook gate.json gate-options.json  # allow list, no model call</span>
 {<span class="tk-key">&quot;hookSpecificOutput&quot;</span>:{<span class="tk-key">&quot;hookEventName&quot;</span>:&quot;PreToolUse&quot;,<span class="tk-key">&quot;permissionDecision&quot;</span>:<span class="act-allow">&quot;allow&quot;</span>,<span class="tk-key">&quot;permissionDecisionReason&quot;</span>:&quot;jev gate (tool-gate): 'Read' is on the allow list&quot;}}</code></pre>
-<pre><code><span class="cmd">$ echo '{&quot;hook_event_name&quot;:&quot;PreToolUse&quot;,&quot;tool_name&quot;:&quot;WebFetch&quot;,&quot;tool_input&quot;:{&quot;url&quot;:&quot;https://example.com&quot;}}' | npx jev gate hook gate.json gate-options.json  # deny list, no model call</span>
+<pre><code><span class="cmd">$ echo '{&quot;hook_event_name&quot;:&quot;PreToolUse&quot;,&quot;tool_name&quot;:&quot;WebFetch&quot;,&quot;tool_input&quot;:{&quot;url&quot;:&quot;https://example.com&quot;}}' | bunx jev gate hook gate.json gate-options.json  # deny list, no model call</span>
 {<span class="tk-key">&quot;hookSpecificOutput&quot;</span>:{<span class="tk-key">&quot;hookEventName&quot;</span>:&quot;PreToolUse&quot;,<span class="tk-key">&quot;permissionDecision&quot;</span>:<span class="act-deny">&quot;deny&quot;</span>,<span class="tk-key">&quot;permissionDecisionReason&quot;</span>:&quot;jev gate (tool-gate): 'WebFetch' is on the deny list&quot;}}</code></pre>
 <p>Any other tool goes to the policy, which asks the model the three questions:</p>
-<pre><code><span class="cmd">$ echo '{&quot;hook_event_name&quot;:&quot;PreToolUse&quot;,&quot;tool_name&quot;:&quot;Bash&quot;,&quot;tool_input&quot;:{&quot;command&quot;:&quot;rm -rf build&quot;}}' | npx jev gate hook gate.json gate-options.json  # live: the model judges a call on neither list</span>
+<pre><code><span class="cmd">$ echo '{&quot;hook_event_name&quot;:&quot;PreToolUse&quot;,&quot;tool_name&quot;:&quot;Bash&quot;,&quot;tool_input&quot;:{&quot;command&quot;:&quot;rm -rf build&quot;}}' | bunx jev gate hook gate.json gate-options.json  # live: the model judges a call on neither list</span>
 {<span class="tk-key">&quot;hookSpecificOutput&quot;</span>:{<span class="tk-key">&quot;hookEventName&quot;</span>:&quot;PreToolUse&quot;,<span class="tk-key">&quot;permissionDecision&quot;</span>:<span class="act-ask">&quot;ask&quot;</span>,<span class="tk-key">&quot;permissionDecisionReason&quot;</span>:&quot;jev gate (tool-gate): it destroys data&quot;}}</code></pre>
 <p>Asking a person is real: modern clients get a signed, expiring approve/deny form whose <code>requestState</code> names a digest of the exact call — an approval cannot be replayed on a different one. Codex, which has no &quot;ask&quot;, denies with an approval fingerprint that <code>jev gate approve-once</code> lets through exactly once.</p>
 <h2 id="call-it-from-anywhere">Call it from anywhere</h2>
 <p>One policy, five ways in.</p>
 <ul>
 <li><strong>In code</strong> — <code>policy.decide(answers)</code> for answers you have, <code>evaluateWithProvider(policy, input)</code> to let a model answer.</li>
-<li><strong>From a shell</strong> — <code>npx jev decide policy.json answers.json</code>, after <code>policy.toJSON()</code> froze the policy to a file.</li>
+<li><strong>From a shell</strong> — <code>bunx jev decide policy.json answers.json</code>, after <code>policy.toJSON()</code> froze the policy to a file.</li>
 <li><strong>Over HTTP</strong> — <code>startServer(policy)</code> from <code>jevlang/serve</code>: <code>POST /decide</code>, <code>/evaluate</code> and <code>/dispatch</code>, <code>GET /policy</code> and <code>/healthz</code>.</li>
 <li><strong>As MCP tools</strong> — <code>policyMcpServer(policy)</code> from <code>jevlang/mcp</code>, over stdio or <code>POST /mcp</code>.</li>
 <li><strong>As an agent hook</strong> — <code>jev gate hook gate.json</code> in front of Claude Code or Codex.</li>
 </ul>
-<p>The HTTP door is one file. Save it as <code>serve.mjs</code> and start it; if 8080 is taken it takes the next free port and prints it, and never touches what holds the first:</p>
+<p>The HTTP door is one file. Save it as <code>serve.js</code> and start it; if 8080 is taken it takes the next free port and prints it, and never touches what holds the first:</p>
 <pre><code><span class="tk-kw">import</span> { startServer } <span class="tk-kw">from</span> <span class="tk-str">'jevlang/serve'</span>;
-<span class="tk-kw">import</span> { policy } <span class="tk-kw">from</span> <span class="tk-str">'./support.mjs'</span>;
+<span class="tk-kw">import</span> { policy } <span class="tk-kw">from</span> <span class="tk-str">'./support.js'</span>;
 
 <span class="tk-kw">const</span> server = <span class="tk-kw">await</span> <span class="tk-fn">startServer</span>(policy);
 console.<span class="tk-fn">log</span>(<span class="tk-str">`listening on ${server.url}`</span>);</code></pre>
-<pre><code><span class="cmd">$ node serve.mjs  # live: keeps running until you stop it</span>
+<pre><code><span class="cmd">$ node serve.js  # live: keeps running until you stop it</span>
 listening on http://127.0.0.1:8080</code></pre>
 <p>Any language can post it the answers. The response is the decision as JSON — <code>action</code>, <code>target</code>, <code>reason</code>, <code>readings</code> — plus an <code>explain</code> string, the same text <code>explainDecision</code> prints (<code>jq</code> is optional; it only picks that field out):</p>
 <pre><code><span class="cmd">$ curl -s http://127.0.0.1:8080/decide -d '{&quot;answers&quot;:{&quot;department&quot;:{&quot;choice&quot;:&quot;billing&quot;,&quot;confidence&quot;:0.55},&quot;frustration&quot;:{&quot;score&quot;:0,&quot;confidence&quot;:0.9},&quot;refund-requested?&quot;:{&quot;noul&quot;:0.02}}}' | jq -r .explain  # live: against the server above</span>
@@ -676,7 +682,7 @@ listening on http://127.0.0.1:8080</code></pre>
 bun install
 bun test
 bun run test:types</code></pre>
-<p>Every example above that is not marked live is re-run by <code>bun test</code>: the <code>file=</code> blocks are written to a scratch project that has <code>jevlang</code> installed the way npm installs it, each <code>$</code> command runs there, and its output must match the block. Editing an example without re-running it fails the suite, and so does the landing page build.</p>
+<p>Every example above that is not marked live is re-run by <code>bun test</code>: the <code>file=</code> blocks are written to a scratch project with <code>jevlang</code> installed as a plain <code>node_modules/jevlang</code>, each <code>$</code> command runs there, and its output must match the block. Editing an example without re-running it fails the suite, and so does the landing page build.</p>
 <p>The engine is pinned by differential tests against the Racket <code>jev</code> implementation — decisions, wire questions, built state, reports, signatures and verdicts match byte-for-byte — and the Python port (<code>jevlang-sh</code> on PyPI) runs the same product on a pure-Python engine with the same oracles. Those differential tests read the Racket monorepo, so they skip unless it is checked out beside this package; everything else runs offline with no Racket anywhere. See <a href="COMPATIBILITY.md">COMPATIBILITY.md</a> for the full evidence table and the short list of known gaps (code lookup, a hosted offering, and a few compile-time conveniences).</p>
 <p>The suite in this checkout (the version banner and timings are trimmed):</p>
 <pre><code><span class="cmd">$ bun install  # live: the suite that re-runs the examples above</span>

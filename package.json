@@ -38,75 +38,75 @@
   "exports": {
     ".": {
       "types": "./src/index.d.ts",
-      "default": "./src/index.mjs"
+      "default": "./src/index.js"
     },
     "./provider": {
       "types": "./src/provider/index.d.ts",
-      "default": "./src/provider/index.mjs"
+      "default": "./src/provider/index.js"
     },
     "./dispatch": {
       "types": "./src/dispatch.d.ts",
-      "default": "./src/dispatch.mjs"
+      "default": "./src/dispatch.js"
     },
     "./journal": {
       "types": "./src/journal.d.ts",
-      "default": "./src/journal.mjs"
+      "default": "./src/journal.js"
     },
     "./journal-db": {
       "types": "./src/journal.d.ts",
-      "default": "./src/journal-db.mjs"
+      "default": "./src/journal-db.js"
     },
     "./handlers": {
       "types": "./src/handlers.d.ts",
-      "default": "./src/handlers.mjs"
+      "default": "./src/handlers.js"
     },
     "./loop": {
       "types": "./src/loop.d.ts",
-      "default": "./src/loop.mjs"
+      "default": "./src/loop.js"
     },
     "./session": {
       "types": "./src/loop.d.ts",
-      "default": "./src/session.mjs"
+      "default": "./src/session.js"
     },
     "./mcp": {
       "types": "./src/mcp.d.ts",
-      "default": "./src/mcp.mjs"
+      "default": "./src/mcp.js"
     },
     "./mcp-client": {
       "types": "./src/mcp-client.d.ts",
-      "default": "./src/mcp-client.mjs"
+      "default": "./src/mcp-client.js"
     },
     "./mcp-import": {
       "types": "./src/mcp-client.d.ts",
-      "default": "./src/mcp-import.mjs"
+      "default": "./src/mcp-import.js"
     },
     "./gate": {
       "types": "./src/gate.d.ts",
-      "default": "./src/gate.mjs"
+      "default": "./src/gate.js"
     },
     "./explain": {
       "types": "./src/gate.d.ts",
-      "default": "./src/explain.mjs"
+      "default": "./src/explain.js"
     },
     "./webhooks": {
       "types": "./src/webhooks.d.ts",
-      "default": "./src/webhooks.mjs"
+      "default": "./src/webhooks.js"
     },
     "./harvest": {
       "types": "./src/webhooks.d.ts",
-      "default": "./src/harvest.mjs"
+      "default": "./src/harvest.js"
     },
     "./wiring": {
       "types": "./src/webhooks.d.ts",
-      "default": "./src/wiring.mjs"
+      "default": "./src/wiring.js"
     },
     "./serve": {
       "types": "./src/serve.d.ts",
-      "default": "./src/serve.mjs"
+      "default": "./src/serve.js"
     }
   },
   "bin": {
-    "jev": "src/cli.mjs"
+    "jev": "src/cli.js"
   },
   "publishConfig": {
     "access": "public"
@@ -117,12 +117,12 @@
     "COMPATIBILITY.md"
   ],
   "scripts": {
-    "test": "bun test test/*.test.mjs",
+    "test": "bun test test/*.test.js",
     "test:types": "tsc -p test/tsconfig.json",
     "release": "bumpp --commit --push --tag",
-    "site": "bun site/build.mjs",
-    "site:card": "bun site/shoot-card.mjs",
-    "test:site": "bun test site/site.test.mjs"
+    "site": "bun site/build.js",
+    "site:card": "bun site/shoot-card.js",
+    "test:site": "bun test site/site.test.js"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
