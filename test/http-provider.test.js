@@ -62,3 +62,16 @@ test('gateway: inside a Vercel Function the OIDC token comes from the request co
     assert.equal((await gatewayProvider().discover()).status, 'ready');
   } finally { delete globalThis[key]; }
 });
+
+test('the schema sent to a model API requires confidence wherever an answer offers it', async () => {
+  const seen = [];
+  const { choice, gate } = await import('../src/index.js');
+  const kind = choice('kind', 'Which?', ['a', 'b']);
+  const gated = definePolicy({ name: 'gated', questions: [kind, spam], gates: [gate(kind, 0.8, hold())], route: { clauses: [rule(kind.is('a'), hold())], otherwise: assign('inbox') } });
+  const registry = new ProviderRegistry();
+  registry.register(openaiProvider({ apiKey: 'k', fetch: fakeFetch(200, { choices: [{ message: { content: JSON.stringify({ kind: { type: 'choice', choice: 'a', confidence: 0.9 }, ...answers }) } }] }, seen) }));
+  await evaluateWithProvider(gated, 'x', { registry, config: mergeProviderConfig({ project: { provider: 'openai' } }) });
+  const props = seen[0].body.response_format.json_schema.schema.properties;
+  assert.ok(props.kind.required.includes('confidence'));
+  assert.deepEqual(props['spam?'].required, ['type', 'noul']);
+});

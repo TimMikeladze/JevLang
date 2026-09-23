@@ -45,8 +45,15 @@ const result = (output, target, model, usage, requestId) => ({
   output, target: target.model ? target : { ...target, model }, model, usage: usage ?? {},
   cost: unreportedCost(), requestId: requestId ?? null, exitStatus: 0, changed: [], attempts: [],
 });
+// Gates read an answer's confidence, and small models drop optional fields,
+// so the schema sent to a model API requires confidence wherever it is offered.
+const requireConfidence = schema => !schema || typeof schema !== 'object' ? schema : {
+  ...schema,
+  properties: Object.fromEntries(Object.entries(schema.properties ?? {}).map(([name, answer]) => [name,
+    answer?.properties?.confidence ? { ...answer, required: [...new Set([...(answer.required ?? []), 'confidence'])] } : answer])),
+};
 const schemaOf = (id, request, target) => {
-  if (request.schema) return request.schema;
+  if (request.schema) return requireConfidence(request.schema);
   throw fail(id, target, 'configuration', 'needs the answer schema on the request');
 };
 
