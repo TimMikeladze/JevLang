@@ -45,8 +45,9 @@ a real cost:
 - **Live model calls are capped twice.** `rateLimit(redisJournal(redis), ...)`
   allows `LIVE_PER_CLIENT_PER_HOUR` (default 5) per client IP and
   `LIVE_PER_DAY` (default 200) for the whole site, across every instance; over
-  either is a 429. In production the live model is off (503) until Redis is
-  configured, since per-instance memory counts would not hold the caps. Offline
+  either is a 429. `JEV_STATE` picks where the counts live: `memory` (each
+  instance counts on its own, so the caps hold per instance), `upstash`
+  (shared), or unset for Upstash when its env is present. Offline
   `answers` are never limited: they cost nothing. Production uses
   `JEV_PROVIDER=gateway` with `JEV_GATEWAY_MODEL=google/gemini-2.5-flash-lite`,
   the cheapest and fastest model that answered correctly in testing.

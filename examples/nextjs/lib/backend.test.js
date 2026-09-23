@@ -86,13 +86,15 @@ test('an unknown provider or a missing key is reported, not attempted', async ()
   } finally { delete process.env.JEV_PROVIDER; }
 });
 
-test('in production the live model needs Redis, so the caps are shared', async () => {
-  process.env.VERCEL_ENV = 'production';
-  process.env.JEV_PROVIDER = 'openai';
-  process.env.OPENAI_API_KEY = 'test';
-  try {
-    const response = await decideRequest(doorstep, new Request('http://x', { method: 'POST', body: JSON.stringify({ input: { message: 'nobody home', valueUsd: 40, raining: false } }) }));
-    expect(response.status).toBe(503);
-    expect((await response.json()).error).toContain('Upstash');
-  } finally { for (const k of ['VERCEL_ENV', 'JEV_PROVIDER', 'OPENAI_API_KEY']) delete process.env[k]; }
+test('JEV_STATE picks the backend explicitly', () => {
+  process.env.JEV_STATE = 'memory';
+  process.env.UPSTASH_REDIS_REST_URL = 'http://x'; process.env.UPSTASH_REDIS_REST_TOKEN = 't';
+  resetBackend();
+  expect(backend().name).toBe('memory');
+  process.env.JEV_STATE = 'upstash';
+  resetBackend();
+  expect(backend().name).toBe('upstash');
+  useMemory(); resetBackend();
+  expect(() => backend()).toThrow(/JEV_STATE=upstash/);
+  delete process.env.JEV_STATE; resetBackend();
 });

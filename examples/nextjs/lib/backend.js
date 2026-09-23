@@ -1,5 +1,8 @@
 // Shared state for the routes: a decision log and a rate limiter.
 //
+// In memory each instance keeps its own counts, so the caps below hold per
+// instance, not site-wide; switch to Upstash (JEV_STATE=upstash) for shared caps.
+//
 // With Upstash env (UPSTASH_REDIS_REST_URL/_TOKEN, or the KV_REST_API_URL/_TOKEN
 // Vercel's Marketplace Redis sets) both live in Redis, shared by every
 // instance; records expire after DECISION_RETENTION_HOURS, so there is no
@@ -13,6 +16,17 @@ import { upstash, redisJournal, redisStore } from 'jevlang/redis';
 
 const redisConfigured = () => Boolean((process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL)
   && (process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN));
+// JEV_STATE picks the backend: 'memory', 'upstash', or unset for Upstash when
+// its env is present and memory otherwise.
+const useRedis = () => {
+  const choice = process.env.JEV_STATE;
+  if (choice === 'memory') return false;
+  if (choice === 'upstash') {
+    if (!redisConfigured()) throw new Error('JEV_STATE=upstash but no Upstash env (UPSTASH_REDIS_REST_URL/_TOKEN or KV_REST_API_URL/_TOKEN)');
+    return true;
+  }
+  return redisConfigured();
+};
 
 // Live model calls cost money, so they are capped twice: per client
 // (LIVE_PER_CLIENT_PER_HOUR, default 5) and for the whole site
@@ -30,7 +44,7 @@ function limits(journal) {
 
 function create() {
   const ttl = 3600 * Number(process.env.DECISION_RETENTION_HOURS ?? 24);
-  if (redisConfigured()) {
+  if (useRedis()) {
     const redis = upstash();
     return { name: 'upstash', store: redisStore(redis, { prefix: 'jevdemo:', ttl }), limit: limits(redisJournal(redis, { prefix: 'jevdemo:' })) };
   }

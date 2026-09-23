@@ -53,8 +53,9 @@ landing page and the examples. Add Upstash Redis from the Vercel Marketplace (se
 `DECISION_RETENTION_HOURS` (default 24), `LIVE_PER_CLIENT_PER_HOUR` (default 5),
 `LIVE_PER_DAY` (default 200), and a provider: `TYPESAFE_API_KEY`, or
 `JEV_PROVIDER=gateway` (with `JEV_GATEWAY_MODEL`), which authenticates with the
-deployment's OIDC token and needs no key. In production the live model stays
-off until Redis is connected, so the caps are shared. No cron: records expire
+deployment's OIDC token and needs no key. `JEV_STATE=memory` keeps the log and
+counts per instance; `JEV_STATE=upstash` shares them (unset: Upstash when its
+env is present). No cron: records expire
 in Redis.
 
 Design notes: [docs/nextjs-example.md](../../docs/nextjs-example.md).

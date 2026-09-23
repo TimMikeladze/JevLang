@@ -39,11 +39,6 @@ export async function decideRequest(policy, request, { onDecision } = {}) {
       if (!keys.some(k => process.env[k]) && !(provider === 'gateway' && vercelOidcToken())) {
         return Response.json({ error: `${keys[0]} is not set for JEV_PROVIDER=${provider}; pass \`answers\` to decide offline` }, { status: 503 });
       }
-      // In memory every instance counts on its own, so the caps would not hold
-      // in production: live calls there need the shared Redis limits.
-      if (backend().name === 'memory' && process.env.VERCEL_ENV === 'production') {
-        return Response.json({ error: 'the live model is off until shared rate limits (Upstash Redis) are configured; pass `answers`' }, { status: 503 });
-      }
       // Only live model calls cost money, so only they are rate limited.
       const allowed = await backend().limit(clientOf(request));
       if (!allowed.ok) {
