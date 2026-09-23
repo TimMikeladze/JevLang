@@ -212,8 +212,9 @@ test('link table honoured', () => {
   assert.deepEqual(labelsIn(index.split('<footer')[1]), ['JevLang on GitHub', 'linesofcode on X', 'Tim Mikeladze on LinkedIn', 'linesofcode on Discord']);
   assert.ok(header.indexOf('class="head-icons"') > header.indexOf('class="site-nav"'));
   for (const href of ['https://github.com/TimMikeladze/JevLang', 'https://x.com/linesofcode', 'https://www.linkedin.com/in/tim-mikeladze', 'https://discord.com/users/linesofcode']) assert.ok(index.includes(`href="${href}"`), href);
-  if (showCloud) assert.match(header, /Cloud <span class="ext">↗<\/span>/);
-  else assert.ok(!header.includes('cloud.jevlang.sh'), 'cloud hidden from the appbar');
+  // The Cloud nav item is always present, opens the sign-in page in a new tab.
+  assert.match(header, /Cloud <span class="ext">↗<\/span>/);
+  assert.ok(header.includes('href="https://cloud.jevlang.sh/sign-in" target="_blank" rel="noopener"'));
 });
 
 // extra: enumeration tables come from the docs, and the docs agree with each other.
@@ -263,6 +264,7 @@ test('diagrams render with values read from the docs', () => {
   const gate = section('tool-gate');
   for (const t of [...options.deny, ...options.allow]) assert.ok(gate.includes(t), t);
   if (showCloud) assert.ok(section('same-engine-hosted').includes('class="flow flow--3 flow--angles"'));
+  else assert.ok(!index.includes('id="same-engine-hosted"'), 'cloud landing section hidden');
 });
 
 // extra: code frames are highlighted, escaped, copyable and labelled; live runs say so.

@@ -22,7 +22,8 @@ export const meta = {
   license: 'MIT',
 };
 
-// Cloud is hidden from the site for now; flip to bring back the hosted section, aside and nav item.
+// Cloud's landing sections stay hidden for now; flip to bring back the hosted section and aside.
+// The nav's Cloud link is independent of this: it always points at the sign-in page.
 export const showCloud = false;
 
 const allSections = [
@@ -213,10 +214,11 @@ const allNav = [
     { label: 'SMS host', href: '/examples/reservation' },
     { label: 'Courier app', href: '/examples/doorstep' },
   ] },
-  { label: 'Cloud', href: 'https://cloud.jevlang.sh', external: true },
+  // The hosted product's front door: its sign-in page, which links to sign-up.
+  { label: 'Cloud', href: 'https://cloud.jevlang.sh/sign-in', external: true },
 ];
 
-export const nav = showCloud ? allNav : allNav.filter((n) => n.label !== 'Cloud');
+export const nav = allNav;
 
 export const footerColumns = [
   { title: 'JevLang', links: [
