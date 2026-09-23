@@ -1,0 +1,24 @@
+{
+  "name": "jevlang-nextjs-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "site": "node scripts/site.js",
+    "predev": "node scripts/site.js",
+    "dev": "node scripts/dev.js",
+    "dev:redis": "node scripts/site.js && node scripts/dev.js --redis",
+    "prebuild": "node scripts/site.js",
+    "build": "next build",
+    "start": "next start",
+    "test": "bun test lib"
+  },
+  "dependencies": {
+    "jevlang": "file:../..",
+    "next": "^16.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@vercel/config": "^0.7.1"
+  }
+}

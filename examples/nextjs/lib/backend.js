@@ -1,0 +1,58 @@
+// Shared state for the routes: a decision log and a rate limiter.
+//
+// With Upstash env (UPSTASH_REDIS_REST_URL/_TOKEN, or the KV_REST_API_URL/_TOKEN
+// Vercel's Marketplace Redis sets) both live in Redis, shared by every
+// instance; records expire after DECISION_RETENTION_HOURS, so there is no
+// cleanup cron. Without it they live in this process, which is enough for
+// `npm run dev` and tests.
+import { randomUUID } from 'node:crypto';
+import { memoryJournal } from 'jevlang/journal';
+import { memoryStore } from 'jevlang/store';
+import { rateLimit } from 'jevlang/dispatch';
+import { upstash, redisJournal, redisStore } from 'jevlang/redis';
+
+const redisConfigured = () => Boolean((process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL)
+  && (process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN));
+
+function create() {
+  const ttl = 3600 * Number(process.env.DECISION_RETENTION_HOURS ?? 24);
+  const perMinute = Number(process.env.RATE_LIMIT_PER_MINUTE ?? 20);
+  if (redisConfigured()) {
+    const redis = upstash();
+    const journal = redisJournal(redis, { prefix: 'jevdemo:' });
+    return { name: 'upstash', store: redisStore(redis, { prefix: 'jevdemo:', ttl }), limit: rateLimit(journal, 'live-model', { max: perMinute, per: 60 }) };
+  }
+  return { name: 'memory', store: memoryStore(), limit: rateLimit(memoryJournal(), 'live-model', { max: perMinute, per: 60 }) };
+}
+
+// One per process; kept on globalThis so dev hot reloads keep the log.
+export function backend() {
+  globalThis.__jevBackend ??= create();
+  return globalThis.__jevBackend;
+}
+export const resetBackend = () => { globalThis.__jevBackend = undefined; };
+
+// The record keeps what explains the decision: the redacted state the model
+// saw, the local facts the rules read, the readings and the policy fingerprint.
+export async function recordDecision({ policy, state, facts, decision }) {
+  return backend().store.append({
+    policy: policy.policy.name,
+    key: randomUUID(),   // every request is its own record, even with identical input
+    input: { state, facts },
+    decision: {
+      action: decision.action, target: decision.target ?? null, reason: decision.reason ?? null,
+      readings: decision.readings ?? [], source: decision.source ?? null,
+      provider: decision.provider ?? null, model: decision.model ?? null, request_id: decision.request_id ?? null,
+      fingerprint: policy.fingerprint(),
+    },
+  });
+}
+
+// Newest first, in the shape the UI's log reads.
+export async function recentDecisions(policyName, limit = 10) {
+  const records = await backend().store.list({ policy: policyName, limit });
+  return records.reverse().map(r => ({
+    at: new Date(r.at).toISOString(), policy: r.policy, fingerprint: r.decision.fingerprint,
+    state: r.input?.state ?? null, facts: r.input?.facts ?? null, decision: r.decision,
+  }));
+}

@@ -174,6 +174,8 @@ test('artefacts and sitemap', () => {
   const sm = read('./out/sitemap.xml');
   for (const loc of sm.matchAll(/<loc>([^<]+)<\/loc>/g)) {
     const path = new URL(loc[1]).pathname.replace(/\/$/, '');
+    // The examples are pages of the Next.js app, not files in site/out.
+    if (path.startsWith('/examples')) { assert.ok(existsSync(new URL(`../examples/nextjs/app${path}/page.js`, import.meta.url)), loc[1]); continue; }
     assert.ok(existsSync(new URL(`./out/${path === '' ? 'index' : path.replace(/^\//, '')}.html`, import.meta.url)), loc[1]);
   }
   assert.match(read('./out/robots.txt'), /Sitemap: https:\/\/jevlang\.sh\/sitemap\.xml/);

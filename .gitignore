@@ -4,3 +4,4 @@ compiled/
 site/shots/
 .vercel
 .env*
+.DS_Store

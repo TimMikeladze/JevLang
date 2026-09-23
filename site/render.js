@@ -723,8 +723,11 @@ export function pageMarkdown({ readme, cloudReadme }) {
   ].join('\n');
 }
 
+export const examplePaths = ['/examples', '/examples/maintenance', '/examples/reservation', '/examples/doorstep'];
+
 export function sitemap() {
-  const urls = [url('/'), url('/reference')].map((u) => `  <url><loc>${u}</loc></url>`).join('\n');
+  // /examples and its demos are pages of the Next.js app that serves this site.
+  const urls = [url('/'), url('/reference'), ...examplePaths.map(url)].map((u) => `  <url><loc>${u}</loc></url>`).join('\n');
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls}

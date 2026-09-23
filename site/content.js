@@ -206,6 +206,7 @@ export const links = [
 const allNav = [
   { label: 'Home', href: '/' },
   { label: 'Reference', href: '/reference' },
+  { label: 'Examples', href: '/examples' },
   { label: 'Cloud', href: 'https://cloud.jevlang.sh', external: true },
 ];
 
@@ -215,6 +216,7 @@ export const footerColumns = [
   { title: 'JevLang', links: [
     { label: 'Home', href: '/' },
     { label: 'Reference', href: '/reference' },
+    { label: 'Examples', href: '/examples' },
     { label: 'GitHub', href: 'repo', external: true },
     { label: 'linesofcode.dev', href: 'https://linesofcode.dev', external: true },
   ] },
