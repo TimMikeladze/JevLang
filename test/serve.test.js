@@ -161,3 +161,11 @@ test('handleRequest is a pure function, so a host can route however it likes', a
   // A trailing slash and a query string name the same route.
   assert.equal((await handleRequest(ticket, 'GET', '/healthz/?x=1', null)).status, 200);
 });
+
+test('a body over maxBody is refused with 413 before it is parsed', async t => {
+  const server = await startServer(ticket, { port: 0, maxBody: 64 });
+  t.after(() => server.stop());
+  const response = await fetch(`${server.url}/decide`, { method: 'POST', body: JSON.stringify({ answers: {}, pad: 'x'.repeat(500) }) });
+  assert.equal(response.status, 413);
+  assert.equal((await response.json()).kind, 'too-large');
+});

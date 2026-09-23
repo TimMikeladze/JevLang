@@ -172,14 +172,34 @@ async function dispatchRequest(policy, body, dispatchers, allowed, evaluate) {
 // holds the one it wanted.
 export async function startServer(policy, {
   host = '127.0.0.1', port = 8080, tries = 20, token = null, dispatchers = null,
-  routes = [], evaluate = null, log = null,
+  routes = [], evaluate = null, log = null, maxBody = 1024 * 1024, requestTimeout = 60,
 } = {}) {
   requireAt(Number.isInteger(port) && port >= 0, 'port', 'a port is a non-negative integer');
+  requireAt(Number.isInteger(maxBody) && maxBody > 0, 'maxBody', 'maxBody is a positive number of bytes');
+  requireAt(Number.isFinite(requestTimeout) && requestTimeout > 0, 'requestTimeout', 'requestTimeout is positive seconds');
   const dispatchAllowed = Boolean(token) || loopbackHost(host);
+  // Off loopback with no token, /decide, /evaluate and /policy answer anyone.
+  if (!token && !loopbackHost(host)) {
+    (log ?? process.stderr).write?.(`warning: serving on ${host} with no token; anyone who can reach it can ask for decisions (and spend model calls). Pass a token.\n`);
+  }
   const server = createServer((request, response) => {
     const chunks = [];
-    request.on('data', chunk => chunks.push(chunk));
+    let size = 0, tooLarge = false;
+    request.on('data', chunk => {
+      size += chunk.length;
+      if (size > maxBody) {
+        if (!tooLarge) {
+          tooLarge = true;
+          const text = JSON.stringify(errorBody(`the body is larger than ${maxBody} bytes`, 'too-large'));
+          response.writeHead(413, { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(text), Connection: 'close' }).end(text);
+          request.destroy();
+        }
+        return;
+      }
+      chunks.push(chunk);
+    });
     request.on('end', async () => {
+      if (tooLarge) return;
       const body = Buffer.concat(chunks);
       const route = routeOf(request.url);
       const extra = routes.find(r => routeMatches(r, route));
@@ -193,7 +213,9 @@ export async function startServer(policy, {
             dispatchers, dispatchAllowed, headers: request.headers, routes, evaluate,
           });
         } catch (error) {
-          answer = { status: 500, body: errorBody(error.message, 'internal') };
+          // The message may carry paths or provider output: it goes to the log, not the client.
+          log?.write?.(`error ${request.method} ${route}: ${error.message}\n`);
+          answer = { status: 500, body: errorBody('internal error', 'internal') };
         }
       }
       const text = answer.body === null || answer.body === undefined ? ''
@@ -207,6 +229,10 @@ export async function startServer(policy, {
       log?.write?.(`${request.method} ${route} ${answer.status}\n`);
     });
   });
+  // Bounded lifetimes, so slow or stalled clients cannot pile up connections.
+  server.requestTimeout = requestTimeout * 1000;
+  server.headersTimeout = Math.min(requestTimeout * 1000, 20_000);
+  server.keepAliveTimeout = 5_000;
   const wanted = port;
   let bound = null;
   for (let attempt = 0; attempt < tries; attempt += 1) {

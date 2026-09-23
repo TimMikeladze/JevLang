@@ -10,3 +10,4 @@ export { claudeProvider, claudeCliRunner, lastStructuredCall } from './providers
 export { codexProvider, codexCliRunner, codexOutputSchema, restoreOptionalFields, catalogToSettings } from './providers/codex.js';
 export { fxProvider, fxCliRunner } from './providers/fx.js';
 export { layaProvider } from './providers/laya.js';
+export { openaiProvider, gatewayProvider, anthropicProvider } from './providers/http.js';

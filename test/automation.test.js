@@ -60,6 +60,8 @@ test('a shell handler runs a declared argv, one argument per placeholder, and ne
   assert.equal(list.stdout.trim(), 'kitchen bedroom');
   await assert.rejects(handlers.failing({}, decision('act', 'failing'), {}), /exited with 3[\s\S]*trouble/);
   await assert.rejects(handlers.slow({}, decision('act', 'slow'), {}), /ran longer than 0.2 seconds and was killed/);
+  // A decision value that starts with '-' would be read as an option: refused.
+  await assert.rejects(handlers['lock-door']({}, decision('act', 'lock-door', { door: '--config=/etc/evil' }), {}), /starts with '-'/);
   // A placeholder for the executable is refused when the handler is built.
   assert.throws(() => handlerFromSpec('bad', { type: 'shell', argv: ['{exe}'] }, dir), /cannot be a placeholder/);
   assert.throws(() => handlerFromSpec('bad', { type: 'nonsense' }, dir), /unknown type/);
@@ -98,6 +100,10 @@ test('an http handler posts the decision with its idempotency key, and a confirm
   const denying = confirmHandler(async () => ({ approved: false }));
   assert.equal(await denying({}, decision('confirm', 'unlock'), {}), false);
   await assert.rejects(handlers.broken({}, decision('assign', 'broken'), {}), /answered 500[\s\S]*the model is down/);
+  // A placeholder host needs allow_hosts, and only those hosts are reached.
+  assert.throws(() => handlerFromSpec('open', { type: 'http', url: 'http://{target}/hook' }), /allow_hosts/);
+  const pinned = handlerFromSpec('pinned', { type: 'http', url: 'http://{target}/hook', allow_hosts: ['hooks.example.com'] });
+  await assert.rejects(pinned({}, decision('assign', '169.254.169.254'), {}), /not in allow_hosts/);
 });
 
 test('a log handler writes one JSON line per decision', async () => {

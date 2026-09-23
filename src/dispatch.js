@@ -28,11 +28,26 @@ export class DispatchError extends Error {
   }
 }
 
-// A budget covers every act decision, or the targets named in `only`.
-export function budget(name, { max, per, amount = () => 1, only = null } = {}) {
+// A budget covers every act decision, or the targets named in `only`. With
+// `by`, each value it returns (a customer, a target) gets its own budget.
+export function budget(name, { max, per, amount = () => 1, only = null, by = null } = {}) {
   requireAt(finite(max) && max >= 0, 'budget.max', 'a budget needs a maximum of at least 0');
   requireAt(finite(per) && per > 0, 'budget.per', 'a budget needs a positive window in seconds');
-  return { name, max, per, amount, only };
+  requireAt(by === null || typeof by === 'function', 'budget.by', 'by is a function of the decision');
+  return { name, max, per, amount, only, by };
+}
+
+// A sliding-window rate limit over any journal: at most `max` takes per key in
+// any `per` seconds. It is a budget with an amount of 1, so every journal
+// (memory, SQL, Redis) enforces it atomically.
+//
+//   const limit = rateLimit(journal, 'evaluate', { max: 20, per: 60 });
+//   if (!(await limit(ip)).ok) return new Response('slow down', { status: 429 });
+export function rateLimit(journal, name, { max, per, clock = () => Date.now() } = {}) {
+  requireAt(isJournal(journal), 'journal', 'a rate limit needs a journal');
+  requireAt(Number.isInteger(max) && max >= 0, 'rateLimit.max', 'max is a count of at least 0');
+  requireAt(finite(per) && per > 0, 'rateLimit.per', 'per is a positive window in seconds');
+  return async (key = '') => ({ ok: await journal.claimBudget(`${name}:${key}`, clock(), 1000 * per, 1, max) });
 }
 
 // Links run in order: one that throws or returns false passes the case on, the
@@ -114,7 +129,7 @@ export function makeDispatcher(handlers, {
   policy = null, policyTargets = null, actions = null, default: fallback = null, allowExtra = false, computedTargets = 'unset',
   confirm = null, maxHops = 4, guards = {}, dryRun = false, planFailure = 'stop',
   clock = () => Date.now(), roles = defaultRoles, allow = {}, timeout = null,
-  journal = null, budgets = [], onScheduled = null, autoRunDue = true,
+  journal = null, budgets = [], onScheduled = null, autoRunDue = true, stepLease = null, scheduleLease = null,
 } = {}) {
   requireAt(object(handlers), 'handlers', 'handlers is a map of target to handler');
   for (const [key, value] of Object.entries(handlers)) requireAt(typeof value === 'function', `handlers.${key}`, 'a handler is a function of (state, decision)');
@@ -124,6 +139,7 @@ export function makeDispatcher(handlers, {
   requireAt(['stop', 'continue', 'rollback'].includes(planFailure), 'planFailure', "planFailure is 'stop', 'continue' or 'rollback'");
   requireAt(timeout === null || (finite(timeout) && timeout > 0), 'timeout', 'a timeout is positive seconds');
   requireAt(journal === null || isJournal(journal), 'journal', 'a journal implements the journal operations');
+  for (const [k, v] of [['stepLease', stepLease], ['scheduleLease', scheduleLease]]) requireAt(v === null || (finite(v) && v > 0), k, `${k} is positive seconds`);
   for (const [key, guard] of Object.entries(guards)) requireAt(typeof guard === 'function', `guards.${key}`, 'a guard is a function of (state, decision)');
 
   const spec = policy?.policy ?? null;
@@ -159,6 +175,7 @@ export function makeDispatcher(handlers, {
     guards: { ...guards }, dryRun, planFailure, clock, roles,
     allow: Object.fromEntries(Object.entries(allow).map(([k, v]) => [k, v.map(roleString)])),
     timeout, journal: journal ?? memoryJournal(), budgets, onScheduled, autoRunDue, waker: { timer: null },
+    stepLease: stepLease === null ? null : 1000 * stepLease, scheduleLease: scheduleLease === null ? null : 1000 * scheduleLease,
     targets() { return Object.keys(table).sort(); },
   };
 }
@@ -220,7 +237,8 @@ async function claimBudgets(d, key, decision) {
     if (!covers) continue;
     const amount = b.amount(decision);
     requireAt(finite(amount) && amount >= 0, `budget.${b.name}`, `the amount for '${key}' is not a number of at least 0`, undefined, 'dispatch');
-    if (!await d.journal.claimBudget(b.name, now(d), 1000 * b.per, amount, b.max)) return false;
+    const name = b.by ? `${b.name}:${b.by(decision)}` : b.name;
+    if (!await d.journal.claimBudget(name, now(d), 1000 * b.per, amount, b.max)) return false;
   }
   return true;
 }
@@ -399,7 +417,7 @@ async function dispatchOne(d, context, decisionIn, fromPolicyIn, path) {
     if (dry) return outcome(decisionIn, dec, null, 'dry-run', [...hops, [key, dec]], link, 'dry-run');
 
     const skey = stepKey(context, path, key);
-    const claim = skey ? await j.beginStep(skey, key, now(d)) : 'new';
+    const claim = skey ? await (d.stepLease === null ? j.beginStep(skey, key, now(d)) : j.beginStep(skey, key, now(d), d.stepLease)) : 'new';
     if (claim === 'running') {
       return skipped('uncertain', `'${key}' started under key ${skey} and never finished; it may have acted, so it is not re-run`);
     }
@@ -437,14 +455,19 @@ let scheduleCounter = 0;
 const pathString = (hops, key) => [...hops.map(([k]) => k), key].join(' -> ');
 
 // Dispatch every scheduled decision that is due; returns how many ran. Each
-// result goes to onScheduled as (key, outcome or error).
+// result goes to onScheduled as (key, outcome or error). On serverless, call
+// this from a cron route: the in-process timer does not survive a frozen
+// instance. With scheduleLease, an item is removed only after it ran, so a
+// crash mid-run delivers it again after the lease.
 export async function runDue(d) {
-  const items = await d.journal.takeDue(now(d));
+  const leased = d.scheduleLease !== null;
+  const items = await (leased ? d.journal.takeDue(now(d), d.scheduleLease) : d.journal.takeDue(now(d)));
   for (const [key, payload] of items) {
     let r;
     try {
       r = await dispatchOne(d, { state: payload.state ?? null, principal: payload.principal ?? null, facts: payload.facts ?? null, base: key }, payload.decision, true, '');
     } catch (error) { r = error; }
+    if (leased) await d.journal.cancel(key);
     d.onScheduled?.(key, r);
   }
   return items.length;

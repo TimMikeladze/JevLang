@@ -22,12 +22,18 @@ export function timerSource(seconds: number, makeInput: () => JSONValue | Promis
 export function iterableSource(iterable: AsyncIterable<JSONValue | LoopEvent>, options?: { key?: string | null; principal?: JSONValue }): Source;
 export function lineSource(readable: { on(event: string, fn: (chunk: string) => void): void; off(event: string, fn: (chunk: string) => void): void; setEncoding?(encoding: string): void }, options?: { onError?: ((line: string, error: Error) => void) | null }): Source;
 
-export interface Sessions { table: Map<string, { input: JSONValue; question: string; rounds: number; at: number }> }
+export interface PendingSession { input: JSONValue; question: string; rounds: number; at: number }
+export interface SessionTable {
+  get(id: string): PendingSession | undefined | Promise<PendingSession | undefined>;
+  set(id: string, value: PendingSession): unknown;
+  delete(id: string): boolean | Promise<boolean>;
+}
+export interface Sessions { table: SessionTable }
 export function makeSessions(evaluate: (input: JSONValue) => Promise<Decision> | Decision, dispatcher: Dispatcher, options?: {
   merge?: (original: JSONValue, question: string, reply: string) => JSONValue;
-  ttl?: number; maxRounds?: number; clock?: () => number;
+  ttl?: number; maxRounds?: number; clock?: () => number; table?: SessionTable;
 }): Sessions;
 export function sessionMessage(sessions: Sessions, id: string, message: string, options?: { principal?: JSONValue; key?: string | null }): Promise<Outcome>;
-export function sessionPending(sessions: Sessions, id: string): string | null;
-export function sessionForget(sessions: Sessions, id: string): boolean;
+export function sessionPending(sessions: Sessions, id: string): string | null | Promise<string | null>;
+export function sessionForget(sessions: Sessions, id: string): boolean | Promise<boolean>;
 export function defaultMerge(original: JSONValue, question: string, reply: string): JSONValue;

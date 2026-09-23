@@ -105,16 +105,27 @@ registerHandlerType('shell', (spec, base) => {
     : findExecutable(argv[0]) ?? specError(target, `no executable ${argv[0]} on PATH`);
   const timeoutSeconds = specNumber(spec, 'timeout', 30, target);
   const cwd = spec.cwd ? resolvePath(base, spec.cwd) : base;
+  // A value from the decision that starts with '-' would be read as an option
+  // (--config=...): refused unless the spec opts in with "allow_dash": true.
+  const checkDash = (template, values) => {
+    if (spec.allow_dash === true || template.startsWith('-')) return values;
+    const bad = values.find(v => v.startsWith('-'));
+    if (bad !== undefined) throw new Error(`handler '${target}': refusing argument ${JSON.stringify(bad.slice(0, 40))}: a value from the decision starts with '-' and would be read as an option (set "allow_dash": true to allow)`);
+    return values;
+  };
   return (state, decision, context) => new Promise((resolve, reject) => {
     const vars = decisionVars(decision, context);
-    const args = argv.slice(1).flatMap(a => {
-      const whole = /^{([a-zA-Z0-9_?!-]+)}$/.exec(a);
-      if (whole && Object.hasOwn(vars, whole[1])) {
-        const v = vars[whole[1]];
-        return Array.isArray(v) ? v.map(valueString) : [valueString(v)];
-      }
-      return [fillTemplate(a, vars, `handlers.${target}`)];
-    });
+    let args;
+    try {
+      args = argv.slice(1).flatMap(a => {
+        const whole = /^{([a-zA-Z0-9_?!-]+)}$/.exec(a);
+        if (whole && Object.hasOwn(vars, whole[1])) {
+          const v = vars[whole[1]];
+          return checkDash(a, Array.isArray(v) ? v.map(valueString) : [valueString(v)]);
+        }
+        return a.includes('{') ? checkDash(a, [fillTemplate(a, vars, `handlers.${target}`)]) : [a];
+      });
+    } catch (error) { reject(error); return; }
     const child = spawn(executable, args, { cwd, detached: true, stdio: ['ignore', 'pipe', 'pipe'] });
     let out = '', err = '', settled = false;
     const timer = setTimeout(() => {
@@ -140,8 +151,24 @@ registerHandlerType('http', (spec) => {
   if (typeof spec.url !== 'string') specError(target, '"url" is required');
   const timeoutSeconds = specNumber(spec, 'timeout', 10, target);
   const includeState = spec.include_state === true;
+  // A placeholder in the host would let a decision pick where the request goes
+  // (an internal address, a metadata service): that needs an allow_hosts list.
+  const templateHost = /^[a-z][a-z0-9+.-]*:\/\/([^/?#]*)/i.exec(spec.url)?.[1] ?? '';
+  const allowHosts = spec.allow_hosts;
+  if (templateHost.includes('{')) {
+    if (!Array.isArray(allowHosts) || !allowHosts.length || !allowHosts.every(h => typeof h === 'string')) {
+      specError(target, 'the url\'s host is a placeholder, so "allow_hosts" must list the hosts it may reach');
+    }
+  }
+  // Only the origin appears in errors: paths and queries can carry secrets.
+  const originOf = url => { try { return new URL(url).origin; } catch { return '<invalid url>'; } };
   return async (state, decision, context) => {
     const url = fillTemplate(spec.url, decisionVars(decision, context), `handlers.${target}`);
+    if (templateHost.includes('{')) {
+      let host = null;
+      try { host = new URL(url).host; } catch { /* reported below */ }
+      if (!host || !allowHosts.includes(host)) throw new Error(`handler '${target}': refusing to post to ${host ?? 'an invalid url'}, which is not in allow_hosts`);
+    }
     const body = JSON.stringify({
       decision, key: context?.key ?? null,
       ...(includeState ? { state: jsonSafe(state) } : {}),
@@ -156,11 +183,11 @@ registerHandlerType('http', (spec) => {
       });
     } catch (error) {
       const timedOut = error.name === 'TimeoutError' || error.name === 'AbortError';
-      throw new Error(`handler '${target}': ${url} ${timedOut ? `gave no answer within ${timeoutSeconds} seconds` : `could not be reached: ${error.message}`}`);
+      throw new Error(`handler '${target}': ${originOf(url)} ${timedOut ? `gave no answer within ${timeoutSeconds} seconds` : `could not be reached: ${error.message}`}`);
     }
     const text = await response.text();
     if (response.status < 200 || response.status > 299) {
-      throw new Error(`handler '${target}': ${url} answered ${response.status}\n  ${text.slice(0, 500)}`);
+      throw new Error(`handler '${target}': ${originOf(url)} answered ${response.status}\n  ${text.slice(0, 500)}`);
     }
     try { return JSON.parse(text); } catch { return text; }
   };

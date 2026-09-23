@@ -9,7 +9,7 @@ import { jevCall, apiKeyConfigured, settings as clientSettings } from './client.
 import {
   ProviderError, ProviderRegistry, availability, capabilities, provider, providerRequest, targetSpec,
   loadProviderConfig, matchingProviderRoute, configLayers, resolveProvider, runProviderRequest, unreportedCost,
-  makeDefaultRegistry,
+  makeDefaultRegistry, openaiProvider, gatewayProvider, anthropicProvider,
 } from './provider/index.js';
 
 const probabilitySchema = { type: 'object' };
@@ -106,9 +106,11 @@ export function typesafeProvider({ maxParallel = 4 } = {}) {
   });
 }
 // The registry a policy asks through: TypeSafe first, then every configured
-// executable. An application's own 'typesafe' registration wins.
+// executable, then the direct HTTP providers (openai, gateway, anthropic), each
+// ready once its key is set. An application's own registration of an id wins.
 export function makePolicyRegistry(config = loadProviderConfig()) {
-  return makeDefaultRegistry(config).overlay([typesafeProvider()], { prepend: true });
+  return makeDefaultRegistry(config).overlay([typesafeProvider()], { prepend: true })
+    .overlay([openaiProvider(), gatewayProvider(), anthropicProvider()]);
 }
 export const policyConfigDefaults = { provider: 'typesafe', preferences: ['typesafe', 'claude', 'codex'] };
 

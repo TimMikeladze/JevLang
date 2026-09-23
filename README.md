@@ -398,6 +398,7 @@ exactly once.
 One policy, five ways in.
 
 - **In code** — `policy.decide(answers)` for answers you have, `evaluateWithProvider(policy, input)` to let a model answer.
+  [`examples/nextjs`](examples/nextjs) wraps three policies in Next.js API routes with a UI each (building maintenance, a restaurant SMS host, courier doorstep dispatch), journals decisions to Vercel Blob and prunes them with a daily cron.
 - **From a shell** — `bunx jev decide policy.json answers.json`, after `policy.toJSON()` froze the policy to a file.
 - **Over HTTP** — `startServer(policy)` from `jevlang/serve`: `POST /decide`, `/evaluate` and `/dispatch`, `GET /policy` and `/healthz`.
 - **As MCP tools** — `policyMcpServer(policy)` from `jevlang/mcp`, over stdio or `POST /mcp`.
@@ -466,6 +467,52 @@ Be honest with yourself the way the model card is: base checkpoints are near
 chance zero-shot on some tasks — fine-tune (`laya-typed-decisions`, or your own
 run) and temperature-fit on your own data before trusting the probabilities.
 
+## Run it on serverless: Vercel + Upstash
+
+Many short-lived instances, no local disk: state has to live somewhere shared,
+and the model has to be an HTTP call. Both are one import.
+
+```js
+import { evaluateWithProvider } from 'jevlang';
+import { rateLimit, makeDispatcher, budget, runDue } from 'jevlang/dispatch';
+import { upstash, redisJournal, redisStore } from 'jevlang/redis';
+
+const redis = upstash();                       // UPSTASH_REDIS_REST_URL/_TOKEN, or Vercel's KV_REST_API_URL/_TOKEN
+const journal = redisJournal(redis);           // idempotency, cooldowns, budgets, scheduled work
+const store = redisStore(redis, { ttl: 7 * 86400 }); // decision history that expires on its own
+const limit = rateLimit(journal, 'decide', { max: 20, per: 60 });
+
+export async function POST(request) {
+  if (!(await limit(request.headers.get('x-forwarded-for') ?? 'anon')).ok) return new Response('slow down', { status: 429 });
+  const { input } = await request.json();
+  const decision = await evaluateWithProvider(policy, input, { provider: 'gateway' });
+  await store.append({ policy: policy.policy.name, input, decision });
+  return Response.json(decision);
+}
+```
+
+- **Any Redis client.** The adapters need one method, `eval(script, keys,
+  args)`: `upstash()` (no dependency, over `fetch`), an `@upstash/redis`
+  client as is, or `fromIoredis(client)` / `fromNodeRedis(client)`. Every
+  operation is one Lua script, so claims are atomic across instances.
+- **Rate limits are budgets.** `rateLimit(journal, name, { max, per })` is a
+  sliding window per key on any journal — memory, SQL or Redis. Inside
+  dispatch, `budget('refunds', { max: 3, per: 86400, by: d => d.params.customer })`
+  gives each customer their own.
+- **HTTP providers.** `openai` (any OpenAI-compatible endpoint), `gateway`
+  (Vercel AI Gateway: `AI_GATEWAY_API_KEY`, or `VERCEL_OIDC_TOKEN` on Vercel)
+  and `anthropic` sit beside `typesafe`, each ready once its key is set. No CLI
+  process, so they run inside a function.
+- **Crash-safe work.** `makeDispatcher(handlers, { journal, stepLease: 300,
+  scheduleLease: 60 })`: a step whose instance died is retried after its
+  lease instead of staying "uncertain" forever, and scheduled work is removed
+  only after it ran. Call `runDue(dispatcher)` from a cron route — the
+  in-process timer does not survive a frozen instance.
+- **Clarify across instances.** `makeSessions(evaluate, dispatcher, { table:
+  redisSessions(redis) })`, so the reply can land anywhere.
+
+`examples/nextjs` is the whole thing wired into a Next.js app.
+
 ## Everything else in the box
 
 The core is small; the surface around it is what a production decision needs.
@@ -475,12 +522,16 @@ The core is small; the surface around it is what a production decision needs.
   JSON Schema for every action, and portable frozen artifacts.
 - **`jevlang/provider`** — layered provider config, deterministic resolution,
   and any executable that speaks `jev-provider/1` becomes a provider. Built-in
-  CLI adapters for Claude, Codex and fx, and a built-in **Laya** adapter for
+  CLI adapters for Claude, Codex and fx, HTTP providers for OpenAI-compatible
+  APIs, Vercel AI Gateway and Anthropic, and a built-in **Laya** adapter for
   self-hosted, open-weights decisions. `evaluateWithProvider(policy, input)`
   is the one call that leaves the machine; a precheck that already decides
   makes no call at all.
-- **`jevlang/dispatch`** — handlers with confirmation, cooldowns, budgets,
-  guards, idempotency keys, plan rollback, and one audit record per outcome.
+- **`jevlang/dispatch`** — handlers with confirmation, cooldowns, budgets and
+  rate limits, guards, idempotency keys, step and schedule leases, plan
+  rollback, and one audit record per outcome.
+- **`jevlang/redis`** — journal, store and session table on any Redis with
+  `eval`; `upstash()` is a dependency-free REST client.
 - **`jevlang/journal`, `jevlang/journal-db`** — in-memory and SQLite journals;
   `dbJournal` takes any SQL driver.
 - **`jevlang/store`** — every decision recorded in a place you choose: memory,

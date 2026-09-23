@@ -9,7 +9,7 @@ export interface Outcome {
   chain: [string, Decision][]; link: { key: string | null; index: number; name: string } | null;
   status: OutcomeStatus; steps: Outcome[];
 }
-export interface Budget { name: string; max: number; per: number; amount: (decision: Decision) => number; only: string[] | null }
+export interface Budget { name: string; max: number; per: number; amount: (decision: Decision) => number; only: string[] | null; by: ((decision: Decision) => string) | null }
 export interface Dispatcher {
   table: Record<string, Handler>; default: Handler | null; confirm: Handler | null; maxHops: number;
   known: string[]; policy: CompiledPolicy | null; schemas: Record<string, JSONValue>;
@@ -24,9 +24,10 @@ export function makeDispatcher(handlers: Record<string, Handler>, options?: {
   planFailure?: 'stop' | 'continue' | 'rollback'; clock?: () => number;
   roles?: (principal: JSONValue) => string[]; allow?: Record<string, string[]>; timeout?: number | null;
   journal?: Journal | null; budgets?: Budget[]; onScheduled?: ((key: string, outcome: Outcome | Error) => void) | null;
-  autoRunDue?: boolean;
+  autoRunDue?: boolean; stepLease?: number | null; scheduleLease?: number | null;
 }): Dispatcher;
-export function budget(name: string, options: { max: number; per: number; amount?: (decision: Decision) => number; only?: string[] | null }): Budget;
+export function budget(name: string, options: { max: number; per: number; amount?: (decision: Decision) => number; only?: string[] | null; by?: ((decision: Decision) => string) | null }): Budget;
+export function rateLimit(journal: Journal, name: string, options: { max: number; per: number; clock?: () => number }): (key?: string) => Promise<{ ok: boolean }>;
 export function handlerChain(...links: Handler[]): Handler;
 export function isHandlerChain(value: unknown): boolean;
 export function retry(proc: Handler, options?: { attempts?: number; backoff?: number; sleep?: (seconds: number) => Promise<void> }): Handler;

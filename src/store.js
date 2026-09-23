@@ -87,6 +87,7 @@ export function ndjsonStore(path) {
 const schema = t => [
   `CREATE TABLE IF NOT EXISTS ${t} (id TEXT PRIMARY KEY, at BIGINT NOT NULL, policy TEXT, key TEXT, input TEXT, answers TEXT, decision TEXT NOT NULL)`,
   `CREATE INDEX IF NOT EXISTS ${t}_at ON ${t} (at)`,
+  `CREATE INDEX IF NOT EXISTS ${t}_policy_at ON ${t} (policy, at)`,
 ];
 
 // driver.query(sql, params) -> rows as objects (the same SqlDriver a journal
@@ -125,8 +126,9 @@ export function dbStore(driver, { dialect = 'postgres', prefix = 'jev_' } = {}) 
       if (options.since !== null && options.since !== undefined) { where.push(`at >= $${params.length + 1}`); params.push(Math.round(options.since)); }
       const limit = options.limit ? ` LIMIT $${params.length + 1}` : '';
       if (limit) params.push(options.limit);
-      const rows = await query(`SELECT * FROM ${t}${where.length ? ` WHERE ${where.join(' AND ')}` : ''} ORDER BY at${limit}`, params);
-      return rows.map(parse);
+      // The newest `limit`, oldest first, as memoryStore returns them.
+      const rows = await query(`SELECT * FROM ${t}${where.length ? ` WHERE ${where.join(' AND ')}` : ''} ORDER BY at DESC${limit}`, params);
+      return rows.map(parse).reverse();
     },
     async close() { await ready; await driver.close?.(); },
   };

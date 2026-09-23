@@ -21,6 +21,10 @@ export function startServer(policy: CompiledPolicy, options?: {
   dispatchers?: ServeDispatchers | null; routes?: ServeRoute[];
   evaluate?: ((input: JSONValue) => Promise<Decision> | Decision) | null;
   log?: { write(text: string): unknown } | null;
+  /** Largest accepted body in bytes (default 1 MB); bigger bodies get 413. */
+  maxBody?: number;
+  /** Seconds a request may take, headers included (default 60). */
+  requestTimeout?: number;
 }): Promise<JevServer>;
 export function tokenMatches(token: string, header: string | undefined): boolean;
 export function loopbackHost(host: string): boolean;

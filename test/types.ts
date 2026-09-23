@@ -47,3 +47,18 @@ const fromRegistry: Provider | null = makeDefaultRegistry({}).get('codex');
 // @ts-expect-error a provider is not a string
 const wrong: string = fromRegistry;
 void ids;
+
+// Serverless state: Redis adapters, rate limits and the HTTP providers.
+import { upstash, redisJournal, redisStore, redisSessions } from 'jevlang/redis';
+import { rateLimit, budget as budgetOf, makeDispatcher as makeDispatcherOf } from 'jevlang/dispatch';
+import { gatewayProvider } from 'jevlang/provider';
+const redis = upstash({ url: 'https://x', token: 't' });
+const journal = redisJournal(redis);
+const take = rateLimit(journal, 'api', { max: 10, per: 60 });
+take('1.2.3.4').then(r => { const ok: boolean = r.ok; return ok; });
+redisStore(redis, { ttl: 86400 });
+redisSessions(redis);
+makeDispatcherOf({}, { journal, stepLease: 300, scheduleLease: 60, budgets: [budgetOf('refunds', { max: 3, per: 86400, by: d => String(d.target) })] });
+gatewayProvider({ model: 'anthropic/claude-haiku-4.5' });
+// @ts-expect-error a rate limit needs a window
+rateLimit(journal, 'api', { max: 10 });

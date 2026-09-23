@@ -12,8 +12,10 @@
 // Times are integer milliseconds.
 import { object } from './common.js';
 
-// beginStep(key, target, now) -> 'new' | 'running' | { status, result }
-//   'new' means this caller claimed the key and must finish or release it
+// beginStep(key, target, now, staleAfter?) -> 'new' | 'running' | { status, result }
+//   'new' means this caller claimed the key and must finish or release it; with
+//   staleAfter (ms), a claim still running after that long is taken over
+//   (its holder crashed or was frozen)
 // finishStep(key, status, result, now)
 // releaseStep(key)                      forget a claim that did not run
 // claimCooldown(name, now, window)      true: claimed, the last run is now
@@ -21,21 +23,26 @@ import { object } from './common.js';
 // claimBudget(name, now, window, amount, max)
 //   true: the usage in (now - window, now] plus amount fits max, and is recorded
 // schedule(key, due, payload)
-// takeDue(now) -> [[key, payload], ...] removed atomically, earliest first
+// takeDue(now, lease?) -> [[key, payload], ...] earliest first. Without a lease
+//   they are removed atomically; with one (ms) they are pushed to now + lease,
+//   and the caller cancels each once it has run, so a crash re-delivers
 // cancel(key)                           true: it was pending
 // nextDue() -> the earliest pending due time, or null
 // close()
 export function memoryJournal() {
   // JavaScript runs one of these to completion before the next, so each claim
   // is atomic without a lock.
-  const steps = new Map();      // key -> { status, result }; "running" until finished
+  const steps = new Map();      // key -> { status, result, at }; "running" until finished
   const cooldowns = new Map();  // name -> last
   const usage = new Map();      // name -> [[at, amount], ...]
   const pending = new Map();    // key -> [due, payload]
   return {
-    beginStep(key) {
+    beginStep(key, target, now = 0, staleAfter = null) {
       const s = steps.get(key);
-      if (!s) { steps.set(key, { status: 'running', result: null }); return 'new'; }
+      if (!s || (s.status === 'running' && staleAfter != null && now - s.at >= staleAfter)) {
+        steps.set(key, { status: 'running', result: null, at: now });
+        return 'new';
+      }
       return s.status === 'running' ? 'running' : { status: s.status, result: s.result };
     },
     finishStep(key, status, result) { steps.set(key, { status, result: result ?? null }); },
@@ -58,9 +65,11 @@ export function memoryJournal() {
       return true;
     },
     schedule(key, due, payload) { pending.set(key, [due, payload]); },
-    takeDue(now) {
+    takeDue(now, lease = null) {
       const due = [...pending].filter(([, [at]]) => at <= now).sort((a, b) => a[1][0] - b[1][0]);
-      for (const [key] of due) pending.delete(key);
+      for (const [key, [, payload]] of due) {
+        if (lease == null) pending.delete(key); else pending.set(key, [now + lease, payload]);
+      }
       return due.map(([key, [, payload]]) => [key, payload]);
     },
     cancel(key) { return pending.delete(key); },

@@ -85,3 +85,13 @@ export function catalogToSettings(text: string): Record<string, { efforts: strin
 export function fxProvider(): Provider;
 export const fxCliRunner: CliRunner;
 export function layaProvider(options?: { command?: string | string[]; maxParallel?: number; timeoutSeconds?: number; environment?: string[] }): Provider;
+export interface HttpProviderOptions {
+  id?: string; baseURL?: string; apiKey?: string | (() => string | null); model?: string;
+  maxParallel?: number; timeoutSeconds?: number; fetch?: typeof fetch;
+}
+/** Any OpenAI-compatible chat completions endpoint (OPENAI_API_KEY). */
+export function openaiProvider(options?: HttpProviderOptions & { headers?: Record<string, string>; keyHint?: string }): Provider;
+/** Vercel AI Gateway (AI_GATEWAY_API_KEY, or VERCEL_OIDC_TOKEN on Vercel); models are "provider/model". */
+export function gatewayProvider(options?: HttpProviderOptions & { headers?: Record<string, string> }): Provider;
+/** The Anthropic Messages API (ANTHROPIC_API_KEY). */
+export function anthropicProvider(options?: HttpProviderOptions & { maxTokens?: number }): Provider;

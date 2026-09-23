@@ -50,6 +50,12 @@ isStore(value)
   `dbJournal`); table `prefix + 'decisions'`, `id` primary key,
   `ON CONFLICT DO NOTHING` for idempotency. Postgres and SQLite dialects.
 - `sqliteStore(path)` — opens the file itself (WAL, like `sqliteJournal`).
+- `redisStore(client, { prefix, ttl })` (`jevlang/redis`) — one key per record
+  plus sorted-set indexes by time and policy; `ttl` seconds gives retention
+  without a cleanup job. For serverless; see `docs/production-readiness.md`.
+
+`list({ limit })` returns the newest `limit` records, oldest first, on every
+backend.
 
 ### Integration
 

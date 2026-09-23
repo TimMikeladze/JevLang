@@ -21,6 +21,8 @@ const schema = (t, { serial, real }) => [
   `CREATE TABLE IF NOT EXISTS ${t('budgets')} (name TEXT PRIMARY KEY)`,
   `CREATE TABLE IF NOT EXISTS ${t('budget_usage')} (id ${serial}, name TEXT NOT NULL, at BIGINT NOT NULL, amount ${real} NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS ${t('scheduled')} (key TEXT PRIMARY KEY, due_at BIGINT NOT NULL, payload TEXT NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS ${t('budget_usage_name_at')} ON ${t('budget_usage')} (name, at)`,
+  `CREATE INDEX IF NOT EXISTS ${t('scheduled_due_at')} ON ${t('scheduled')} (due_at)`,
 ];
 const ms = x => Math.round(x);
 // A driver may answer synchronously (node:sqlite does) or with a promise. This
@@ -42,9 +44,13 @@ export function dbJournal(driver, { dialect = 'postgres', prefix = 'jev_' } = {}
     }
   })();
   const journal = {
-    async beginStep(key, target, now) {
+    async beginStep(key, target, now, staleAfter = null) {
       await ready;
-      const claimed = await query(`INSERT INTO ${t('steps')} (key, target, status, started_at) VALUES ($1, $2, 'running', $3) ON CONFLICT (key) DO NOTHING RETURNING key`, [key, String(target), ms(now)]);
+      // With staleAfter, a running claim older than that is taken over in the same statement.
+      const claimed = staleAfter == null
+        ? await query(`INSERT INTO ${t('steps')} (key, target, status, started_at) VALUES ($1, $2, 'running', $3) ON CONFLICT (key) DO NOTHING RETURNING key`, [key, String(target), ms(now)])
+        : await query(`INSERT INTO ${t('steps')} (key, target, status, started_at) VALUES ($1, $2, 'running', $3) ON CONFLICT (key) DO UPDATE SET started_at = excluded.started_at, target = excluded.target WHERE ${t('steps')}.status = 'running' AND ${t('steps')}.started_at <= $4 RETURNING key`,
+          [key, String(target), ms(now), ms(now - staleAfter)]);
       if (claimed.length) return 'new';
       const rows = await query(`SELECT status, result FROM ${t('steps')} WHERE key = $1`, [key]);
       // Released between the two statements: treat it as in flight.
@@ -91,10 +97,17 @@ export function dbJournal(driver, { dialect = 'postgres', prefix = 'jev_' } = {}
       await query(`INSERT INTO ${t('scheduled')} (key, due_at, payload) VALUES ($1, $2, $3) ON CONFLICT (key) DO UPDATE SET due_at = excluded.due_at, payload = excluded.payload`,
         [key, ms(due), JSON.stringify(payload)]);
     },
-    async takeDue(now) {
+    async takeDue(now, lease = null) {
       await ready;
-      const rows = await query(`DELETE FROM ${t('scheduled')} WHERE due_at <= $1 RETURNING key, payload, due_at`, [ms(now)]);
-      return rows.sort((a, b) => a.due_at - b.due_at).map(row => [row.key, JSON.parse(row.payload)]);
+      // A lease moves each item to now + lease instead of deleting it; the caller cancels it once run.
+      const rows = lease == null
+        ? await query(`DELETE FROM ${t('scheduled')} WHERE due_at <= $1 RETURNING key, payload, due_at`, [ms(now)])
+        : await query(`UPDATE ${t('scheduled')} SET due_at = $2 WHERE due_at <= $1 RETURNING key, payload`, [ms(now), ms(now + lease)]);
+      if (lease != null) {
+        // RETURNING gives the new due_at, so the original order is gone; sort by key for stability.
+        return rows.sort((a, b) => String(a.key).localeCompare(String(b.key))).map(row => [row.key, JSON.parse(row.payload)]);
+      }
+      return rows.sort((a, b) => Number(a.due_at) - Number(b.due_at)).map(row => [row.key, JSON.parse(row.payload)]);
     },
     async cancel(key) {
       await ready;
@@ -105,7 +118,8 @@ export function dbJournal(driver, { dialect = 'postgres', prefix = 'jev_' } = {}
       await ready;
       const rows = await query(`SELECT MIN(due_at) AS due FROM ${t('scheduled')}`);
       const due = rows[0]?.due;
-      return typeof due === 'number' ? due : null;
+      // node-pg returns BIGINT as a string.
+      return due == null ? null : Number(due);
     },
     async close() { await ready; await driver.close?.(); },
   };

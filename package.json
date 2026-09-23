@@ -60,6 +60,10 @@
       "types": "./src/store.d.ts",
       "default": "./src/store.js"
     },
+    "./redis": {
+      "types": "./src/redis.d.ts",
+      "default": "./src/redis.js"
+    },
     "./handlers": {
       "types": "./src/handlers.d.ts",
       "default": "./src/handlers.js"
