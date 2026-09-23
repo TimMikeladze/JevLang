@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { noul, definePolicy, rule, assign, hold } from '../src/index.js';
 import { evaluateWithProvider } from '../src/evaluate.js';
-import { ProviderRegistry, mergeProviderConfig, openaiProvider, anthropicProvider, gatewayProvider } from '../src/provider/index.js';
+import { ProviderRegistry, mergeProviderConfig, openaiProvider, anthropicProvider, gatewayProvider, vercelOidcToken } from '../src/provider/index.js';
 
 const spam = noul('spam?', 'Is this message spam?');
 const policy = definePolicy({
@@ -52,4 +52,13 @@ test('HTTP failures map to provider error kinds; a missing key is not ready', as
   await assert.rejects(decide(openaiProvider({ apiKey: 'k', fetch: fakeFetch(401, {}) }), 'openai'),
     error => error.kind === 'authentication' || error.attempts.some(a => a.outcome === 'authentication'));
   assert.equal((await openaiProvider({ apiKey: () => null }).discover()).status, 'unauthenticated');
+});
+
+test('gateway: inside a Vercel Function the OIDC token comes from the request context', async () => {
+  const key = Symbol.for('@vercel/request-context');
+  globalThis[key] = { get: () => ({ headers: { 'x-vercel-oidc-token': 'oidc-from-request' } }) };
+  try {
+    assert.equal(vercelOidcToken(), 'oidc-from-request');
+    assert.equal((await gatewayProvider().discover()).status, 'ready');
+  } finally { delete globalThis[key]; }
 });

@@ -78,11 +78,24 @@ export function openaiProvider({
   });
 }
 
+// The deployment's OIDC token inside a Vercel Function: Vercel hands it to each
+// request as the x-vercel-oidc-token header, reachable through the request
+// context (what @vercel/oidc reads). In builds and `vercel env pull` it is the
+// VERCEL_OIDC_TOKEN variable instead.
+export function vercelOidcToken() {
+  try {
+    const headers = globalThis[Symbol.for('@vercel/request-context')]?.get?.()?.headers;
+    const token = headers?.['x-vercel-oidc-token'];
+    if (typeof token === 'string' && token) return token;
+  } catch { /* not on Vercel */ }
+  return env('VERCEL_OIDC_TOKEN');
+}
+
 // Vercel AI Gateway speaks the OpenAI protocol; models are "provider/model".
-// On Vercel, VERCEL_OIDC_TOKEN authenticates without a key.
+// On Vercel, the deployment's OIDC token authenticates without a key.
 export const gatewayProvider = (options = {}) => openaiProvider({
   id: 'gateway', baseURL: 'https://ai-gateway.vercel.sh/v1',
-  apiKey: () => env('AI_GATEWAY_API_KEY') ?? env('VERCEL_OIDC_TOKEN'),
+  apiKey: () => env('AI_GATEWAY_API_KEY') ?? vercelOidcToken(),
   model: env('JEV_GATEWAY_MODEL') ?? 'openai/gpt-5-mini',
   keyHint: 'set AI_GATEWAY_API_KEY (or deploy on Vercel for VERCEL_OIDC_TOKEN)',
   ...options,

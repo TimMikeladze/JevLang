@@ -4,6 +4,7 @@
 // typesafe (default), gateway (Vercel AI Gateway), openai or anthropic.
 import { evaluateWithProvider, JevError } from 'jevlang';
 import { explainDecision } from 'jevlang/explain';
+import { vercelOidcToken } from 'jevlang/provider';
 import { backend } from './backend.js';
 
 const providerKeys = {
@@ -34,7 +35,8 @@ export async function decideRequest(policy, request, { onDecision } = {}) {
       const provider = providerName();
       const keys = providerKeys[provider];
       if (!keys) return Response.json({ error: `JEV_PROVIDER=${provider} is not one of ${Object.keys(providerKeys).join(', ')}` }, { status: 500 });
-      if (!keys.some(k => process.env[k])) {
+      // On Vercel the gateway's OIDC token arrives with the request, not as env.
+      if (!keys.some(k => process.env[k]) && !(provider === 'gateway' && vercelOidcToken())) {
         return Response.json({ error: `${keys[0]} is not set for JEV_PROVIDER=${provider}; pass \`answers\` to decide offline` }, { status: 503 });
       }
       // In memory every instance counts on its own, so the caps would not hold

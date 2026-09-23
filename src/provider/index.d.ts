@@ -95,3 +95,5 @@ export function openaiProvider(options?: HttpProviderOptions & { headers?: Recor
 export function gatewayProvider(options?: HttpProviderOptions & { headers?: Record<string, string> }): Provider;
 /** The Anthropic Messages API (ANTHROPIC_API_KEY). */
 export function anthropicProvider(options?: HttpProviderOptions & { maxTokens?: number }): Provider;
+/** The deployment's OIDC token: the request's x-vercel-oidc-token inside a Vercel Function, else VERCEL_OIDC_TOKEN. */
+export function vercelOidcToken(): string | null;
