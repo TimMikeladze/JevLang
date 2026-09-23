@@ -98,3 +98,13 @@ test('JEV_STATE picks the backend explicitly', () => {
   expect(() => backend()).toThrow(/JEV_STATE=upstash/);
   delete process.env.JEV_STATE; resetBackend();
 });
+
+test('a preview decides without recording', async () => {
+  const seen = [];
+  const body = { input: { message: 'nobody home', valueUsd: 40, raining: false }, answers: { situation: { choice: 'nobody-home', confidence: 0.9 }, 'unsafe?': { noul: 0.1 } } };
+  const post = extra => decideRequest(doorstep, new Request('http://x', { method: 'POST', body: JSON.stringify({ ...body, ...extra }) }), { onDecision: e => seen.push(e) });
+  expect((await post({ preview: true })).status).toBe(200);
+  expect(seen.length).toBe(0);
+  await post({});
+  expect(seen.length).toBe(1);
+});

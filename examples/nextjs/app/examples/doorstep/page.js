@@ -1,6 +1,6 @@
 import { doorstep } from '../../../lib/policies.js';
 import { policySource } from '../../../lib/source.js';
-import CourierApp from './CourierApp.js';
+import Demo from './Demo.js';
 
 export const metadata = {
   title: 'JevLang example — Courier app',
@@ -11,5 +11,5 @@ export const metadata = {
 
 // The policy stays on the server; the client only gets the questions it asks.
 export default function Page() {
-  return <CourierApp questions={doorstep.questions({})} source={policySource('doorstep')} />;
+  return <Demo questions={doorstep.questions({})} source={policySource('doorstep')} />;
 }

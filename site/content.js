@@ -250,3 +250,29 @@ export const agentsMistakes = [
 
 export const agentsGateNote =
   '`deny` and `allow` lists on `jev gate hook` match tool names (`WebFetch`, `mcp__prod__*`), not command text such as `Bash(rm *)`; calls on neither list go to the policy.';
+
+// The live examples: pages of the Next.js app (examples/nextjs) that serves
+// this site. One entry drives the nav, llms.txt, AGENTS.md and index.md.
+export const examplesSource = 'https://github.com/TimMikeladze/JevLang/tree/main/examples/nextjs';
+export const examples = [
+  { name: 'Tenant hotline', path: '/examples/maintenance', route: '/api/maintenance',
+    summary: 'Tenants text one number; the policy decides who gets woken up. Time and outside temperature are local facts the model never sees; a 0.3 danger bar pages on-call.',
+    input: { message: 'smells like gas in the hall', hour: 3, outsideTempC: 2 },
+    answers: { issue: { choice: 'other', confidence: 0.6 }, 'danger?': { noul: 0.92 } } },
+  { name: 'Restaurant SMS host', path: '/examples/reservation', route: '/api/reservation',
+    summary: 'Guests text the restaurant; the model reads intent and flags serious allergies. Party size and free seats come from the booking system.',
+    input: { message: 'Table for 4 Sat 7pm? My son carries an EpiPen', partySize: 4, seatsFree: 12 },
+    answers: { intent: { choice: 'book', confidence: 0.97 }, 'severe-allergy?': { noul: 0.96 } } },
+  { name: 'Courier app', path: '/examples/doorstep', route: '/api/doorstep',
+    summary: 'A driver says what is happening at the door; parcel value, rain and a nearby locker decide door, locker or tomorrow. Anything unsafe means nobody risks it.',
+    input: { message: 'Big dog loose in the yard, nobody answering', valueUsd: 120, raining: false, lockerNearby: true },
+    answers: { situation: { choice: 'nobody-home', confidence: 0.93 }, 'unsafe?': { noul: 0.91 } } },
+];
+
+// Running on serverless, for the agent files: what a production deploy uses.
+export const serverlessNotes = [
+  '`jevlang/redis` — `redisJournal`, `redisStore`, `redisSessions` on any Redis with `eval(script, keys, args)`; `upstash()` is a dependency-free client (UPSTASH_REDIS_REST_URL/_TOKEN or KV_REST_API_URL/_TOKEN).',
+  '`rateLimit(journal, name, { max, per })` from `jevlang/dispatch` — a sliding window per key on any journal; `budget(name, { max, per, by })` limits each customer inside dispatch.',
+  'HTTP providers `gateway` (Vercel AI Gateway, OIDC on Vercel), `openai` and `anthropic` sit beside `typesafe`: `evaluateWithProvider(policy, input, { provider: \'gateway\' })`.',
+  '`makeDispatcher(handlers, { journal, stepLease, scheduleLease })` re-delivers work a crashed instance left; call `runDue(dispatcher)` from a cron route.',
+];

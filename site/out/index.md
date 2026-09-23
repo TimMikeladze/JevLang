@@ -424,6 +424,29 @@ Proven, judged and missing, in that order — the same honesty the engine ships 
 - The Python SDK decides but does not dispatch, because handlers are host functions.
 - A stability run's statistics are ported; collecting the repeated provider calls is still yours.
 
+## Examples
+
+Three live Next.js route handlers, each decided by a policy. Try them at https://jevlang.sh/examples/maintenance; source: https://github.com/TimMikeladze/JevLang/tree/main/examples/nextjs.
+
+### Tenant hotline — https://jevlang.sh/examples/maintenance
+
+Tenants text one number; the policy decides who gets woken up. Time and outside temperature are local facts the model never sees; a 0.3 danger bar pages on-call.
+
+- API: `POST https://jevlang.sh/api/maintenance` with `{ input, answers? }`; without `answers` a live model answers (rate limited).
+
+### Restaurant SMS host — https://jevlang.sh/examples/reservation
+
+Guests text the restaurant; the model reads intent and flags serious allergies. Party size and free seats come from the booking system.
+
+- API: `POST https://jevlang.sh/api/reservation` with `{ input, answers? }`; without `answers` a live model answers (rate limited).
+
+### Courier app — https://jevlang.sh/examples/doorstep
+
+A driver says what is happening at the door; parcel value, rain and a nearby locker decide door, locker or tomorrow. Anything unsafe means nobody risks it.
+
+- API: `POST https://jevlang.sh/api/doorstep` with `{ input, answers? }`; without `answers` a live model answers (rate limited).
+
+
 ## Start
 
 Install the package, or clone the repo and run the suite yourself. The Verify panel is a real run of that suite, read at build time.

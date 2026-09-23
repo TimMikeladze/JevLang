@@ -1,6 +1,6 @@
 import { reservation } from '../../../lib/policies.js';
 import { policySource } from '../../../lib/source.js';
-import HostStand from './HostStand.js';
+import Demo from './Demo.js';
 
 export const metadata = {
   title: 'JevLang example — SMS host',
@@ -11,5 +11,5 @@ export const metadata = {
 
 // The policy stays on the server; the client only gets the questions it asks.
 export default function Page() {
-  return <HostStand questions={reservation.questions({})} source={policySource('reservation')} />;
+  return <Demo questions={reservation.questions({})} source={policySource('reservation')} />;
 }

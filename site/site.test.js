@@ -297,3 +297,22 @@ test('vendored cloud API table in sync', () => {
   try { sibling = read('../../jevcloud-next/README.md'); } catch { return; } // not cloned: skip
   assert.deepEqual(cloudApiTable(cloudReadme), cloudApiTable(sibling));
 });
+
+// 11. the agent files point at every live example, and the calls AGENTS.md shows really decide.
+test('llms.txt, AGENTS.md and index.md cover the examples', async () => {
+  const { examples } = await import('./content.js');
+  // The policies resolve `jevlang` through the example's node_modules; CI does
+  // not install it, so the offline decide check runs only where it can.
+  const policies = await import('../examples/nextjs/lib/policies.js').catch(() => null);
+  const byRoute = policies && { '/api/maintenance': policies.maintenance, '/api/reservation': policies.reservation, '/api/doorstep': policies.doorstep };
+  const llms = read('./out/llms.txt'), agents = read('./out/AGENTS.md'), md = read('./out/index.md');
+  for (const e of examples) {
+    for (const [name, text] of [['llms.txt', llms], ['AGENTS.md', agents], ['index.md', md]]) assert.ok(text.includes(url(e.path)), `${name}: ${e.path}`);
+    assert.ok(agents.includes(JSON.stringify({ input: e.input, answers: e.answers })), `AGENTS.md shows the ${e.route} call`);
+    const policy = byRoute?.[e.route];
+    if (!policy) continue;
+    const { state, facts } = policy.buildState(e.input);
+    assert.ok(policy.decide(e.answers, { state, facts }).action, `${e.route} decides offline`);
+  }
+  assert.ok(llms.includes('jevlang/redis') && agents.includes('rateLimit'));
+});

@@ -70,10 +70,15 @@ a real cost:
 - `lib/route.js` — `policyRoute(policy)`: the POST and GET every route exports.
 - `app/api/*/route.js` — one line each.
 - `scripts/site.js` — builds the landing page and copies it into `public/`.
-- `app/examples/maintenance`, `app/examples/reservation`, `app/examples/doorstep` — one UI per route: a
-  tenant text thread, a host-stand SMS console, a courier app. Each lets you
-  play the model (sliders per question) or use the live model, and shows the
-  decision, its readings and the decision log.
+- `app/_kit/Flow.js` — the one guided flow every demo uses: (1) a request
+  comes in, with scenarios and the local facts the model never sees, (2) the
+  model answers the policy's questions — you drag the answers or ask the live
+  model, (3) the policy decides, with the outcome, reasons and readings, (4) a
+  copyable `curl` for the same call. The policy source sits beside it with the
+  deciding clause highlighted. Playing the model previews every change
+  (`preview: true`, not recorded); "Record this decision" logs one.
+- `app/examples/{maintenance,reservation,doorstep}/Demo.js` — each demo's
+  scenarios, facts, outcome copy and takeaways.
 - `lib/source.js` — reads each policy's block from `lib/policies.js` at build
   time and maps `$.gates[i]` / `$.route.clauses[i]` / `$.route.otherwise` to
   source lines. Every demo shows the policy beside the UI and highlights the

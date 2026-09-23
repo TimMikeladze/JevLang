@@ -1,4 +1,6 @@
-// Shared POST handler: body { input, answers? }.
+// Shared POST handler: body { input, answers?, preview? }.
+// `preview: true` decides without recording (the demo pages preview every
+// slider move; only an explicit run is logged).
 // With `answers` the model is skipped (tests, demos, replaying a recorded run);
 // otherwise the provider named by JEV_PROVIDER answers the policy's questions:
 // typesafe (default), gateway (Vercel AI Gateway), openai or anthropic.
@@ -23,7 +25,7 @@ const clientOf = request => (request.headers.get('x-forwarded-for') ?? '').split
 export async function decideRequest(policy, request, { onDecision } = {}) {
   let body;
   try { body = await request.json(); } catch { return Response.json({ error: 'body must be JSON' }, { status: 400 }); }
-  const { input, answers } = body ?? {};
+  const { input, answers, preview } = body ?? {};
   if (!input || typeof input !== 'object') return Response.json({ error: 'body.input must be an object' }, { status: 400 });
 
   try {
@@ -49,7 +51,7 @@ export async function decideRequest(policy, request, { onDecision } = {}) {
       }
       decision = await evaluateWithProvider(policy, input, { provider });
     }
-    onDecision?.({ policy, state, facts, decision });
+    if (preview !== true) onDecision?.({ policy, state, facts, decision });
     return Response.json({
       action: decision.action,
       target: decision.target ?? null,
