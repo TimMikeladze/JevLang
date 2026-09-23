@@ -243,3 +243,25 @@ test('numbered answers are untouched, and other kinds are left alone', () => {
   assert.deepEqual(answers.f.probabilities, { 0: 0.2, 1: 0.8 });
   assert.equal(answers.spam.noul, 0.9);
 });
+
+test("a model's own legend is how its numbering is read", () => {
+  const questions = {
+    frustration: {
+      type: 'score',
+      instructions: 'How frustrated is the customer?',
+      criteria: ['Calm and matter-of-fact', 'Annoyed but polite', 'Angry, threatening to leave'],
+    },
+  };
+  // What gpt-5-mini answered through AI Gateway: a one-based legend of its own.
+  const answers = normalizeAnswers(questions, {
+    frustration: {
+      type: 'score',
+      score: 3,
+      legend: { 1: 'Calm and matter-of-fact', 2: 'Annoyed but polite', 3: 'Angry, threatening to leave' },
+      confidence: 0.96,
+      probabilities: { 0: 0.01, 1: 0.04, 2: 0.95 },
+    },
+  });
+  assert.equal(answers.frustration.score, 2);
+  assert.doesNotThrow(() => validateAnswers(questions, answers));
+});

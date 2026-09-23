@@ -143,6 +143,13 @@ export function normalizeAnswers(questions, answers) {
       const index = /^(0|[1-9][0-9]*)$/.test(answer.score) ? Number(answer.score) : indexOf(answer.score);
       if (index >= 0) answer.score = index;
     }
+    // A model that numbered the levels itself says so in `legend`; a score
+    // read against its own legend is read in the question's terms.
+    if (typeof answer.score === 'number' && object(answer.legend)) {
+      const named = answer.legend[String(answer.score)];
+      const index = named === undefined ? -1 : indexOf(named);
+      if (index >= 0) answer.score = index;
+    }
     if (object(answer.probabilities)) {
       const mapped = {};
       let changed = false;
