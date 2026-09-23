@@ -8,7 +8,7 @@ import {
   makeResolver, figure, renderLanding, renderReference, llmsText, agentsMd, pageMarkdown, sitemap, robots, markdownHtml,
   modulesTable, cloudApiTable, readmeTable, readmeList, version, bootScript, url,
 } from './render.js';
-import { css } from './styles.js';
+import { css, chromeCss } from './styles.js';
 import { readPolicy, readAnswers, parseExplain } from './diagrams.js';
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
@@ -212,9 +212,16 @@ test('link table honoured', () => {
   assert.deepEqual(labelsIn(index.split('<footer')[1]), ['JevLang on GitHub', 'linesofcode on X', 'Tim Mikeladze on LinkedIn', 'linesofcode on Discord']);
   assert.ok(header.indexOf('class="head-icons"') > header.indexOf('class="site-nav"'));
   for (const href of ['https://github.com/TimMikeladze/JevLang', 'https://x.com/linesofcode', 'https://www.linkedin.com/in/tim-mikeladze', 'https://discord.com/users/linesofcode']) assert.ok(index.includes(`href="${href}"`), href);
-  // The Cloud nav item is always present, opens the sign-in page in a new tab.
+  // The Cloud nav item is in the HTML but behind the cloud-nav Vercel flag:
+  // hidden by default, revealed by the boot script when the proxy's cookie is
+  // present. See docs/cloud-nav-flag.md.
   assert.match(header, /Cloud <span class="ext">↗<\/span>/);
   assert.ok(header.includes('href="https://cloud.jevlang.sh/sign-in" target="_blank" rel="noopener"'));
+  assert.ok(header.includes('data-flag="cloud-nav"'));
+  assert.ok(bootScript.includes('jev-cloud-nav=1') && bootScript.includes("dataset.flags='cloud-nav'"), 'boot script reveals on the cookie');
+  assert.ok(css.includes('.site-nav a[data-flag=cloud-nav]{display:none}'), 'hidden by default');
+  assert.ok(css.includes('html[data-flags~=cloud-nav] .site-nav a[data-flag=cloud-nav]{display:block}'), 'revealed by the flag');
+  assert.ok(chromeCss.includes('html[data-flags~=cloud-nav]'), 'example pages get the reveal rule');
 });
 
 // extra: enumeration tables come from the docs, and the docs agree with each other.

@@ -215,7 +215,8 @@ const allNav = [
     { label: 'Courier app', href: '/examples/doorstep' },
   ] },
   // The hosted product's front door: its sign-in page, which links to sign-up.
-  { label: 'Cloud', href: 'https://cloud.jevlang.sh/sign-in', external: true },
+  // Hidden unless the cloud-nav Vercel flag is on (docs/cloud-nav-flag.md).
+  { label: 'Cloud', href: 'https://cloud.jevlang.sh/sign-in', external: true, flag: 'cloud-nav' },
 ];
 
 export const nav = allNav;

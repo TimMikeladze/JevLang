@@ -263,8 +263,9 @@ export const bootScript = `<script>
 (function(){
 var K='jevlang-theme',r=document.documentElement,mq=matchMedia('(prefers-color-scheme: dark)');
 function saved(){try{var s=localStorage.getItem(K);return s==='dark'||s==='light'?s:'system'}catch(e){return'system'}}
-function set(p){r.dataset.pref=p;r.dataset.theme=p==='system'?(mq.matches?'dark':'light'):p;var b=document.getElementById('theme-toggle');if(b)b.setAttribute('aria-label','Theme: '+p+'. Click to change')}
-set(saved());r.dataset.js='';
+  function set(p){r.dataset.pref=p;r.dataset.theme=p==='system'?(mq.matches?'dark':'light'):p;var b=document.getElementById('theme-toggle');if(b)b.setAttribute('aria-label','Theme: '+p+'. Click to change')}
+  set(saved());r.dataset.js='';
+  if(/(?:^|;\\s*)jev-cloud-nav=1(?:;|$)/.test(document.cookie))r.dataset.flags='cloud-nav';
 document.addEventListener('DOMContentLoaded',function(){set(r.dataset.pref)});
 mq.addEventListener('change',function(){if(r.dataset.pref==='system')set('system')});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')document.querySelectorAll('.nav-drop[open]').forEach(function(d){d.open=false})});
@@ -333,7 +334,7 @@ const navDrop = (n, active) => {
 };
 
 export function header(active) {
-  const navLinks = nav.map((n) => n.children ? navDrop(n, active) : `<a href="${esc(n.href)}"${n.external ? ' target="_blank" rel="noopener"' : ''}${n.href === active ? ' aria-current="page"' : ''}>${esc(n.label)}${n.external ? ' <span class="ext">↗</span>' : ''}</a>`).join('');
+  const navLinks = nav.map((n) => n.children ? navDrop(n, active) : `<a href="${esc(n.href)}"${n.external ? ' target="_blank" rel="noopener"' : ''}${n.flag ? ` data-flag="${esc(n.flag)}"` : ''}${n.href === active ? ' aria-current="page"' : ''}>${esc(n.label)}${n.external ? ' <span class="ext">↗</span>' : ''}</a>`).join('');
   const iconsRight = links.filter((l) => l.where.includes('header')).map(iconLink).join('');
   return `<a class="skip" href="#main">Skip to content</a>
 <header class="site-head"><div class="shell">
