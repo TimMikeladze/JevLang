@@ -206,7 +206,13 @@ export const links = [
 const allNav = [
   { label: 'Home', href: '/' },
   { label: 'Reference', href: '/reference' },
-  { label: 'Examples', href: '/examples' },
+  // The examples are pages of the Next.js app that serves this site; the nav
+  // item is a dropdown, and there is no separate examples index.
+  { label: 'Examples', href: '/examples', children: [
+    { label: 'Tenant hotline', href: '/examples/maintenance' },
+    { label: 'SMS host', href: '/examples/reservation' },
+    { label: 'Courier app', href: '/examples/doorstep' },
+  ] },
   { label: 'Cloud', href: 'https://cloud.jevlang.sh', external: true },
 ];
 
@@ -216,9 +222,14 @@ export const footerColumns = [
   { title: 'JevLang', links: [
     { label: 'Home', href: '/' },
     { label: 'Reference', href: '/reference' },
-    { label: 'Examples', href: '/examples' },
     { label: 'GitHub', href: 'repo', external: true },
     { label: 'linesofcode.dev', href: 'https://linesofcode.dev', external: true },
+  ] },
+  { title: 'Examples', links: [
+    { label: 'Tenant hotline', href: '/examples/maintenance' },
+    { label: 'SMS host', href: '/examples/reservation' },
+    { label: 'Courier app', href: '/examples/doorstep' },
+    { label: 'Source', href: 'https://github.com/TimMikeladze/JevLang/tree/main/examples/nextjs', external: true },
   ] },
   { title: 'Community', links: [
     { label: 'X', href: 'https://x.com/linesofcode', external: true },

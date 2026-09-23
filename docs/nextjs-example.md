@@ -3,7 +3,12 @@
 This app is also jevlang.sh. `/` and `/reference` are the static pages
 `site/build.js` writes (`scripts/site.js` copies `site/out` into `public/` before
 `dev` and `build`; `next.config.mjs` rewrites the two paths), and the demos live
-under `/examples`. Old demo paths (`/doorstep`, ...) redirect there. One deploy
+under `/examples/<name>`, reached from the Examples dropdown in the site's nav
+(there is no examples index; `/examples` redirects to the first demo). The demo
+pages wear the site's own chrome: `scripts/site.js` renders the same header,
+footer, theme script and styles `site/render.js` gives the landing page into
+`app/_kit/chrome.json`, and `app/layout.js` wraps every page in them. Old demo
+paths (`/doorstep`, ...) redirect. One deploy
 serves both: the Vercel project's Root Directory is `examples/nextjs`.
 
 `examples/nextjs` puts JevLang behind Next.js App Router route handlers. Each
@@ -37,10 +42,14 @@ a real cost:
   `DECISION_RETENTION_HOURS` (default 24) by TTL, so there is no prune cron.
   `GET /api/<route>` returns the 10 newest. Without Upstash env the same code
   uses `memoryStore`.
-- **Rate limit on live model calls.** `rateLimit(redisJournal(redis), ...)`
-  allows `RATE_LIMIT_PER_MINUTE` (default 20) per client IP per minute across
-  every instance; over it is a 429 with `Retry-After`. Offline `answers` are
-  not limited: they cost nothing.
+- **Live model calls are capped twice.** `rateLimit(redisJournal(redis), ...)`
+  allows `LIVE_PER_CLIENT_PER_HOUR` (default 5) per client IP and
+  `LIVE_PER_DAY` (default 200) for the whole site, across every instance; over
+  either is a 429. In production the live model is off (503) until Redis is
+  configured, since per-instance memory counts would not hold the caps. Offline
+  `answers` are never limited: they cost nothing. Production uses
+  `JEV_PROVIDER=gateway` with `JEV_GATEWAY_MODEL=google/gemini-2.5-flash-lite`,
+  the cheapest and fastest model that answered correctly in testing.
 - **Local Redis = Docker.** `npm run dev` needs nothing (memory). `npm run
   dev:redis` starts Redis and the Upstash REST proxy
   (`hiett/serverless-redis-http`) on free ports and points the app at it, so
@@ -60,7 +69,6 @@ a real cost:
 - `lib/route.js` — `policyRoute(policy)`: the POST and GET every route exports.
 - `app/api/*/route.js` — one line each.
 - `scripts/site.js` — builds the landing page and copies it into `public/`.
-- `app/examples/page.js` — the examples overview.
 - `app/examples/maintenance`, `app/examples/reservation`, `app/examples/doorstep` — one UI per route: a
   tenant text thread, a host-stand SMS console, a courier app. Each lets you
   play the model (sliders per question) or use the live model, and shows the
@@ -69,13 +77,10 @@ a real cost:
   time and maps `$.gates[i]` / `$.route.clauses[i]` / `$.route.otherwise` to
   source lines. Every demo shows the policy beside the UI and highlights the
   clause that decided.
-- `app/globals.css`, `app/_kit/{icons,site,Nav}.js` — the jevlang.sh design
-  system ported: OKLCH tokens, dark/light/system toggle sharing the site's
-  `jevlang-theme` localStorage key (no-flash boot script in `<head>`), the same
-  header, footer, brand mark, frames and decision colours (green assign, amber
-  escalate/page, red hold). The home page is a landing page in the site's shape;
-  every code frame on it is read from this example's files or computed by the
-  real policy at build time.
+- `app/layout.js`, `app/_kit/chrome.json` (generated) — the site's header with
+  the Examples dropdown, footer, theme script and chrome styles.
+- `app/globals.css`, `app/_kit/icons.js` — page styles for the demos: frames,
+  controls and decision colours (green assign, amber escalate/page, red hold).
 - `app/_kit/kit.js` — shared client pieces.
 - `scripts/dev.js` — `next dev` on a free port; `--redis` adds Redis in Docker.
 - `lib/*.test.js` — offline decisions, the decision log (memory, and Redis

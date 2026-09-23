@@ -44,8 +44,9 @@ test('upstash: the same round trip through Redis', async () => {
   await roundTrip();
 });
 
-test('live model calls are rate limited per client; offline answers are not', async () => {
-  process.env.RATE_LIMIT_PER_MINUTE = '2';
+test('live model calls are capped per client and for the site; offline answers are not', async () => {
+  process.env.LIVE_PER_CLIENT_PER_HOUR = '2';
+  process.env.LIVE_PER_DAY = '3';
   process.env.JEV_PROVIDER = 'openai';
   process.env.OPENAI_API_KEY = 'test';
   resetBackend();
@@ -58,13 +59,16 @@ test('live model calls are rate limited per client; offline answers are not', as
     expect((await post('1.1.1.1', { input })).status).toBe(200);
     const limited = await post('1.1.1.1', { input });
     expect(limited.status).toBe(429);
-    expect(limited.headers.get('retry-after')).toBe('60');
+    expect((await limited.json()).error).toContain('this hour');
     expect((await post('2.2.2.2', { input })).status).toBe(200);
+    const siteCap = await post('3.3.3.3', { input });
+    expect(siteCap.status).toBe(429);
+    expect((await siteCap.json()).error).toContain('today');
     const answers = { situation: { choice: 'nobody-home', confidence: 0.9 }, 'unsafe?': { noul: 0.1 } };
     expect((await post('1.1.1.1', { input, answers })).status).toBe(200);
   } finally {
     globalThis.fetch = originalFetch;
-    for (const k of ['RATE_LIMIT_PER_MINUTE', 'JEV_PROVIDER', 'OPENAI_API_KEY']) delete process.env[k];
+    for (const k of ['LIVE_PER_CLIENT_PER_HOUR', 'LIVE_PER_DAY', 'JEV_PROVIDER', 'OPENAI_API_KEY']) delete process.env[k];
   }
 });
 
@@ -80,4 +84,15 @@ test('an unknown provider or a missing key is reported, not attempted', async ()
     expect(missing.status).toBe(503);
     expect((await missing.json()).error).toContain('ANTHROPIC_API_KEY');
   } finally { delete process.env.JEV_PROVIDER; }
+});
+
+test('in production the live model needs Redis, so the caps are shared', async () => {
+  process.env.VERCEL_ENV = 'production';
+  process.env.JEV_PROVIDER = 'openai';
+  process.env.OPENAI_API_KEY = 'test';
+  try {
+    const response = await decideRequest(doorstep, new Request('http://x', { method: 'POST', body: JSON.stringify({ input: { message: 'nobody home', valueUsd: 40, raining: false } }) }));
+    expect(response.status).toBe(503);
+    expect((await response.json()).error).toContain('Upstash');
+  } finally { for (const k of ['VERCEL_ENV', 'JEV_PROVIDER', 'OPENAI_API_KEY']) delete process.env[k]; }
 });

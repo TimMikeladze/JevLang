@@ -20,6 +20,10 @@ export default {
     ] };
   },
   async redirects() {
-    return ['maintenance', 'reservation', 'doorstep'].map(name => ({ source: `/${name}`, destination: `/examples/${name}`, permanent: true }));
+    // No examples index: the nav's Examples dropdown is the way in.
+    return [
+      { source: '/examples', destination: '/examples/maintenance', permanent: false },
+      ...['maintenance', 'reservation', 'doorstep'].map(name => ({ source: `/${name}`, destination: `/examples/${name}`, permanent: true })),
+    ];
   },
 };

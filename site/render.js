@@ -267,7 +267,9 @@ function set(p){r.dataset.pref=p;r.dataset.theme=p==='system'?(mq.matches?'dark'
 set(saved());r.dataset.js='';
 document.addEventListener('DOMContentLoaded',function(){set(r.dataset.pref)});
 mq.addEventListener('change',function(){if(r.dataset.pref==='system')set('system')});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')document.querySelectorAll('.nav-drop[open]').forEach(function(d){d.open=false})});
 document.addEventListener('click',function(e){
+document.querySelectorAll('.nav-drop[open]').forEach(function(d){if(!d.contains(e.target))d.open=false});
 var t=e.target.closest('#theme-toggle');
 if(t){var n={system:'dark',dark:'light',light:'system'}[r.dataset.pref];try{n==='system'?localStorage.removeItem(K):localStorage.setItem(K,n)}catch(x){}set(n);return}
 var c=e.target.closest('[data-copy],[data-copy-code],[data-copy-markdown]');
@@ -322,8 +324,16 @@ function jsonLd() {
 const resolveHref = (h) => (h === 'repo' ? repo : h);
 const iconLink = (l) => `<a class="icon-link" href="${esc(resolveHref(l.href))}" aria-label="${esc(l.label)}">${icon(l.icon)}</a>`;
 
+const navLink = (n, active) => `<a href="${esc(n.href)}"${n.href === active ? ' aria-current="page"' : ''}>${esc(n.label)}</a>`;
+// A nav item with children is a disclosure: works without script, and the boot
+// script closes it on an outside click or Escape.
+const navDrop = (n, active) => {
+  const current = active === n.href || n.children.some((c) => c.href === active);
+  return `<details class="nav-drop"><summary${current ? ' aria-current="page"' : ''}>${esc(n.label)}</summary><div class="nav-menu">${n.children.map((c) => navLink(c, active)).join('')}</div></details>`;
+};
+
 export function header(active) {
-  const navLinks = nav.map((n) => `<a href="${esc(n.href)}"${n.external ? ' target="_blank" rel="noopener"' : ''}${n.href === active ? ' aria-current="page"' : ''}>${esc(n.label)}${n.external ? ' <span class="ext">↗</span>' : ''}</a>`).join('');
+  const navLinks = nav.map((n) => n.children ? navDrop(n, active) : `<a href="${esc(n.href)}"${n.external ? ' target="_blank" rel="noopener"' : ''}${n.href === active ? ' aria-current="page"' : ''}>${esc(n.label)}${n.external ? ' <span class="ext">↗</span>' : ''}</a>`).join('');
   const iconsRight = links.filter((l) => l.where.includes('header')).map(iconLink).join('');
   return `<a class="skip" href="#main">Skip to content</a>
 <header class="site-head"><div class="shell">
@@ -723,7 +733,7 @@ export function pageMarkdown({ readme, cloudReadme }) {
   ].join('\n');
 }
 
-export const examplePaths = ['/examples', '/examples/maintenance', '/examples/reservation', '/examples/doorstep'];
+export const examplePaths = ['/examples/maintenance', '/examples/reservation', '/examples/doorstep'];
 
 export function sitemap() {
   // /examples and its demos are pages of the Next.js app that serves this site.

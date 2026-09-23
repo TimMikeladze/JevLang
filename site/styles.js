@@ -53,6 +53,16 @@ h2{font-size:clamp(1.35rem,2.4vw,1.7rem);line-height:1.2;font-weight:650;letter-
 .site-nav a::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--accent);border-radius:1px;transform:scaleX(0);transition:transform .16s ease}
 .site-nav a:hover,.site-nav a[aria-current=page]{color:var(--ink)}
 .site-nav a:hover::after,.site-nav a[aria-current=page]::after{transform:scaleX(1)}
+.site-nav{align-items:center}
+.nav-drop{position:relative}
+.nav-drop summary{position:relative;list-style:none;cursor:pointer;margin:0;padding-block:.3rem;font:.875rem/1.6 var(--sans);color:var(--soft);transition:color .14s ease}
+.nav-drop summary::-webkit-details-marker{display:none}
+.nav-drop summary::after{content:"";display:inline-block;width:.34rem;height:.34rem;margin:0 0 .2rem .45rem;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);vertical-align:middle;opacity:.7}
+.nav-drop summary:hover,.nav-drop[open] summary,.nav-drop summary[aria-current=page]{color:var(--ink)}
+.nav-menu{position:absolute;top:calc(100% + .55rem);left:-.6rem;z-index:20;display:grid;gap:.1rem;min-width:12rem;padding:.4rem;background:var(--raise);border:1px solid var(--line);border-radius:.6rem;box-shadow:0 12px 32px -12px oklch(0% 0 0/.45)}
+.site-nav .nav-menu a{padding:.45rem .6rem;border-radius:.4rem;color:var(--body)}
+.site-nav .nav-menu a::after{display:none}
+.site-nav .nav-menu a:hover,.site-nav .nav-menu a[aria-current=page]{background:var(--band);color:var(--ink)}
 .head-icons{margin-left:auto;display:flex;align-items:center;gap:.75rem}
 .icon-link{color:var(--soft);display:inline-flex;transition:color .14s ease}
 .icon-link:hover{color:var(--ink)}
@@ -344,7 +354,10 @@ td code{font-size:.8rem}
 .tablewrap td:first-child{white-space:normal}
 .tablewrap td[data-label]::before{content:attr(data-label);display:block;margin-top:.35rem;font:600 .66rem/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--soft)}
 .tablewrap td[data-label]:first-child::before{display:none}
-.site-nav{display:none}
+.site-nav{gap:1rem}
+.site-nav>a[href="/"]{display:none}
+.head-icons .icon-link,.head-div{display:none}
+.nav-menu{left:auto;right:-4rem}
 .panels,.boundaries{grid-template-columns:minmax(0,1fr)}
 h1{font-size:2.6rem}
 .frame{border-radius:0;border-left:0;border-right:0;margin-inline:-1rem}
@@ -363,3 +376,21 @@ h1{font-size:2.6rem}
 .rung-then{grid-column:2}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto}}`;
+
+// The chrome every page shares, the Next.js examples included: tokens, base,
+// skip link, header, dropdown, theme toggle, footer, and their phone rules.
+const chromeLine = /^(:root|@media \(prefers-color-scheme|\*\{|html\{|body\{|\.shell\{|\.skip|:focus-visible|\.site-head|\.brand|\.mark-|\.site-nav|\.nav-drop|\.nav-menu|\.head-|\.icon-link|\.ext\{|\.theme-toggle|:root\[data-pref|\.site-foot|\.foot-|\.copyright)/;
+export const chromeCss = [
+  css.slice(0, css.indexOf('*{box-sizing')).trim(),   // tokens and the light theme
+  ...(() => {
+    // Top-level rules only: lines inside a multi-line @media block are skipped
+    // (the phone rules the chrome needs are restated below).
+    let inBlock = false;
+    return css.slice(css.indexOf('*{box-sizing')).split('\n').filter((line) => {
+      if (inBlock) { if (line === '}') inBlock = false; return false; }
+      if (/^@media[^{]*\{$/.test(line)) { inBlock = true; return false; }
+      return chromeLine.test(line);
+    });
+  })(),
+  '@media (max-width:720px){.shell{width:calc(100% - 2rem)}.site-nav{gap:1rem}.site-nav>a[href="/"]{display:none}.head-icons .icon-link,.head-div{display:none}.nav-menu{left:auto;right:-4rem}}',
+].join('\n');

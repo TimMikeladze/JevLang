@@ -14,15 +14,27 @@ import { upstash, redisJournal, redisStore } from 'jevlang/redis';
 const redisConfigured = () => Boolean((process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL)
   && (process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN));
 
+// Live model calls cost money, so they are capped twice: per client
+// (LIVE_PER_CLIENT_PER_HOUR, default 5) and for the whole site
+// (LIVE_PER_DAY, default 200), which also bounds a distributed flood.
+function limits(journal) {
+  const perClient = rateLimit(journal, 'live-client', { max: Number(process.env.LIVE_PER_CLIENT_PER_HOUR ?? 5), per: 3600 });
+  const site = rateLimit(journal, 'live-site', { max: Number(process.env.LIVE_PER_DAY ?? 200), per: 86400 });
+  // The client's claim first: a refused client never spends the site's budget.
+  return async client => {
+    if (!(await perClient(client)).ok) return { ok: false, scope: 'client' };
+    if (!(await site('all')).ok) return { ok: false, scope: 'site' };
+    return { ok: true };
+  };
+}
+
 function create() {
   const ttl = 3600 * Number(process.env.DECISION_RETENTION_HOURS ?? 24);
-  const perMinute = Number(process.env.RATE_LIMIT_PER_MINUTE ?? 20);
   if (redisConfigured()) {
     const redis = upstash();
-    const journal = redisJournal(redis, { prefix: 'jevdemo:' });
-    return { name: 'upstash', store: redisStore(redis, { prefix: 'jevdemo:', ttl }), limit: rateLimit(journal, 'live-model', { max: perMinute, per: 60 }) };
+    return { name: 'upstash', store: redisStore(redis, { prefix: 'jevdemo:', ttl }), limit: limits(redisJournal(redis, { prefix: 'jevdemo:' })) };
   }
-  return { name: 'memory', store: memoryStore(), limit: rateLimit(memoryJournal(), 'live-model', { max: perMinute, per: 60 }) };
+  return { name: 'memory', store: memoryStore(), limit: limits(memoryJournal()) };
 }
 
 // One per process; kept on globalThis so dev hot reloads keep the log.

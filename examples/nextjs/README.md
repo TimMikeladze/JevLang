@@ -2,7 +2,8 @@
 
 This app serves jevlang.sh as well: the landing page and reference at `/` and
 `/reference` (built from `site/` by `npm run site`, which `dev` and `build` run
-first), and the three demos under `/examples`.
+first), and the three demos under `/examples/<name>`, reached from the Examples
+dropdown in the site's nav. Every page shares the site's header and footer.
 
 Three API routes, each backed by a policy, each with its own UI. The model
 answers a couple of questions; the policy — plain code — decides, using facts
@@ -40,17 +41,20 @@ curl localhost:3000/api/reservation   # newest logged decisions
 ```
 
 Pass `answers` alongside `input` to skip the model (demos, tests, replays).
-More than `RATE_LIMIT_PER_MINUTE` (default 20) live calls from one client in a
-minute get a 429; offline answers are never limited.
+Live model calls are capped at `LIVE_PER_CLIENT_PER_HOUR` (default 5) per
+client and `LIVE_PER_DAY` (default 200) for the whole site; over either is a
+429. Offline answers are never limited.
 
 ## Deploying
 
 The Vercel project's Root Directory is `examples/nextjs`: one deploy serves the
 landing page and the examples. Add Upstash Redis from the Vercel Marketplace (sets `KV_REST_API_URL` and
 `KV_REST_API_TOKEN`; `UPSTASH_REDIS_REST_URL`/`_TOKEN` work too). Optionally set
-`DECISION_RETENTION_HOURS` (default 24), `RATE_LIMIT_PER_MINUTE` (default 20),
-and a provider: `TYPESAFE_API_KEY`, or `JEV_PROVIDER=gateway`, which
-authenticates with the deployment's OIDC token and needs no key. No cron:
-records expire in Redis.
+`DECISION_RETENTION_HOURS` (default 24), `LIVE_PER_CLIENT_PER_HOUR` (default 5),
+`LIVE_PER_DAY` (default 200), and a provider: `TYPESAFE_API_KEY`, or
+`JEV_PROVIDER=gateway` (with `JEV_GATEWAY_MODEL`), which authenticates with the
+deployment's OIDC token and needs no key. In production the live model stays
+off until Redis is connected, so the caps are shared. No cron: records expire
+in Redis.
 
 Design notes: [docs/nextjs-example.md](../../docs/nextjs-example.md).
