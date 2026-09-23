@@ -282,7 +282,7 @@ f.then(function(v){return navigator.clipboard.writeText(v)}).then(function(){c.d
 
 // ---------- head ----------
 
-export function head({ title, description, canonical }) {
+export function head({ title, description, canonical, image = '/og.png' }) {
   return `<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -296,13 +296,13 @@ export function head({ title, description, canonical }) {
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${esc(canonical)}">
-<meta property="og:image" content="${origin}/og.png">
+<meta property="og:image" content="${origin}${image}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:alt" content="${esc(meta.name)} — ${esc(meta.h1)}">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="${origin}/og.png">
+<meta name="twitter:image" content="${origin}${image}">
 <link rel="icon" href="${favicon}">
 <script type="application/ld+json">${JSON.stringify(jsonLd())}</script>
 ${bootScript}
@@ -337,7 +337,7 @@ export function header(active) {
   const iconsRight = links.filter((l) => l.where.includes('header')).map(iconLink).join('');
   return `<a class="skip" href="#main">Skip to content</a>
 <header class="site-head"><div class="shell">
-<a class="brand" href="/"><span class="brand-mark">${productMark}</span><span class="brand-word">${esc(meta.name)}</span></a>
+<a class="brand" href="/"><span class="brand-word">${esc(meta.name)}</span></a>
 <nav class="site-nav" aria-label="Site">${navLinks}</nav>
 <div class="head-icons">${iconsRight}<span class="head-div" aria-hidden="true"></span>
 <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Theme: system. Click to change"><span class="i i-system">${icon('monitor')}</span><span class="i i-dark">${icon('moon')}</span><span class="i i-light">${icon('sun')}</span></button>
@@ -621,7 +621,7 @@ export function renderReference({ readme }) {
   const toc = [...readme.matchAll(/^## (.+)$/gm)].map((m) => `<a href="#${slug(m[1])}">${esc(m[1])}</a>`).join('');
   return `<!doctype html>
 <html lang="en">
-${head({ title: `${meta.name} — reference`, description: `The full ${meta.name} README: policies, gates, dispatch, providers, MCP, serving, and the verification evidence.`, canonical: url('/reference') })}
+${head({ title: `${meta.name} — reference`, description: `The full ${meta.name} README: policies, gates, dispatch, providers, MCP, serving, and the verification evidence.`, canonical: url('/reference'), image: '/og-reference.png' })}
 <body id="reference">
 ${header('/reference')}
 <main id="main"><div class="shell ref-layout">

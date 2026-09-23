@@ -192,12 +192,16 @@ test('artefacts and sitemap', () => {
   assert.ok(agents.includes('WebFetch') && agents.includes('Bash(rm *)'), 'the tool gate note');
 });
 
-// 10. og.png exists, and its PNG header really says 1200x630, small enough for every client.
-test('og.png dimensions', () => {
-  const png = readFileSync(new URL('./out/og.png', import.meta.url));
-  assert.equal(png.readUInt32BE(16), 1200);
-  assert.equal(png.readUInt32BE(20), 630);
-  assert.ok(png.length < 300 * 1024, `og.png is ${png.length} bytes`);
+// 10. every OG card exists, and its PNG header really says 1200x630, small enough for every client.
+test('og cards dimensions', async () => {
+  const { cards } = await import('./cards.js');
+  for (const { file } of cards) {
+    const png = readFileSync(new URL(`./out/${file}`, import.meta.url));
+    assert.equal(png.readUInt32BE(16), 1200, file);
+    assert.equal(png.readUInt32BE(20), 630, file);
+    assert.ok(png.length < 300 * 1024, `${file} is ${png.length} bytes`);
+  }
+  assert.match(read('./out/reference.html'), /og:image" content="https:\/\/jevlang\.sh\/og-reference\.png"/);
 });
 
 // 11. links appear as the model says.
