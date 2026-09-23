@@ -64,6 +64,10 @@
       "types": "./src/redis.d.ts",
       "default": "./src/redis.js"
     },
+    "./cloud": {
+      "types": "./src/cloud.d.ts",
+      "default": "./src/cloud.js"
+    },
     "./handlers": {
       "types": "./src/handlers.d.ts",
       "default": "./src/handlers.js"

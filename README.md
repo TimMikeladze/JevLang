@@ -513,6 +513,59 @@ export async function POST(request) {
 
 `examples/nextjs` is the whole thing wired into a Next.js app.
 
+## The hosted product: `jevlang/cloud`
+
+Everything above runs on your own machine. [JevLang Cloud](https://cloud.jevlang.sh)
+runs the same engine for many tenants — deployments, traces, limits, a spend
+cap, a review queue — and `jevlang/cloud` is the client for it: one `fetch`,
+no dependency, no engine logic. A decision it returns is the decision this
+package made, because the service imports this package.
+
+```js
+import { cloud } from 'jevlang/cloud';
+
+const jc = cloud({ key: process.env.JEV_KEY });        // jev_live_… or jev_pub_…
+
+const decision = await jc.evaluate('support', ticket); // limits, cap and trace: server-side
+const offline = await jc.decide('support', ticket, answers);   // free, no model asked
+await jc.deploy('support', policy, { note: 'tightened the refund rule' });
+await jc.promote('support', 4, { expect: 3, gate: { max_changed: 0.05 } });
+```
+
+- **The tenant comes from the key**, never from an argument, so a client cannot
+  name another tenant's project. A wrong one is a 404, with the words an
+  unknown project gets.
+- **A publishable key (`jev_pub_…`) is safe in a browser**: it evaluates one
+  project environment, from the origins its owner listed, under an end-user
+  limit. `jc.evaluate` sends it to the public door automatically.
+- **`jc.journal(project)` is a `Journal`** — the same interface `redisJournal`
+  and `dbJournal` satisfy — so `makeDispatcher({ journal })` takes the managed
+  one unchanged, and idempotency, cooldowns, budgets and scheduled work are
+  shared with everything else in the project:
+
+```js
+import { makeDispatcher, dispatch } from 'jevlang/dispatch';
+
+const dispatcher = makeDispatcher(handlers, { journal: jc.journal('support') });
+await dispatch(dispatcher, state, decision, { key: caseId });
+```
+
+- **`expect` and `gate`** are the promotion's two safety rails: `expect` is the
+  production number you believe is live, so two promotions racing cannot both
+  win, and a gate replays real production traces against the candidate and
+  refuses when too much changed — or when there are fewer than thirty
+  replayable traces, because a gate over too little evidence is not a gate.
+
+The CLI speaks to it too, with `JEV_KEY` set (and `JEV_CLOUD_URL` for a
+deployment of your own):
+
+```sh
+jev deploy support policy.json --note "tightened the refund rule"
+jev promote support 4 --expect 3 --gate 0.05
+jev logs support --limit 20
+jev open support
+```
+
 ## Everything else in the box
 
 The core is small; the surface around it is what a production decision needs.

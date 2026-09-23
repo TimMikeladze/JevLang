@@ -426,7 +426,7 @@ h1{font-size:2.6rem}
 </div>
 </div></header>
 <main id="main"><div class="shell ref-layout">
-<nav class="ref-toc" aria-label="Contents"><p class="toc-title">Contents</p><a href="#why-you-need-this">Why you need this</a><a href="#hello-world">Hello, world</a><a href="#three-kinds-of-question">Three kinds of question</a><a href="#a-real-one-support-routing">A real one: support routing</a><a href="#mistakes-are-build-errors">Mistakes are build errors</a><a href="#guard-an-agent-s-tools">Guard an agent's tools</a><a href="#call-it-from-anywhere">Call it from anywhere</a><a href="#self-hosted-decisions-with-laya">Self-hosted decisions with Laya</a><a href="#run-it-on-serverless-vercel-upstash">Run it on serverless: Vercel + Upstash</a><a href="#everything-else-in-the-box">Everything else in the box</a><a href="#verify-it-yourself">Verify it yourself</a></nav>
+<nav class="ref-toc" aria-label="Contents"><p class="toc-title">Contents</p><a href="#why-you-need-this">Why you need this</a><a href="#hello-world">Hello, world</a><a href="#three-kinds-of-question">Three kinds of question</a><a href="#a-real-one-support-routing">A real one: support routing</a><a href="#mistakes-are-build-errors">Mistakes are build errors</a><a href="#guard-an-agent-s-tools">Guard an agent's tools</a><a href="#call-it-from-anywhere">Call it from anywhere</a><a href="#self-hosted-decisions-with-laya">Self-hosted decisions with Laya</a><a href="#run-it-on-serverless-vercel-upstash">Run it on serverless: Vercel + Upstash</a><a href="#the-hosted-product-jevlang-cloud">The hosted product: `jevlang/cloud`</a><a href="#everything-else-in-the-box">Everything else in the box</a><a href="#verify-it-yourself">Verify it yourself</a></nav>
 <article class="ref-doc">
 <h1 id="jevlang">JevLang</h1>
 <p><strong>Decide once, trust everywhere.</strong> JevLang is a policy engine for decisions that used to live inside a prompt: routing, triage, approvals, escalation, guarding an agent's tools. You write the policy once in plain TypeScript (or Python); JevLang asks the model only the questions the policy needs, checks the answers, decides — and can prove, from a signed journal, exactly why it decided that.</p>
@@ -752,6 +752,33 @@ listening on http://127.0.0.1:8080</code></pre>
 <li><strong>Clarify across instances.</strong> <code>makeSessions(evaluate, dispatcher, { table: redisSessions(redis) })</code>, so the reply can land anywhere.</li>
 </ul>
 <p><code>examples/nextjs</code> is the whole thing wired into a Next.js app.</p>
+<h2 id="the-hosted-product-jevlang-cloud">The hosted product: <code>jevlang/cloud</code></h2>
+<p>Everything above runs on your own machine. <a href="https://cloud.jevlang.sh">JevLang Cloud</a> runs the same engine for many tenants — deployments, traces, limits, a spend cap, a review queue — and <code>jevlang/cloud</code> is the client for it: one <code>fetch</code>, no dependency, no engine logic. A decision it returns is the decision this package made, because the service imports this package.</p>
+<pre><code><span class="tk-kw">import</span> { cloud } <span class="tk-kw">from</span> <span class="tk-str">'jevlang/cloud'</span>;
+
+<span class="tk-kw">const</span> jc = <span class="tk-fn">cloud</span>({ key: process.env.JEV_KEY });        <span class="tk-cmt">// jev_live_… or jev_pub_…</span>
+
+<span class="tk-kw">const</span> decision = <span class="tk-kw">await</span> jc.<span class="tk-fn">evaluate</span>(<span class="tk-str">'support'</span>, ticket); <span class="tk-cmt">// limits, cap and trace: server-side</span>
+<span class="tk-kw">const</span> offline = <span class="tk-kw">await</span> jc.<span class="tk-fn">decide</span>(<span class="tk-str">'support'</span>, ticket, answers);   <span class="tk-cmt">// free, no model asked</span>
+<span class="tk-kw">await</span> jc.<span class="tk-fn">deploy</span>(<span class="tk-str">'support'</span>, policy, { note: <span class="tk-str">'tightened the refund rule'</span> });
+<span class="tk-kw">await</span> jc.<span class="tk-fn">promote</span>(<span class="tk-str">'support'</span>, <span class="tk-num">4</span>, { expect: <span class="tk-num">3</span>, gate: { max_changed: <span class="tk-num">0.05</span> } });</code></pre>
+<ul>
+<li><strong>The tenant comes from the key</strong>, never from an argument, so a client cannot name another tenant's project. A wrong one is a 404, with the words an unknown project gets.</li>
+<li><strong>A publishable key (<code>jev_pub_…</code>) is safe in a browser</strong>: it evaluates one project environment, from the origins its owner listed, under an end-user limit. <code>jc.evaluate</code> sends it to the public door automatically.</li>
+<li><strong><code>jc.journal(project)</code> is a <code>Journal</code></strong> — the same interface <code>redisJournal</code> and <code>dbJournal</code> satisfy — so <code>makeDispatcher({ journal })</code> takes the managed one unchanged, and idempotency, cooldowns, budgets and scheduled work are shared with everything else in the project:</li>
+</ul>
+<pre><code><span class="tk-kw">import</span> { makeDispatcher, dispatch } <span class="tk-kw">from</span> <span class="tk-str">'jevlang/dispatch'</span>;
+
+<span class="tk-kw">const</span> dispatcher = <span class="tk-fn">makeDispatcher</span>(handlers, { journal: jc.<span class="tk-fn">journal</span>(<span class="tk-str">'support'</span>) });
+<span class="tk-kw">await</span> <span class="tk-fn">dispatch</span>(dispatcher, state, decision, { key: caseId });</code></pre>
+<ul>
+<li><strong><code>expect</code> and <code>gate</code></strong> are the promotion's two safety rails: <code>expect</code> is the production number you believe is live, so two promotions racing cannot both win, and a gate replays real production traces against the candidate and refuses when too much changed — or when there are fewer than thirty replayable traces, because a gate over too little evidence is not a gate.</li>
+</ul>
+<p>The CLI speaks to it too, with <code>JEV_KEY</code> set (and <code>JEV_CLOUD_URL</code> for a deployment of your own):</p>
+<pre><code>jev deploy support policy.json --note &quot;tightened the refund rule&quot;
+jev promote support 4 --expect 3 --gate 0.05
+jev logs support --limit 20
+jev open support</code></pre>
 <h2 id="everything-else-in-the-box">Everything else in the box</h2>
 <p>The core is small; the surface around it is what a production decision needs.</p>
 <ul>

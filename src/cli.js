@@ -12,6 +12,7 @@ import { cost } from './cost.js';
 import { loadProviderConfig, makeDefaultRegistry, discoverProviders, resolveProvider, providerRequest, targetSpec } from './provider/index.js';
 import { evaluateWithProvider, runPolicyProvider, fixtureFromRun, policyConfigDefaults, makePolicyRegistry } from './evaluate.js';
 import { makeGate, hookResponse, approveOnce, parseToolList } from './gate.js';
+import { cloud } from './cloud.js';
 
 async function providerReport(options = {}) {
   const config = options.config ?? loadProviderConfig({ role: options.role ?? null });
@@ -91,6 +92,55 @@ async function fixtureFiles(dir) {
   const files = (await readdir(dir, { withFileTypes: true })).filter(f => f.isFile() && f.name.endsWith('.json')).map(f => f.name).sort();
   return Promise.all(files.map(f => jsonFile(resolve(dir, f))));
 }
+// The cloud commands. The key is the tenant, so none of them name one.
+function flags(args) {
+  const rest = [];
+  const options = {};
+  for (let i = 0; i < args.length; i++) {
+    if (args[i].startsWith('--')) options[args[i].slice(2)] = args[i + 1]?.startsWith('--') === false ? args[++i] : true;
+    else rest.push(args[i]);
+  }
+  return { rest, options };
+}
+
+async function cloudCommand(command, args) {
+  const { rest, options } = flags(args);
+  const jc = cloud({ ...(options.url ? { baseUrl: options.url } : {}), ...(options.environment ? { environment: options.environment } : {}) });
+  const [project, second] = rest;
+  if (!project) throw new Error(`jev ${command} needs a project.`);
+
+  if (command === 'open') { console.log(jc.playground(project)); return; }
+
+  if (command === 'logs') {
+    const traces = await jc.traces(project, { limit: Number(options.limit ?? 20), environment: options.environment ?? null });
+    for (const trace of traces) {
+      const decision = trace.decision ?? {};
+      console.log(`${trace.at}  ${trace.kind.padEnd(9)} ${String(decision.action ?? trace.status).padEnd(9)} ${decision.target ?? ''}`.trimEnd());
+    }
+    if (!traces.length) console.log('nothing recorded yet');
+    return;
+  }
+
+  if (command === 'deploy') {
+    if (!second) throw new Error('jev deploy needs the policy artifact: jev deploy PROJECT POLICY.json');
+    const published = await jc.deploy(project, await jsonFile(second), { note: typeof options.note === 'string' ? options.note : null });
+    console.log(`published #${published.number} (${published.identity})${published.production ? ' — the first, so it is production' : ' — a preview until promoted'}`);
+    return;
+  }
+
+  // promote
+  if (!second) throw new Error('jev promote needs the deployment: jev promote PROJECT 3');
+  const gate = options.gate === undefined ? null : { max_changed: Number(options.gate), ...(options.sample ? { sample: Number(options.sample) } : {}) };
+  const moved = await jc.promote(project, second, {
+    expect: options.expect === undefined ? null : Number(options.expect),
+    gate,
+    environment: options.environment ?? null,
+  });
+  console.log(moved.rollback
+    ? `rolled back to #${moved.production}`
+    : `production is #${moved.production}${moved.gate ? ` (the gate saw ${moved.gate.changed} of ${moved.gate.replayed} change)` : ''}`);
+}
+
 async function main(args) {
   if (args[0] === 'rpc') {
     for await (const line of createInterface({ input: process.stdin, crlfDelay: Infinity })) {
@@ -103,7 +153,11 @@ async function main(args) {
   }
   const [command, path, input, extra] = args;
   if (!command || ['help', '--help', '-h'].includes(command)) {
-    console.log('jev validate POLICY.json\njev decide POLICY.json ANSWERS.json [FACTS.json]\njev state POLICY.json INPUT.json\njev schema POLICY.json\njev stats POLICY.json FIXTURE_DIR\njev calibrate POLICY.json FIXTURE_DIR\njev cost POLICY.json [INPUT.json] [FIXTURE_DIR]\njev evaluate POLICY.json INPUT.json   (calls the selected provider)\njev record POLICY.json INPUT.json     (calls it, and writes a fixture)\njev providers\njev gate hook POLICY.json [OPTIONS.json] < event.json   (calls the provider)\njev gate approve-once FINGERPRINT\njev replay POLICY.json FIXTURE_DIR\njev diff BEFORE.json AFTER.json FIXTURE_DIR\njev tune POLICY.json FIXTURE_DIR GRID.json\njev rpc'); return;
+    console.log('jev validate POLICY.json\njev decide POLICY.json ANSWERS.json [FACTS.json]\njev state POLICY.json INPUT.json\njev schema POLICY.json\njev stats POLICY.json FIXTURE_DIR\njev calibrate POLICY.json FIXTURE_DIR\njev cost POLICY.json [INPUT.json] [FIXTURE_DIR]\njev evaluate POLICY.json INPUT.json   (calls the selected provider)\njev record POLICY.json INPUT.json     (calls it, and writes a fixture)\njev providers\njev gate hook POLICY.json [OPTIONS.json] < event.json   (calls the provider)\njev gate approve-once FINGERPRINT\njev replay POLICY.json FIXTURE_DIR\njev diff BEFORE.json AFTER.json FIXTURE_DIR\njev tune POLICY.json FIXTURE_DIR GRID.json\njev deploy PROJECT POLICY.json [--note "what changed"]   (JevLang Cloud)\njev promote PROJECT DEPLOYMENT [--expect N] [--gate 0.05]\njev logs PROJECT [--limit 20]\njev open PROJECT                    (prints the playground link)\njev rpc'); return;
+  }
+  if (['deploy', 'promote', 'logs', 'open'].includes(command)) {
+    await cloudCommand(command, args.slice(1));
+    return;
   }
   if (command === 'providers') { console.log(JSON.stringify(await handle({ method: command, options: path ? await jsonFile(path) : {} }), null, 2)); return; }
   if (command === 'gate') {
