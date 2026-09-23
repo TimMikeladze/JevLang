@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { writeFile, mkdtemp, chmod } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { questionsAnswerSchema, policyPrompt, evaluateWithProvider, evaluateConfiguredPolicy, typesafeProvider, fixtureFromRun, runPolicyProvider } from '../src/evaluate.js';
+import { questionsAnswerSchema, policyPrompt, evaluateWithProvider, evaluateConfiguredPolicy, typesafeProvider, fixtureFromRun, runPolicyProvider, normalizeAnswers } from '../src/evaluate.js';
+import { validateAnswers } from '../src/engine.js';
 import { jevCall, settings as client, defaultRetryPolicy, JevApiError } from '../src/client.js';
 import { ProviderRegistry, mergeProviderConfig, capabilities, commandProvider, clearProviderDiscoveryCache, environmentReader } from '../src/provider/index.js';
 import { replay } from '../src/fixtures.js';
@@ -196,4 +197,49 @@ test('any executable can answer a policy, and its run records a replayable fixtu
   const rows = replay(home, [fixture]);
   assert.equal(rows[0].status, 'pass');
   assert.equal(rows[0].verifiedBy, 'questions');
+});
+
+// A model that answers a score in the question's own words is answering the
+// question, not a different one: the names it used are translated to the
+// levels the policy declared, and anything that matches no level is left as it
+// came so validation still refuses it.
+test('score answers given by name are translated to their levels', () => {
+  const questions = {
+    frustration: {
+      type: 'score',
+      instructions: 'How frustrated is the customer?',
+      criteria: ['Calm and matter-of-fact', 'Annoyed but polite', 'Angry, threatening to leave'],
+    },
+  };
+  const answers = normalizeAnswers(questions, {
+    frustration: {
+      type: 'score',
+      score: 'Angry, threatening to leave',
+      confidence: 0.95,
+      probabilities: { 'Calm and matter-of-fact': 0.01, 'Annoyed but polite': 0.04, 'Angry, threatening to leave': 0.95 },
+    },
+  });
+  assert.equal(answers.frustration.score, 2);
+  assert.deepEqual(answers.frustration.probabilities, { 0: 0.01, 1: 0.04, 2: 0.95 });
+  assert.doesNotThrow(() => validateAnswers(questions, answers));
+});
+
+test('a level name nothing declared is left alone, and refused', () => {
+  const questions = { f: { type: 'score', instructions: 'x', criteria: ['a', 'b'] } };
+  const answers = normalizeAnswers(questions, { f: { type: 'score', score: 0, probabilities: { 'c': 1 } } });
+  assert.deepEqual(answers.f.probabilities, { c: 1 });
+  assert.throws(() => validateAnswers(questions, answers), /probabilities/);
+});
+
+test('numbered answers are untouched, and other kinds are left alone', () => {
+  const questions = {
+    f: { type: 'score', instructions: 'x', criteria: ['a', 'b'] },
+    spam: { type: 'noul', instructions: 'spam?' },
+  };
+  const answers = normalizeAnswers(questions, {
+    f: { type: 'score', score: 1, probabilities: { 0: 0.2, 1: 0.8 } },
+    spam: { type: 'noul', noul: 0.9 },
+  });
+  assert.deepEqual(answers.f.probabilities, { 0: 0.2, 1: 0.8 });
+  assert.equal(answers.spam.noul, 0.9);
 });

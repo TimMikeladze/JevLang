@@ -124,6 +124,38 @@ export const policyProviderRequest = (state, questions, { provider: id = null, m
     metadata: { state, questions },
   });
 
+/**
+ * A model may name a score's level instead of numbering it: `{"score": "Angry,
+ * threatening to leave"}`, or a distribution keyed by the level's name. That is
+ * the same answer in the question's own words, so it is translated to the
+ * levels the policy declared — a name that matches no level is left exactly as
+ * it came, and validation refuses it. Nothing is guessed at.
+ */
+export function normalizeAnswers(questions, answers) {
+  if (!object(questions) || !object(answers)) return answers;
+  for (const [id, question] of Object.entries(questions)) {
+    const answer = answers[id];
+    if (!object(answer) || question?.type !== 'score') continue;
+    const levels = Array.isArray(question.criteria) ? question.criteria : [];
+    const names = levels.map(level => object(level) ? (level.name ?? null) : level);
+    const indexOf = name => names.findIndex(n => n !== null && String(n) === String(name));
+    if (typeof answer.score === 'string') {
+      const index = /^(0|[1-9][0-9]*)$/.test(answer.score) ? Number(answer.score) : indexOf(answer.score);
+      if (index >= 0) answer.score = index;
+    }
+    if (object(answer.probabilities)) {
+      const mapped = {};
+      let changed = false;
+      for (const [key, value] of Object.entries(answer.probabilities)) {
+        const index = /^(0|[1-9][0-9]*)$/.test(key) ? -1 : indexOf(key);
+        if (index >= 0) { mapped[String(index)] = value; changed = true; } else { mapped[key] = value; }
+      }
+      if (changed) answer.probabilities = mapped;
+    }
+  }
+  return answers;
+}
+
 export async function runPolicyProvider(state, questions, { provider: id = null, model = null, effort = null, config = null, registry = null, role = 'policy' } = {}) {
   const request = policyProviderRequest(state, questions, { provider: id, model, effort, role });
   const resolvedConfig = config ?? loadProviderConfig({ defaults: policyConfigDefaults, role });
@@ -131,7 +163,7 @@ export async function runPolicyProvider(state, questions, { provider: id = null,
   return runProviderRequest(request, resolvedConfig, resolvedRegistry, {
     observe: result => { if (result.target.provider.id !== 'typesafe' && result.usage) clientSettings.onUsage?.(result.usage); },
     validate: answers => {
-      try { validateAnswers(questions, answers); return null; } catch (error) { return error.message; }
+      try { validateAnswers(questions, normalizeAnswers(questions, answers)); return null; } catch (error) { return error.message; }
     },
   });
 }
