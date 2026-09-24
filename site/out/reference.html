@@ -791,6 +791,19 @@ listening on http://127.0.0.1:8080</code></pre>
 jev promote support 4 --expect 3 --gate 0.05
 jev logs support --limit 20
 jev open support</code></pre>
+<p><strong>Actions on your own machine.</strong> A cloud handler can only reach the internet (<code>http</code>, <code>webhook</code>, sandboxed <code>code</code>). For a private database, a VPN-only service or a shell, make the target <code>{ &quot;type&quot;: &quot;runner&quot;, &quot;pool&quot;: &quot;prod-east&quot; }</code> in the environment's handlers: dispatch queues the step, and a runner you host pulls it with a <code>run</code>-scoped key, runs it, and reports onto the trace. Nothing on your network accepts a connection, and the cloud has already decided — the runner only acts.</p>
+<pre><code><span class="tk-kw">import</span> { runner } <span class="tk-kw">from</span> <span class="tk-str">'jevlang/cloud'</span>;
+
+<span class="tk-fn">runner</span>({
+  key: process.env.JEV_RUNNER_KEY,     <span class="tk-cmt">// a key with the run scope</span>
+  pool: <span class="tk-str">'prod-east'</span>,
+  handlers: {
+    <span class="tk-str">'billing-queue'</span>: <span class="tk-kw">async</span> (state, decision) =&gt; ({ ticket: <span class="tk-kw">await</span> <span class="tk-fn">fileTicket</span>(decision) }),
+  },
+}).<span class="tk-fn">start</span>();                            <span class="tk-cmt">// claim, run, report; stop() finishes the jobs in hand</span></code></pre>
+<p>Or with a handlers file (the one <code>makeDispatcher</code> takes — <code>shell</code>, <code>log</code>, <code>mqtt</code> and the rest work here, because this is your machine):</p>
+<pre><code>jev runner prod-east handlers.json --concurrency 4</code></pre>
+<p>A throw fails the job and the cloud re-queues it, up to five attempts; a target the runner has no handler for fails without a retry. While a handler runs the runner extends its lease, and a runner whose lease ran out cannot report over the one that claimed the job next.</p>
 <h2 id="everything-else-in-the-box">Everything else in the box</h2>
 <p>The core is small; the surface around it is what a production decision needs.</p>
 <ul>

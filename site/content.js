@@ -152,6 +152,15 @@ export const sections = [
     ],
   },
   {
+    id: 'own-runner',
+    h2: 'Actions on your own machine',
+    p: 'Make a target `{ "type": "runner", "pool": "prod-east" }` and dispatch queues the step instead of calling out. `runner()` from `jevlang/cloud`, or `jev runner prod-east handlers.json`, pulls it with a `run`-scoped key and reports onto the trace, so a private database or a shell is in reach and nothing on your network accepts a connection.',
+    doc: 'The hosted product: `jevlang/cloud`',
+    demos: [
+      { type: 'snippet', marker: "import { runner } from 'jevlang/cloud';", name: 'runner.js' },
+    ],
+  },
+  {
     id: 'bring-your-own',
     h2: 'Bring your own everything',
     p: 'Model keys, the model endpoint, state, traces and handlers each have a managed and a bring-your-own option, chosen per environment on the same code path: your own Anthropic key, any OpenAI-compatible URL, your Upstash or Postgres, your own runner beside `http` and `webhook`. Usage on your own key is never marked up, and the hard spend cap still applies to it.',

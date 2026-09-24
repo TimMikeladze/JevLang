@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { cloud, CloudError } from '../src/cloud.js';
+import { cloud, CloudError, runner } from '../src/cloud.js';
 import { makeDispatcher, dispatch } from '../src/dispatch.js';
 import { definePolicy, noul, rule, assign, hold } from '../src/index.js';
 
@@ -182,4 +182,54 @@ test('an unreachable service is a connection error, not a hang', async () => {
     assert.ok(['connection', 'timeout'].includes(error.code));
     return true;
   });
+});
+
+// A runner claims from its pool, runs the handler the target names, and
+// reports with the claim's token; a thrown error fails the job for a retry,
+// and a target it has no handler for fails without one.
+test('runner: claim, run, complete; a throw fails and retries; an unknown target does not retry', async () => {
+  const job = (id, target) => ({ id, claim: `jrc_${id}`, project: 'support', environment: 'production', target,
+    decision: { ...decision, target }, state: { ticket: 'T-1' }, attempt: 1, lease_until: '2026-01-01T00:00:00Z' });
+  const service = await fakeCloud({
+    'POST /api/v1/runners/claim': { jobs: [job('a', 'billing-queue'), job('b', 'flaky'), job('c', 'nobody')] },
+    'POST /api/v1/runners/jobs/a/complete': { body: { id: 'a', status: 'done' } },
+    'POST /api/v1/runners/jobs/b/fail': { body: { id: 'b', status: 'queued', retrying: true } },
+    'POST /api/v1/runners/jobs/c/fail': { body: { id: 'c', status: 'failed' } },
+  });
+  const events = [];
+  const r = runner({
+    key: 'jev_live_test', baseUrl: service.url, pool: 'prod-east', name: 'box', concurrency: 3, wait: 0,
+    handlers: {
+      'billing-queue': async (state, d) => ({ filed: state.ticket, to: d.target }),
+      flaky: async () => { throw new Error('db down'); },
+    },
+    onEvent: e => events.push(e.type),
+  });
+  assert.equal(await r.runOnce(), 3);
+  service.stop();
+
+  const claim = service.seen.find(s => s.path === '/api/v1/runners/claim');
+  assert.deepEqual(claim.body, { pool: 'prod-east', max: 3, wait: 0, lease: 300, name: 'box' });
+  assert.equal(claim.headers.authorization, 'Bearer jev_live_test');
+  const body = p => service.seen.find(s => s.path === p).body;
+  assert.deepEqual(body('/api/v1/runners/jobs/a/complete'), { claim: 'jrc_a', result: { filed: 'T-1', to: 'billing-queue' } });
+  assert.deepEqual(body('/api/v1/runners/jobs/b/fail'), { claim: 'jrc_b', error: 'db down', retry: true });
+  assert.deepEqual(body('/api/v1/runners/jobs/c/fail'), { claim: 'jrc_c', error: "this runner has no handler for 'nobody'", retry: false });
+  assert.deepEqual(events.filter(e => e !== 'claimed').sort(), ['done', 'failed', 'failed']);
+});
+
+test('runner: a long handler extends its lease while it runs', async () => {
+  const service = await fakeCloud({
+    'POST /api/v1/runners/claim': { jobs: [{ id: 'a', claim: 'jrc_a', target: 'slow', decision, state: null, attempt: 1 }] },
+    'POST /api/v1/runners/jobs/a/extend': { body: { id: 'a', status: 'claimed' } },
+    'POST /api/v1/runners/jobs/a/complete': { body: { id: 'a', status: 'done' } },
+  });
+  // A 0.3 s lease beats every 0.1 s; the handler takes 0.35 s.
+  const r = runner({ key: 'jev_live_test', baseUrl: service.url, lease: 0.3, wait: 0,
+    handlers: { slow: () => new Promise(res => setTimeout(() => res('ok'), 350)) } });
+  await r.runOnce();
+  service.stop();
+  const extends_ = service.seen.filter(s => s.path.endsWith('/extend'));
+  assert.ok(extends_.length >= 2, `${extends_.length} heartbeats`);
+  assert.deepEqual(extends_[0].body, { claim: 'jrc_a', lease: 0.3 });
 });

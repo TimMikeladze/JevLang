@@ -16,7 +16,7 @@ the same code path either way.
 | Model endpoint | AI Gateway | Any OpenAI-compatible URL, including a self-hosted one |
 | State (journal, limits, budgets) | Our Upstash, namespaced per tenant | Your Upstash, or your Postgres |
 | Traces | Our Postgres, retention by plan, redaction on write | Your Postgres, or nothing at all |
-| Handlers | `http` and `webhook` behind an egress allowlist | Your own runner |
+| Handlers | `http` and `webhook` behind an egress allowlist, `code` in Vercel Sandbox | Your own runner: `{ "type": "runner" }` queues the step, and `jev runner` runs it on your machine |
 
 The rate limits and the hard spend cap apply to your own key too, because the
 cap protects you as much as us.
@@ -53,10 +53,14 @@ that admits the resource exists. `x-jev-environment` picks `dev`, `preview` or
 | `GET /api/v1/usage` | rows, and a total that separates money from estimates |
 | `GET/PUT /api/v1/billing`, `POST /api/v1/billing/report` | the plan and its limits (from one config), the Stripe mapping, and reporting a closed month |
 | `GET /api/v1/audit` | what changed, and who did it |
+| `POST /api/v1/runners/claim` | a runner asks its pool for work, with a lease and a one-time claim token; long-polls up to 25 s |
+| `POST /api/v1/runners/jobs/:id/complete` | the runner's result, onto the trace that queued it; `fail` re-queues until five attempts, `extend` is the heartbeat |
+| `GET /api/v1/runners` | pools, their runners and when each last asked |
+| `GET /api/v1/projects/:slug/runner-jobs` | a project's runner jobs, newest first |
 | `POST /api/v1/stripe/webhook` | the only writer of subscription state: Stripe signs, the raw body is verified, and the projection is idempotent |
 | `POST /api/public/evaluate` | the browser door: a publishable key, an origin allowlist, an end-user limit |
 
-Scopes are `evaluate`, `dispatch`, `deploy` and `read`; a key missing one is
+Scopes are `evaluate`, `dispatch`, `deploy`, `read` and `run` (a runner's); a key missing one is
 told which it needs. A key also carries one of six roles, and cannot be minted
 with more than the person minting it has. `Idempotency-Key` on evaluate and
 dispatch makes a retry return the first answer instead of paying or acting

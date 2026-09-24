@@ -4,6 +4,7 @@
 //   const jc = cloud({ key: process.env.JEV_KEY });     // jev_live_… or jev_pub_…
 //   const decision = await jc.evaluate('doorstep', input);
 //   const journal = jc.journal('doorstep');             // drop-in for makeDispatcher({ journal })
+//   runner({ pool: 'prod-east', handlers }).start();     // run `{ type: "runner" }` targets here
 //
 // It is `fetch` and nothing else — no dependency, and no engine logic. The
 // decision it returns is the decision the engine made, because the service
@@ -192,6 +193,102 @@ export function cloudJournal(client, project) {
     nextDue: () => state('nextDue', {}).then(r => r.result),
     close: () => undefined,
   };
+}
+
+/**
+ * A runner: the process that runs a `{ "type": "runner" }` target's work on
+ * your own machine. It pulls — claims jobs from a pool with a lease, runs the
+ * handler the job's target names, and reports back — so nothing on your
+ * network accepts a connection. The cloud decided already; the runner acts.
+ *
+ *   runner({ key: process.env.JEV_RUNNER_KEY, pool: 'prod-east', handlers: {
+ *     'billing-queue': async (state, decision) => ({ ticket: await file(decision) }),
+ *   } }).start();
+ *
+ * A handler that throws fails the job, and the cloud re-queues it until its
+ * attempts run out; while one runs, the lease is extended so a long action is
+ * not handed to another runner. A target this runner has no handler for fails
+ * without a retry, since retrying cannot help.
+ */
+export function runner({
+  pool = 'default',
+  handlers = {},
+  run = null,
+  name = defaultName(),
+  concurrency = 1,
+  wait = 20,
+  lease = 300,
+  client = null,
+  onEvent = () => {},
+  ...options
+} = {}) {
+  const jc = client ?? cloud(options);
+  let stopping = false;
+  let loop = null;
+  const call = (path, body) => jc.call(path, { body });
+  const report = (job, op, body) => call(`/api/v1/runners/jobs/${encodeURIComponent(job.id)}/${op}`, { claim: job.claim, ...body });
+
+  const execute = run ?? (async (job) => {
+    const handler = Object.prototype.hasOwnProperty.call(handlers, job.target) ? handlers[job.target] : handlers.default;
+    if (typeof handler !== 'function') throw Object.assign(new Error(`this runner has no handler for '${job.target}'`), { retry: false });
+    return handler(job.state, job.decision, { job });
+  });
+
+  async function runJob(job) {
+    onEvent({ type: 'claimed', job });
+    const beat = setInterval(() => {
+      report(job, 'extend', { lease }).catch(error => onEvent({ type: 'heartbeat-failed', job, error }));
+    }, Math.max(0.05, lease / 3) * 1000);
+    try {
+      const result = await execute(job);
+      await report(job, 'complete', { result: result === undefined ? null : result });
+      onEvent({ type: 'done', job, result });
+    } catch (error) {
+      const retry = error?.retry !== false;
+      await report(job, 'fail', { error: String(error?.message ?? error), retry })
+        .catch(e => onEvent({ type: 'report-failed', job, error: e }));
+      onEvent({ type: 'failed', job, error, retry });
+    } finally {
+      clearInterval(beat);
+    }
+  }
+
+  /** One claim, and the jobs it returned, run to their reports. Returns how many ran. */
+  async function runOnce({ wait: w = wait } = {}) {
+    const { jobs } = await call('/api/v1/runners/claim', { pool, max: concurrency, wait: w, lease, name });
+    await Promise.all(jobs.map(runJob));
+    return jobs.length;
+  }
+
+  return {
+    runOnce,
+    /** Claim and run until `stop()`. A failed claim waits and asks again. */
+    start() {
+      if (loop) return loop;
+      stopping = false;
+      loop = (async () => {
+        let backoff = 1;
+        while (!stopping) {
+          try { await runOnce(); backoff = 1; }
+          catch (error) {
+            onEvent({ type: 'claim-failed', error });
+            await new Promise(r => setTimeout(r, backoff * 1000));
+            backoff = Math.min(30, backoff * 2);
+          }
+        }
+      })();
+      return loop;
+    },
+    /** Finish the jobs in hand, then stop asking. */
+    async stop() { stopping = true; await loop; loop = null; },
+    pool,
+    name,
+  };
+}
+
+function defaultName() {
+  const host = typeof process !== 'undefined' ? (process.env.HOSTNAME ?? process.env.COMPUTERNAME ?? null) : null;
+  return `${host ?? 'runner'}-${typeof process !== 'undefined' ? process.pid : Math.floor(Math.random() * 1e6)}`;
 }
 
 export { CloudError };

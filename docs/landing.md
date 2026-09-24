@@ -86,6 +86,7 @@ state), the page's second script is its source text (capped at 8 KB, end of
 9. **Same engine, hosted** — `jevlang/cloud`, `jc.evaluate`. README client block.
 10. **Promote behind a replay gate** — `jev deploy`, `jev promote --expect --gate`. Lifecycle diagram + README CLI block.
 11. **Managed state, same interface** — `jc.journal(project)` into `makeDispatcher`. README block.
+11b. **Actions on your own machine** — `{ "type": "runner" }`, `runner()`, `jev runner`. README runner block.
 12. **Bring your own everything** — table from the cloud README.
 13. **Tenants isolated by construction** — `org_id` RLS; the cloud README's isolation bullets as a table.
 14. **One HTTP API** — scopes, `Idempotency-Key`, `jev_pub_…`; the route table.

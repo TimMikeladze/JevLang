@@ -59,3 +59,59 @@ export interface CloudClient {
 
 export function cloud(options?: CloudOptions): CloudClient;
 export function cloudJournal(client: CloudClient, project: string): Journal;
+
+/** A job a runner claimed: the decision the cloud made, and the state it saw. */
+export interface RunnerJob {
+  id: string;
+  /** One-time token for this claim; reports need it. */
+  claim: string;
+  project: string;
+  environment: string;
+  target: string;
+  decision: Decision;
+  state: JSONValue | null;
+  attempt: number;
+  lease_until: string;
+}
+
+export type RunnerHandler = (state: JSONValue | null, decision: Decision, context: { job: RunnerJob }) => unknown;
+
+export type RunnerEvent =
+  | { type: 'claimed'; job: RunnerJob }
+  | { type: 'done'; job: RunnerJob; result: unknown }
+  | { type: 'failed'; job: RunnerJob; error: unknown; retry: boolean }
+  | { type: 'heartbeat-failed' | 'report-failed'; job: RunnerJob; error: unknown }
+  | { type: 'claim-failed'; error: unknown };
+
+export interface RunnerOptions extends CloudOptions {
+  /** The pool a `{ "type": "runner", "pool": … }` handler names. Default `default`. */
+  pool?: string;
+  /** Target → handler. `default` catches targets with no handler of their own. */
+  handlers?: Record<string, RunnerHandler>;
+  /** Replaces the handler lookup: run the whole job yourself. */
+  run?: (job: RunnerJob) => unknown;
+  /** How this runner appears on the dashboard. */
+  name?: string;
+  /** Jobs claimed and run at once. Default 1, at most 10. */
+  concurrency?: number;
+  /** Seconds a claim long-polls for work. Default 20, at most 25. */
+  wait?: number;
+  /** Seconds a claim holds a job; extended every third of it while a handler runs. Default 300. */
+  lease?: number;
+  /** An existing client, instead of making one from the options. */
+  client?: CloudClient;
+  onEvent?: (event: RunnerEvent) => void;
+}
+
+export interface Runner {
+  /** Claim once, run what came back, and report. Resolves to how many jobs ran. */
+  runOnce(options?: { wait?: number }): Promise<number>;
+  /** Claim and run until `stop()`. */
+  start(): Promise<void>;
+  /** Finish the jobs in hand, then stop. */
+  stop(): Promise<void>;
+  readonly pool: string;
+  readonly name: string;
+}
+
+export function runner(options?: RunnerOptions): Runner;

@@ -566,6 +566,38 @@ jev logs support --limit 20
 jev open support
 ```
 
+**Actions on your own machine.** A cloud handler can only reach the internet
+(`http`, `webhook`, sandboxed `code`). For a private database, a VPN-only
+service or a shell, make the target `{ "type": "runner", "pool": "prod-east" }`
+in the environment's handlers: dispatch queues the step, and a runner you host
+pulls it with a `run`-scoped key, runs it, and reports onto the trace. Nothing
+on your network accepts a connection, and the cloud has already decided — the
+runner only acts.
+
+```js
+import { runner } from 'jevlang/cloud';
+
+runner({
+  key: process.env.JEV_RUNNER_KEY,     // a key with the run scope
+  pool: 'prod-east',
+  handlers: {
+    'billing-queue': async (state, decision) => ({ ticket: await fileTicket(decision) }),
+  },
+}).start();                            // claim, run, report; stop() finishes the jobs in hand
+```
+
+Or with a handlers file (the one `makeDispatcher` takes — `shell`, `log`,
+`mqtt` and the rest work here, because this is your machine):
+
+```sh
+jev runner prod-east handlers.json --concurrency 4
+```
+
+A throw fails the job and the cloud re-queues it, up to five attempts; a target
+the runner has no handler for fails without a retry. While a handler runs the
+runner extends its lease, and a runner whose lease ran out cannot report over
+the one that claimed the job next.
+
 ## Everything else in the box
 
 The core is small; the surface around it is what a production decision needs.

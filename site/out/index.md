@@ -446,6 +446,25 @@ await dispatch(dispatcher, state, decision, { key: caseId });
 ```
 
 
+## Actions on your own machine
+
+Make a target { "type": "runner", "pool": "prod-east" } and dispatch queues the step instead of calling out. runner() from jevlang/cloud, or jev runner prod-east handlers.json, pulls it with a run-scoped key and reports onto the trace, so a private database or a shell is in reach and nothing on your network accepts a connection.
+
+**runner.js**
+
+```js
+import { runner } from 'jevlang/cloud';
+
+runner({
+  key: process.env.JEV_RUNNER_KEY,     // a key with the run scope
+  pool: 'prod-east',
+  handlers: {
+    'billing-queue': async (state, decision) => ({ ticket: await fileTicket(decision) }),
+  },
+}).start();                            // claim, run, report; stop() finishes the jobs in hand
+```
+
+
 ## Bring your own everything
 
 Model keys, the model endpoint, state, traces and handlers each have a managed and a bring-your-own option, chosen per environment on the same code path: your own Anthropic key, any OpenAI-compatible URL, your Upstash or Postgres, your own runner beside http and webhook. Usage on your own key is never marked up, and the hard spend cap still applies to it.
@@ -456,7 +475,7 @@ Model keys, the model endpoint, state, traces and handlers each have a managed a
 | Model endpoint | AI Gateway | Any OpenAI-compatible URL, including a self-hosted one |
 | State (journal, limits, budgets) | Our Upstash, namespaced per tenant | Your Upstash, or your Postgres |
 | Traces | Our Postgres, retention by plan, redaction on write | Your Postgres, or nothing at all |
-| Handlers | `http` and `webhook` behind an egress allowlist | Your own runner |
+| Handlers | `http` and `webhook` behind an egress allowlist, `code` in Vercel Sandbox | Your own runner: `{ "type": "runner" }` queues the step, and `jev runner` runs it on your machine |
 
 
 ## Tenants isolated by construction
@@ -497,6 +516,10 @@ Every route sits under /api/v1, and a key carries the scopes evaluate, dispatch,
 | `GET /api/v1/projects/:slug/docs/:file` | generated per deployment: openapi.json, llms.txt, AGENTS.md, mcp.json, snippets.md |
 | `GET /api/v1/usage` | rows, and a total that separates money from estimates |
 | `GET /api/v1/audit` | what changed, and who did it |
+| `POST /api/v1/runners/claim` | a runner asks its pool for work, with a lease and a one-time claim token; long-polls up to 25 s |
+| `POST /api/v1/runners/jobs/:id/complete` | the runner's result, onto the trace that queued it; fail re-queues until five attempts, extend is the heartbeat |
+| `GET /api/v1/runners` | pools, their runners and when each last asked |
+| `GET /api/v1/projects/:slug/runner-jobs` | a project's runner jobs, newest first |
 | `POST /api/v1/stripe/webhook` | the only writer of subscription state: Stripe signs, the raw body is verified, and the projection is idempotent |
 | `POST /api/public/evaluate` | the browser door: a publishable key, an origin allowlist, an end-user limit |
 

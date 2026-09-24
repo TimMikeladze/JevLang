@@ -12,7 +12,8 @@ import { cost } from './cost.js';
 import { loadProviderConfig, makeDefaultRegistry, discoverProviders, resolveProvider, providerRequest, targetSpec } from './provider/index.js';
 import { evaluateWithProvider, runPolicyProvider, fixtureFromRun, policyConfigDefaults, makePolicyRegistry } from './evaluate.js';
 import { makeGate, hookResponse, approveOnce, parseToolList } from './gate.js';
-import { cloud } from './cloud.js';
+import { cloud, runner } from './cloud.js';
+import { loadHandlers } from './handlers.js';
 
 async function providerReport(options = {}) {
   const config = options.config ?? loadProviderConfig({ role: options.role ?? null });
@@ -103,6 +104,31 @@ function flags(args) {
   return { rest, options };
 }
 
+// `jev runner POOL HANDLERS.json`: run a pool's `{ "type": "runner" }` work
+// here, with the same handler file `makeDispatcher` takes. Ctrl-C finishes the
+// jobs in hand, then stops.
+async function runnerCommand(args) {
+  const { rest, options } = flags(args);
+  const [pool, file] = rest;
+  if (!pool || !file) throw new Error('jev runner needs a pool and a handlers file: jev runner prod-east handlers.json');
+  const handlers = await loadHandlers(resolve(file));
+  const r = runner({
+    pool,
+    handlers,
+    ...(options.url ? { baseUrl: options.url } : {}),
+    ...(typeof options.name === 'string' ? { name: options.name } : {}),
+    concurrency: Number(options.concurrency ?? 1),
+    onEvent: (e) => {
+      if (e.type === 'done') console.log(`done    ${e.job.id}  ${e.job.target}`);
+      else if (e.type === 'failed') console.log(`failed  ${e.job.id}  ${e.job.target}: ${e.error?.message ?? e.error}${e.retry ? ' (will retry)' : ''}`);
+      else if (e.type === 'claim-failed') console.error(`claim failed: ${e.error?.message ?? e.error}; asking again`);
+    },
+  });
+  console.log(`runner ${r.name} pulling from pool ${pool} (${Object.keys(handlers).join(', ')})`);
+  process.once('SIGINT', () => { console.log('finishing the jobs in hand…'); r.stop().then(() => process.exit(0)); });
+  await r.start();
+}
+
 async function cloudCommand(command, args) {
   const { rest, options } = flags(args);
   const jc = cloud({ ...(options.url ? { baseUrl: options.url } : {}), ...(options.environment ? { environment: options.environment } : {}) });
@@ -153,8 +179,9 @@ async function main(args) {
   }
   const [command, path, input, extra] = args;
   if (!command || ['help', '--help', '-h'].includes(command)) {
-    console.log('jev validate POLICY.json\njev decide POLICY.json ANSWERS.json [FACTS.json]\njev state POLICY.json INPUT.json\njev schema POLICY.json\njev stats POLICY.json FIXTURE_DIR\njev calibrate POLICY.json FIXTURE_DIR\njev cost POLICY.json [INPUT.json] [FIXTURE_DIR]\njev evaluate POLICY.json INPUT.json   (calls the selected provider)\njev record POLICY.json INPUT.json     (calls it, and writes a fixture)\njev providers\njev gate hook POLICY.json [OPTIONS.json] < event.json   (calls the provider)\njev gate approve-once FINGERPRINT\njev replay POLICY.json FIXTURE_DIR\njev diff BEFORE.json AFTER.json FIXTURE_DIR\njev tune POLICY.json FIXTURE_DIR GRID.json\njev deploy PROJECT POLICY.json [--note "what changed"]   (JevLang Cloud)\njev promote PROJECT DEPLOYMENT [--expect N] [--gate 0.05]\njev logs PROJECT [--limit 20]\njev open PROJECT                    (prints the playground link)\njev rpc'); return;
+    console.log('jev validate POLICY.json\njev decide POLICY.json ANSWERS.json [FACTS.json]\njev state POLICY.json INPUT.json\njev schema POLICY.json\njev stats POLICY.json FIXTURE_DIR\njev calibrate POLICY.json FIXTURE_DIR\njev cost POLICY.json [INPUT.json] [FIXTURE_DIR]\njev evaluate POLICY.json INPUT.json   (calls the selected provider)\njev record POLICY.json INPUT.json     (calls it, and writes a fixture)\njev providers\njev gate hook POLICY.json [OPTIONS.json] < event.json   (calls the provider)\njev gate approve-once FINGERPRINT\njev replay POLICY.json FIXTURE_DIR\njev diff BEFORE.json AFTER.json FIXTURE_DIR\njev tune POLICY.json FIXTURE_DIR GRID.json\njev deploy PROJECT POLICY.json [--note "what changed"]   (JevLang Cloud)\njev promote PROJECT DEPLOYMENT [--expect N] [--gate 0.05]\njev logs PROJECT [--limit 20]\njev open PROJECT                    (prints the playground link)\njev runner POOL HANDLERS.json [--concurrency N] [--name NAME]   (runs runner targets here)\njev rpc'); return;
   }
+  if (command === 'runner') { await runnerCommand(args.slice(1)); return; }
   if (['deploy', 'promote', 'logs', 'open'].includes(command)) {
     await cloudCommand(command, args.slice(1));
     return;
