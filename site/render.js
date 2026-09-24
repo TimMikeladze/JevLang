@@ -256,7 +256,7 @@ var K='jevlang-theme',r=document.documentElement,mq=matchMedia('(prefers-color-s
 function saved(){try{var s=localStorage.getItem(K);return s==='dark'||s==='light'?s:'system'}catch(e){return'system'}}
   function set(p){r.dataset.pref=p;r.dataset.theme=p==='system'?(mq.matches?'dark':'light'):p;var b=document.getElementById('theme-toggle');if(b)b.setAttribute('aria-label','Theme: '+p+'. Click to change')}
   set(saved());r.dataset.js='';
-  if(/(?:^|;\\s*)jev-cloud-nav=1(?:;|$)/.test(document.cookie))r.dataset.flags='cloud-nav';
+  if(/(?:^|;\\s*)jev-cloud=1(?:;|$)/.test(document.cookie))r.dataset.flags='cloud';
 document.addEventListener('DOMContentLoaded',function(){set(r.dataset.pref)});
 mq.addEventListener('change',function(){if(r.dataset.pref==='system')set('system')});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')document.querySelectorAll('.nav-drop[open]').forEach(function(d){d.open=false})});
@@ -337,8 +337,12 @@ export function header(active) {
 </div></header>`;
 }
 
+const flagAttr = (x) => (x.flag ? ` data-flag="${esc(x.flag)}"` : '');
+// The agent files cannot ask a flag, so they carry only what is always on.
+const unflagged = (list) => list.filter((x) => !x.flag);
+
 export function footer() {
-  const cols = footerColumns.map((c) => `<div class="foot-col"><h3>${esc(c.title)}</h3>${c.links.map((l) => `<a href="${esc(resolveHref(l.href))}"${l.external ? ' target="_blank" rel="noopener"' : ''}>${esc(l.label)}${l.external ? ' <span class="ext">↗</span>' : ''}</a>`).join('')}</div>`).join('');
+  const cols = footerColumns.map((c) => `<div class="foot-col"${flagAttr(c)}><h3>${esc(c.title)}</h3>${c.links.map((l) => `<a href="${esc(resolveHref(l.href))}"${l.external ? ' target="_blank" rel="noopener"' : ''}>${esc(l.label)}${l.external ? ' <span class="ext">↗</span>' : ''}</a>`).join('')}</div>`).join('');
   const iconRow = links.filter((l) => l.where.includes('footer')).map(iconLink).join('');
   return `<footer class="site-foot"><div class="shell">
 <div class="foot-cols">${cols}</div>
@@ -540,8 +544,8 @@ export function renderLanding({ readme, cloudReadme }) {
 
   const sectionHtml = contentSections.map((s, i) => {
     const demos = s.demos.map((d) => `<div class="demo">${renderDemo(d, ctx)}</div>`).join('\n');
-    const aside = asides.filter((a) => a.before === s.id).map((a) => `<div class="aside"><div class="shell"><p>${inlineMd(a.text)}</p></div></div>`).join('\n');
-    return `${aside}<section id="${s.id}" class="section${i % 2 === 0 ? ' section--band' : ''}" aria-labelledby="${s.id}-h">
+    const aside = asides.filter((a) => a.before === s.id).map((a) => `<div class="aside"${flagAttr(a)}><div class="shell"><p>${inlineMd(a.text)}</p></div></div>`).join('\n');
+    return `${aside}<section id="${s.id}" class="section${i % 2 === 0 ? ' section--band' : ''}"${flagAttr(s)} aria-labelledby="${s.id}-h">
 <div class="shell">
 <h2 id="${s.id}-h">${esc(s.h2)}</h2>
 <p class="expl">${inlineMd(s.p)}${s.doc ? ` <a href="/reference#${slug(s.doc)}">Read the section.</a>` : ''}</p>
@@ -567,7 +571,7 @@ ${demos}
   const hero = `<section class="hero" aria-labelledby="top"><div class="shell hero-grid">
 <div class="hero-copy">
 <h1 id="top">${esc(meta.h1)}</h1>
-<p class="lede">${inlineMd(meta.lede)}</p>
+<p class="lede">${inlineMd(meta.lede)}${meta.ledeCloud ? ` <span data-flag="cloud">${inlineMd(meta.ledeCloud)}</span>` : ''}</p>
 ${actions}
 </div>
 <div class="hero-demo">${heroConsole(heroModel(r))}</div>
@@ -663,7 +667,7 @@ export function llmsText({ readme, cloudReadme }) {
     `# ${meta.name}`, '',
     `> ${meta.description}`, '',
     `${inlinePlain(meta.lede)} Install with \`${meta.install}\`. ${meta.license} licensed.`, '',
-    ...contentSections.flatMap((s) => [capabilityMarkdown(s, ctx)]),
+    ...unflagged(contentSections).flatMap((s) => [capabilityMarkdown(s, ctx)]),
     examplesMarkdown(), '',
     serverlessMarkdown(),
     '## Links', '',
@@ -721,7 +725,7 @@ export function pageMarkdown({ readme, cloudReadme }) {
     `# ${meta.name} — ${meta.h1}`, '',
     inlinePlain(meta.lede), '',
     `Install: \`${meta.install}\``, '',
-    ...contentSections.flatMap((s) => [capabilityMarkdown(s, ctx)]),
+    ...unflagged(contentSections).flatMap((s) => [capabilityMarkdown(s, ctx)]),
     examplesMarkdown(), '',
   ].join('\n');
 }

@@ -58,7 +58,7 @@ report.prose = await page.evaluate(() => [...document.querySelectorAll('.expl')]
 report.widths = await page.evaluate(() => ({
   shell: Math.round(document.querySelector('.shell').getBoundingClientRect().width),
   proseMax: Math.max(...[...document.querySelectorAll('.expl')].map((p) => Math.round(p.getBoundingClientRect().width))),
-  demoMin: Math.min(...[...document.querySelectorAll('.section .demo > .frame, .section .demo > .diagram')].map((f) => Math.round(f.getBoundingClientRect().width))),
+  demoMin: Math.min(...[...document.querySelectorAll('.section .demo > .frame, .section .demo > .diagram')].filter((f) => f.getClientRects().length > 0).map((f) => Math.round(f.getBoundingClientRect().width))),
 }));
 expect(report.widths.proseMax < report.widths.shell * 0.75, 'prose is capped narrower than the shell');
 expect(report.widths.demoMin >= report.widths.shell - 2, 'demos run the full shell width');
@@ -119,7 +119,7 @@ expect(md.status() === 200 && og.status() === 200 && report.og.type === 'image/p
 
 // every section id the model names exists and is reachable by anchor
 report.anchors = [];
-for (const id of sections.map((s) => s.id)) {
+for (const id of sections.filter((s) => !s.flag).map((s) => s.id)) {  // flagged ones are hidden while the flag is off
   const found = await page.evaluate((i) => !!document.getElementById(i), id);
   report.anchors.push([id, found]);
   expect(found, `#${id} exists`);
@@ -140,7 +140,7 @@ await ctx2.close();
 
 await page.evaluate(() => window.scrollTo(0, 0));
 await (await page.$('.hero')).screenshot({ path: shots + 'hero-dark.png' });
-for (const id of sections.map((s) => s.id)) {
+for (const id of sections.filter((s) => !s.flag).map((s) => s.id)) {  // flagged ones are hidden while the flag is off
   const el = await page.$(`#${id}`);
   await el.scrollIntoViewIfNeeded(); await page.waitForTimeout(60);
   await el.screenshot({ path: `${shots}section-${id}.png` });

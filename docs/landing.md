@@ -94,7 +94,9 @@ state), the page's second script is its source text (capped at 8 KB, end of
 
 An aside before 9 says Cloud is a hosted product, not something you `bun add`.
 The hero lede links the repo and cloud.jevlang.sh; the footer has a Jev Cloud
-column. The nav's Cloud link still waits on the `cloud-nav` flag.
+column. All of it — sections, aside, the lede's cloud sentence, the footer column
+and the nav link — is hidden until the `cloud` Vercel flag is on (docs/cloud-flag.md),
+and llms.txt / index.md leave it out.
 
 `docs/cloud-api.md` vendors four jevcloud-next README sections verbatim (Bring
 your own everything, The API, Billing, Isolation); the site test fails when any

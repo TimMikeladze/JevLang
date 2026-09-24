@@ -63,8 +63,7 @@ h2{font-size:clamp(1.35rem,2.4vw,1.7rem);line-height:1.2;font-weight:650;letter-
 .site-nav .nav-menu a{padding:.45rem .6rem;border-radius:.4rem;color:var(--body)}
 .site-nav .nav-menu a::after{display:none}
 .site-nav .nav-menu a:hover,.site-nav .nav-menu a[aria-current=page]{background:var(--band);color:var(--ink)}
-.site-nav a[data-flag=cloud-nav]{display:none}
-html[data-flags~=cloud-nav] .site-nav a[data-flag=cloud-nav]{display:block}
+html:not([data-flags~=cloud]) [data-flag=cloud]{display:none!important}
 .head-icons{margin-left:auto;display:flex;align-items:center;gap:.75rem}
 .icon-link{color:var(--soft);display:inline-flex;transition:color .14s ease}
 .icon-link:hover{color:var(--ink)}
@@ -390,7 +389,7 @@ h1{font-size:2.6rem}
 
 // The chrome every page shares, the Next.js examples included: tokens, base,
 // skip link, header, dropdown, theme toggle, footer, and their phone rules.
-const chromeLine = /^(:root|@media \(prefers-color-scheme|\*\{|html\{|html\[data-flags|body\{|\.shell\{|\.skip|:focus-visible|\.site-head|\.brand|\.mark-|\.site-nav|\.nav-drop|\.nav-menu|\.head-|\.icon-link|\.ext\{|\.theme-toggle|:root\[data-pref|\.site-foot|\.foot-|\.copyright)/;
+const chromeLine = /^(:root|@media \(prefers-color-scheme|\*\{|html\{|html:not\(\[data-flags|body\{|\.shell\{|\.skip|:focus-visible|\.site-head|\.brand|\.mark-|\.site-nav|\.nav-drop|\.nav-menu|\.head-|\.icon-link|\.ext\{|\.theme-toggle|:root\[data-pref|\.site-foot|\.foot-|\.copyright)/;
 export const chromeCss = [
   css.slice(0, css.indexOf('*{box-sizing')).trim(),   // tokens and the light theme
   ...(() => {

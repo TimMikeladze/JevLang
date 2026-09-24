@@ -155,7 +155,7 @@ test('hero and capability sections', () => {
   assert.equal([...hero.matchAll(/<a class="control|<span class="control|<details class="control/g)].length, 3, 'three controls');
   assert.ok(!hero.includes(`Currently v${version}`), 'no version line in the hero');
   const ledeLinks = [...hero.match(/<p class="lede">([\s\S]*?)<\/p>/)[1].matchAll(/<a href="([^"]+)">/g)].map((m) => m[1]);
-  assert.deepEqual(ledeLinks, [repo, 'https://cloud.jevlang.sh'], 'lede links the repo and the hosted product');
+  assert.deepEqual(ledeLinks, [repo, 'https://cloud.jevlang.sh'], 'lede links the repo, and the hosted product while the cloud flag is on');
   assert.ok(sections.length >= 4);
   for (const s of sections) {
     const sec = section(s.id);
@@ -186,7 +186,7 @@ test('artefacts and sitemap', () => {
   const llms = read('./out/llms.txt');
   const md = read('./out/index.md');
   assert.match(llms, /^# JevLang\n\n> /);
-  for (const s of sections) { assert.ok(llms.includes(`## ${s.h2}`), `llms.txt: ${s.h2}`); assert.ok(md.includes(`## ${s.h2}`), `index.md: ${s.h2}`); }
+  for (const s of sections.filter((x) => !x.flag)) { assert.ok(llms.includes(`## ${s.h2}`), `llms.txt: ${s.h2}`); assert.ok(md.includes(`## ${s.h2}`), `index.md: ${s.h2}`); }
   assert.ok(llms.includes(url('/reference')) && llms.includes('https://github.com/TimMikeladze/JevLang'));
   // The examples travel with the text: the file an agent copies is the file the page shows.
   assert.ok(md.includes(r.file('policy.js').body) && llms.includes(r.file('support.js').body));
@@ -216,16 +216,25 @@ test('link table honoured', () => {
   assert.deepEqual(labelsIn(index.split('<footer')[1]), ['JevLang on GitHub', 'linesofcode on X', 'Tim Mikeladze on LinkedIn', 'linesofcode on Discord']);
   assert.ok(header.indexOf('class="head-icons"') > header.indexOf('class="site-nav"'));
   for (const href of ['https://github.com/TimMikeladze/JevLang', 'https://x.com/linesofcode', 'https://www.linkedin.com/in/tim-mikeladze', 'https://discord.com/users/linesofcode']) assert.ok(index.includes(`href="${href}"`), href);
-  // The Cloud nav item is in the HTML but behind the cloud-nav Vercel flag:
-  // hidden by default, revealed by the boot script when the proxy's cookie is
-  // present. See docs/cloud-nav-flag.md.
+  // Everything cloud is in the HTML but behind the `cloud` Vercel flag: hidden
+  // by default, revealed by the boot script when the proxy's cookie is present,
+  // and left out of the agent files. See docs/cloud-flag.md.
   assert.match(header, /Cloud <span class="ext">↗<\/span>/);
-  assert.ok(header.includes('href="https://cloud.jevlang.sh/sign-in" target="_blank" rel="noopener"'));
-  assert.ok(header.includes('data-flag="cloud-nav"'));
-  assert.ok(bootScript.includes('jev-cloud-nav=1') && bootScript.includes("dataset.flags='cloud-nav'"), 'boot script reveals on the cookie');
-  assert.ok(css.includes('.site-nav a[data-flag=cloud-nav]{display:none}'), 'hidden by default');
-  assert.ok(css.includes('html[data-flags~=cloud-nav] .site-nav a[data-flag=cloud-nav]{display:block}'), 'revealed by the flag');
-  assert.ok(chromeCss.includes('html[data-flags~=cloud-nav]'), 'example pages get the reveal rule');
+  assert.ok(header.includes('href="https://cloud.jevlang.sh/sign-in" target="_blank" rel="noopener" data-flag="cloud"'));
+  assert.ok(bootScript.includes('jev-cloud=1') && bootScript.includes("dataset.flags='cloud'"), 'boot script reveals on the cookie');
+  assert.ok(css.includes('html:not([data-flags~=cloud]) [data-flag=cloud]{display:none!important}'), 'hidden unless the flag is on');
+  assert.ok(chromeCss.includes('html:not([data-flags~=cloud])'), 'example pages get the rule');
+  const cloudIds = sections.filter((s) => s.flag === 'cloud').map((s) => s.id);
+  assert.deepEqual(cloudIds, ['cloud', 'promote', 'managed-state', 'own-runner', 'bring-your-own', 'isolation', 'cloud-api', 'plans']);
+  for (const id of cloudIds) assert.match(index, new RegExp(`<section id="${id}" class="section[^"]*" data-flag="cloud"`), id);
+  assert.ok(index.includes('<div class="aside" data-flag="cloud">'));
+  assert.ok(index.includes('<div class="foot-col" data-flag="cloud"><h3>Jev Cloud</h3>'));
+  assert.ok(/<p class="lede">[^]*<span data-flag="cloud">[^<]*<a href="https:\/\/cloud\.jevlang\.sh">Jev Cloud<\/a>/.test(index), 'lede cloud sentence flagged');
+  // Nothing cloud outside a flagged element: strip them, and no cloud link or section is left.
+  for (const [name, text] of [['llms.txt', read('out/llms.txt')], ['index.md', read('out/index.md')]]) {
+    assert.ok(!/cloud\.jevlang\.sh|Jev Cloud|jevlang\/cloud/.test(text), `${name} mentions the cloud`);
+  }
+  assert.ok(!/Jev Cloud|cloud\.jevlang/.test(read('out/index.html').match(/<meta name="description" content="([^"]+)"/)[1]));
 });
 
 // extra: enumeration tables come from the docs, and the docs agree with each other.

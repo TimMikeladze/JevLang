@@ -14,9 +14,11 @@ export const meta = {
   name: 'JevLang',
   h1: 'Typesafe policy for LLM decisions',
   lede:
-    '`jevlang` is a typesafe policy engine for decisions an LLM used to make inside a prompt: routing, triage, approvals, guarding an agent\'s tools. Declare the questions and the rules in plain [TypeScript](REPO), and every decision explains itself. Embed it, or deploy the same policy to [Jev Cloud](https://cloud.jevlang.sh) for traces, gated promotion and a spend cap.',
+    '`jevlang` is a typesafe policy engine for decisions an LLM used to make inside a prompt: routing, triage, approvals, guarding an agent\'s tools. Declare the questions and the rules in plain [TypeScript](REPO), and every decision explains itself.',
+  // Shown only while the `cloud` flag is on (docs/cloud-flag.md).
+  ledeCloud: 'Embed it, or deploy the same policy to [Jev Cloud](https://cloud.jevlang.sh) for traces, gated promotion and a spend cap.',
   description:
-    'jevlang is a typesafe policy engine for LLM decisions: the model answers small questions, your policy decides. Embed it, or run it hosted on Jev Cloud.',
+    'jevlang is a typesafe policy engine for LLM decisions: the model answers small questions, your policy decides, and every decision explains itself.',
   install: 'bun add jevlang',
   tagline: 'a policy engine for prompt-sized decisions',
   license: 'MIT',
@@ -25,6 +27,9 @@ export const meta = {
 // The hero's live console: this policy, deciding the tickets this file decides.
 export const hero = { policy: 'support.js', decide: 'decide.js', run: 'node decide.js' };
 
+// Everything about the hosted product carries `flag: 'cloud'`: it ships in the
+// HTML, hidden until the `cloud` Vercel flag is on, and the agent files
+// (llms.txt, index.md) leave it out, since they cannot ask the flag.
 export const sections = [
   {
     id: 'how-it-works',
@@ -125,6 +130,7 @@ export const sections = [
   // from docs/cloud-api.md, the vendored jevcloud-next README sections.
   {
     id: 'cloud',
+    flag: 'cloud',
     h2: 'Same engine, hosted',
     p: '[Jev Cloud](https://cloud.jevlang.sh) runs this package for many tenants, and `jevlang/cloud` is its client: one `fetch`, no dependency, no engine logic. `jc.evaluate(project, input)` returns the decision `policy.decide()` would make, with the rate limit, spend cap and trace applied on the server.',
     doc: 'The hosted product: `jevlang/cloud`',
@@ -134,6 +140,7 @@ export const sections = [
   },
   {
     id: 'promote',
+    flag: 'cloud',
     h2: 'Promote behind a replay gate',
     p: '`jev deploy` publishes a policy artifact that never changes, and `jev promote` is the only thing that moves production. `--expect` names the version you believe is live, so two promotions cannot both win; `--gate` replays real production traces against the candidate and refuses when too many decide differently.',
     doc: 'The hosted product: `jevlang/cloud`',
@@ -144,6 +151,7 @@ export const sections = [
   },
   {
     id: 'managed-state',
+    flag: 'cloud',
     h2: 'Managed state, same interface',
     p: '`jc.journal(project)` is a `Journal`, the interface `redisJournal` and `dbJournal` already satisfy. Hand it to `makeDispatcher` and idempotency, cooldowns, budgets and scheduled work are shared by every instance, with no Redis of your own to run.',
     doc: 'The hosted product: `jevlang/cloud`',
@@ -153,6 +161,7 @@ export const sections = [
   },
   {
     id: 'own-runner',
+    flag: 'cloud',
     h2: 'Actions on your own machine',
     p: 'Make a target `{ "type": "runner", "pool": "prod-east" }` and dispatch queues the step instead of calling out. `runner()` from `jevlang/cloud`, or `jev runner prod-east handlers.json`, pulls it with a `run`-scoped key and reports onto the trace, so a private database or a shell is in reach and nothing on your network accepts a connection.',
     doc: 'The hosted product: `jevlang/cloud`',
@@ -162,6 +171,7 @@ export const sections = [
   },
   {
     id: 'bring-your-own',
+    flag: 'cloud',
     h2: 'Bring your own everything',
     p: 'Model keys, the model endpoint, state, traces and handlers each have a managed and a bring-your-own option, chosen per environment on the same code path: your own Anthropic key, any OpenAI-compatible URL, your Upstash or Postgres, your own runner beside `http` and `webhook`. Usage on your own key is never marked up, and the hard spend cap still applies to it.',
     doc: null,
@@ -171,6 +181,7 @@ export const sections = [
   },
   {
     id: 'isolation',
+    flag: 'cloud',
     h2: 'Tenants isolated by construction',
     p: 'The organization comes from the `Authorization: Bearer jev_live_…` key, never from the path, so a wrong tenant gets the same 404 an unknown project does. Row-level security on `org_id` is the second wall, and the negatives are tested.',
     doc: null,
@@ -180,6 +191,7 @@ export const sections = [
   },
   {
     id: 'cloud-api',
+    flag: 'cloud',
     h2: 'One HTTP API',
     p: 'Every route sits under `/api/v1`, and a key carries the scopes `evaluate`, `dispatch`, `deploy` or `read`. `Idempotency-Key` makes a retry return the first answer instead of paying or acting twice, and a `jev_pub_…` key is safe in a browser behind an origin allowlist.',
     doc: null,
@@ -189,6 +201,7 @@ export const sections = [
   },
   {
     id: 'plans',
+    flag: 'cloud',
     h2: 'Free to start',
     p: 'Signing in at [cloud.jevlang.sh](https://cloud.jevlang.sh/sign-in) creates an organization you own; invite people with one of six roles. The plans are defined once, in a config the [`/pricing`](https://cloud.jevlang.sh/pricing) page, the limits and the tests all read.',
     doc: null,
@@ -205,6 +218,7 @@ export const sections = [
 export const asides = [
   {
     before: 'cloud',
+    flag: 'cloud',
     text: 'Want it deployed instead of embedded? [Jev Cloud](https://cloud.jevlang.sh) is the hosted product, not something you `bun add`: organizations, keys, traces and a review queue around the same decisions.',
   },
 ];
@@ -229,8 +243,8 @@ const allNav = [
     { label: 'Courier app', href: '/examples/doorstep' },
   ] },
   // The hosted product's front door: its sign-in page, which links to sign-up.
-  // Hidden unless the cloud-nav Vercel flag is on (docs/cloud-nav-flag.md).
-  { label: 'Cloud', href: 'https://cloud.jevlang.sh/sign-in', external: true, flag: 'cloud-nav' },
+  // Hidden unless the cloud Vercel flag is on (docs/cloud-flag.md).
+  { label: 'Cloud', href: 'https://cloud.jevlang.sh/sign-in', external: true, flag: 'cloud' },
 ];
 
 export const nav = allNav;
@@ -248,7 +262,7 @@ export const footerColumns = [
     { label: 'Courier app', href: '/examples/doorstep' },
     { label: 'Source', href: 'https://github.com/TimMikeladze/JevLang/tree/main/examples/nextjs', external: true },
   ] },
-  { title: 'Jev Cloud', links: [
+  { title: 'Jev Cloud', flag: 'cloud', links: [
     { label: 'Sign in', href: 'https://cloud.jevlang.sh/sign-in', external: true },
     { label: 'Pricing', href: 'https://cloud.jevlang.sh/pricing', external: true },
     { label: 'The API', href: '/#cloud-api' },
