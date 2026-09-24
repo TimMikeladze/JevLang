@@ -4,6 +4,8 @@
   "description": "A policy engine for LLM decisions: declare routes, gates and actions once in TypeScript or Python, and every decision comes validated, explainable, replayable and audited",
   "type": "module",
   "keywords": [
+    "jev",
+    "jevlang",
     "llm",
     "ai",
     "policy",
