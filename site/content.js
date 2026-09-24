@@ -14,19 +14,15 @@ export const meta = {
   name: 'JevLang',
   h1: 'Typesafe policy for LLM decisions',
   lede:
-    '`jevlang` is a typesafe policy engine for decisions an LLM used to make inside a prompt: routing, triage, approvals, guarding an agent\'s tools. You declare the questions the model answers and the rules that act on them, in plain [TypeScript](REPO). Mistakes are build errors, and every decision explains itself.',
+    '`jevlang` is a typesafe policy engine for decisions an LLM used to make inside a prompt: routing, triage, approvals, guarding an agent\'s tools. Declare the questions and the rules in plain [TypeScript](REPO), and every decision explains itself. Embed it, or deploy the same policy to [Jev Cloud](https://cloud.jevlang.sh) for traces, gated promotion and a spend cap.',
   description:
-    'jevlang is a typesafe policy engine for LLM decisions: the model answers small questions in TypeScript, your policy decides, and every decision explains itself.',
+    'jevlang is a typesafe policy engine for LLM decisions: the model answers small questions, your policy decides. Embed it, or run it hosted on Jev Cloud.',
   install: 'bun add jevlang',
   tagline: 'a policy engine for prompt-sized decisions',
   license: 'MIT',
 };
 
-// Cloud's landing sections stay hidden for now; flip to bring back the hosted section and aside.
-// The nav's Cloud link is independent of this: it always points at the sign-in page.
-export const showCloud = false;
-
-const allSections = [
+export const sections = [
   {
     id: 'how-it-works',
     h2: 'How one decision works',
@@ -122,28 +118,84 @@ const allSections = [
       { type: 'modules', title: 'Every export in the package' },
     ],
   },
+  // The hosted product. Snippets are README blocks; tables and figures come
+  // from docs/cloud-api.md, the vendored jevcloud-next README sections.
   {
-    id: 'same-engine-hosted',
+    id: 'cloud',
     h2: 'Same engine, hosted',
-    p: 'Jev Cloud runs this engine for many tenants over HTTP at [cloud.jevlang.sh](https://cloud.jevlang.sh): deploy, promote, evaluate. Every route takes `Authorization: Bearer jev_live_…`, and the organization comes from the credential, never the path. Deployments never change once published; `promote` with `expect` is the only thing that moves production.',
-    doc: null,
+    p: '[Jev Cloud](https://cloud.jevlang.sh) runs this package for many tenants, and `jevlang/cloud` is its client: one `fetch`, no dependency, no engine logic. `jc.evaluate(project, input)` returns the decision `policy.decide()` would make, with the rate limit, spend cap and trace applied on the server.',
+    doc: 'The hosted product: `jevlang/cloud`',
+    demos: [
+      { type: 'snippet', marker: "import { cloud } from 'jevlang/cloud';", name: 'app.js' },
+    ],
+  },
+  {
+    id: 'promote',
+    h2: 'Promote behind a replay gate',
+    p: '`jev deploy` publishes a policy artifact that never changes, and `jev promote` is the only thing that moves production. `--expect` names the version you believe is live, so two promotions cannot both win; `--gate` replays real production traces against the candidate and refuses when too many decide differently.',
+    doc: 'The hosted product: `jevlang/cloud`',
     demos: [
       { type: 'diagram', name: 'lifecycle' },
+      { type: 'snippet', marker: 'jev deploy support policy.json', name: 'shell' },
+    ],
+  },
+  {
+    id: 'managed-state',
+    h2: 'Managed state, same interface',
+    p: '`jc.journal(project)` is a `Journal`, the interface `redisJournal` and `dbJournal` already satisfy. Hand it to `makeDispatcher` and idempotency, cooldowns, budgets and scheduled work are shared by every instance, with no Redis of your own to run.',
+    doc: 'The hosted product: `jevlang/cloud`',
+    demos: [
+      { type: 'snippet', marker: "journal: jc.journal('support')", name: 'dispatch.js' },
+    ],
+  },
+  {
+    id: 'bring-your-own',
+    h2: 'Bring your own everything',
+    p: 'Model keys, the model endpoint, state, traces and handlers each have a managed and a bring-your-own option, chosen per environment on the same code path: your own Anthropic key, any OpenAI-compatible URL, your Upstash or Postgres, your own runner beside `http` and `webhook`. Usage on your own key is never marked up, and the hard spend cap still applies to it.',
+    doc: null,
+    demos: [
+      { type: 'cloud-table', heading: 'Bring your own everything' },
+    ],
+  },
+  {
+    id: 'isolation',
+    h2: 'Tenants isolated by construction',
+    p: 'The organization comes from the `Authorization: Bearer jev_live_…` key, never from the path, so a wrong tenant gets the same 404 an unknown project does. Row-level security on `org_id` is the second wall, and the negatives are tested.',
+    doc: null,
+    demos: [
+      { type: 'cloud-list', heading: 'Isolation, by construction' },
+    ],
+  },
+  {
+    id: 'cloud-api',
+    h2: 'One HTTP API',
+    p: 'Every route sits under `/api/v1`, and a key carries the scopes `evaluate`, `dispatch`, `deploy` or `read`. `Idempotency-Key` makes a retry return the first answer instead of paying or acting twice, and a `jev_pub_…` key is safe in a browser behind an origin allowlist.',
+    doc: null,
+    demos: [
       { type: 'cloud-api' },
+    ],
+  },
+  {
+    id: 'plans',
+    h2: 'Free to start',
+    p: 'Signing in at [cloud.jevlang.sh](https://cloud.jevlang.sh/sign-in) creates an organization you own; invite people with one of six roles. The plans are defined once, in a config the [`/pricing`](https://cloud.jevlang.sh/pricing) page, the limits and the tests all read.',
+    doc: null,
+    demos: [
+      { type: 'plans', heading: 'Billing', rows: [
+        { plan: /Three plans — (Free),/, terms: '$0', how: 'No card; the free limits apply' },
+        { plan: /, (Pro) \(/, terms: /Pro \((\$[\d]+\/seat\/month)\)/, how: /Pro is\s+(Stripe-hosted Checkout at the member count)/ },
+        { plan: /\), (Team) —/, how: /Team is (a conversation and a `mailto:`)/ },
+      ] },
     ],
   },
 ];
 
-export const sections = showCloud ? allSections : allSections.filter((s) => s.id !== 'same-engine-hosted');
-
-const allAsides = [
+export const asides = [
   {
-    before: 'same-engine-hosted',
-    text: 'Want it deployed instead of embedded? [Jev Cloud](https://cloud.jevlang.sh) runs the same decisions with identity, storage and a dashboard: organizations by default, keys shown once and stored hashed, every decision a trace. A hosted product, and not something you `bun add`.',
+    before: 'cloud',
+    text: 'Want it deployed instead of embedded? [Jev Cloud](https://cloud.jevlang.sh) is the hosted product, not something you `bun add`: organizations, keys, traces and a review queue around the same decisions.',
   },
 ];
-
-export const asides = showCloud ? allAsides : allAsides.filter((a) => a.before !== 'same-engine-hosted');
 
 // One authored link table drives header and footer. `href: "repo"` follows the
 // repo variable; `where` says which slots it appears in.
@@ -183,6 +235,11 @@ export const footerColumns = [
     { label: 'SMS host', href: '/examples/reservation' },
     { label: 'Courier app', href: '/examples/doorstep' },
     { label: 'Source', href: 'https://github.com/TimMikeladze/JevLang/tree/main/examples/nextjs', external: true },
+  ] },
+  { title: 'Jev Cloud', links: [
+    { label: 'Sign in', href: 'https://cloud.jevlang.sh/sign-in', external: true },
+    { label: 'Pricing', href: 'https://cloud.jevlang.sh/pricing', external: true },
+    { label: 'The API', href: '/#cloud-api' },
   ] },
   { title: 'Community', links: [
     { label: 'X', href: 'https://x.com/linesofcode', external: true },

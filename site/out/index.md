@@ -1,6 +1,6 @@
 # JevLang — Typesafe policy for LLM decisions
 
-jevlang is a typesafe policy engine for decisions an LLM used to make inside a prompt: routing, triage, approvals, guarding an agent's tools. You declare the questions the model answers and the rules that act on them, in plain TypeScript (https://github.com/TimMikeladze/JevLang). Mistakes are build errors, and every decision explains itself.
+jevlang is a typesafe policy engine for decisions an LLM used to make inside a prompt: routing, triage, approvals, guarding an agent's tools. Declare the questions and the rules in plain TypeScript (https://github.com/TimMikeladze/JevLang), and every decision explains itself. Embed it, or deploy the same policy to Jev Cloud (https://cloud.jevlang.sh) for traces, gated promotion and a spend cap.
 
 Install: `bun add jevlang`
 
@@ -398,6 +398,118 @@ escalate human-triage  // unclear which team owns this
 | `jevlang/mcp` | serve a policy as MCP tools (decide offline and free, evaluate capped), dual-era protocol. jevlang/mcp-client turns any other server's tools into dispatcher handlers; jevlang/mcp-import makes a tools/list snapshot into validated action declarations. |
 | `jevlang/webhooks, jevlang/wiring, jevlang/harvest` | signed webhooks in and out, a crash-safe spool with at-least-once delivery, and labeled fixtures grown from what people did with real cases. |
 | `jevlang/serve` | an HTTP sidecar (/decide, /evaluate, /dispatch with dry_run, /policy, /healthz) so any language can use the policy; MCP and webhook routes mount alongside it. |
+
+
+## Same engine, hosted
+
+Jev Cloud (https://cloud.jevlang.sh) runs this package for many tenants, and jevlang/cloud is its client: one fetch, no dependency, no engine logic. jc.evaluate(project, input) returns the decision policy.decide() would make, with the rate limit, spend cap and trace applied on the server.
+
+**app.js**
+
+```js
+import { cloud } from 'jevlang/cloud';
+
+const jc = cloud({ key: process.env.JEV_KEY });        // jev_live_… or jev_pub_…
+
+const decision = await jc.evaluate('support', ticket); // limits, cap and trace: server-side
+const offline = await jc.decide('support', ticket, answers);   // free, no model asked
+await jc.deploy('support', policy, { note: 'tightened the refund rule' });
+await jc.promote('support', 4, { expect: 3, gate: { max_changed: 0.05 } });
+```
+
+
+## Promote behind a replay gate
+
+jev deploy publishes a policy artifact that never changes, and jev promote is the only thing that moves production. --expect names the version you believe is live, so two promotions cannot both win; --gate replays real production traces against the candidate and refuses when too many decide differently.
+
+**shell**
+
+```sh
+jev deploy support policy.json --note "tightened the refund rule"
+jev promote support 4 --expect 3 --gate 0.05
+jev logs support --limit 20
+jev open support
+```
+
+
+## Managed state, same interface
+
+jc.journal(project) is a Journal, the interface redisJournal and dbJournal already satisfy. Hand it to makeDispatcher and idempotency, cooldowns, budgets and scheduled work are shared by every instance, with no Redis of your own to run.
+
+**dispatch.js**
+
+```js
+import { makeDispatcher, dispatch } from 'jevlang/dispatch';
+
+const dispatcher = makeDispatcher(handlers, { journal: jc.journal('support') });
+await dispatch(dispatcher, state, decision, { key: caseId });
+```
+
+
+## Bring your own everything
+
+Model keys, the model endpoint, state, traces and handlers each have a managed and a bring-your-own option, chosen per environment on the same code path: your own Anthropic key, any OpenAI-compatible URL, your Upstash or Postgres, your own runner beside http and webhook. Usage on your own key is never marked up, and the hard spend cap still applies to it.
+
+| Piece | Managed | Bring your own |
+| --- | --- | --- |
+| Model keys | AI Gateway on the deployment's OIDC token, so we hold no gateway key | Your OpenAI, Anthropic or AI Gateway key, sealed as a secret. Never marked up |
+| Model endpoint | AI Gateway | Any OpenAI-compatible URL, including a self-hosted one |
+| State (journal, limits, budgets) | Our Upstash, namespaced per tenant | Your Upstash, or your Postgres |
+| Traces | Our Postgres, retention by plan, redaction on write | Your Postgres, or nothing at all |
+| Handlers | `http` and `webhook` behind an egress allowlist | Your own runner |
+
+
+## Tenants isolated by construction
+
+The organization comes from the Authorization: Bearer jev_live_… key, never from the path, so a wrong tenant gets the same 404 an unknown project does. Row-level security on org_id is the second wall, and the negatives are tested.
+
+| Guarantee | How it holds |
+| --- | --- |
+| The tenant comes from the credential | Every store function takes the organization first; a wrong tenant is the 404 an unknown slug gets. |
+| Every Redis key and every journal name is prefixed | `t:{org}:p:{project}:e:{env}:` server-side, so a project's configuration cannot reach another namespace — and two tenants' identical `Idempotency-Key`s are not the same case. |
+| Row-level security on `org_id` is the second wall | The app connects as the database's owner and drops to a role with no `BYPASSRLS` inside every transaction, naming the organization it is reading. A query that forgets reads nothing rather than everything. |
+| The negatives are tested | org B's key reads, writes, limits, spends and promotes nothing of org A's. |
+
+
+## One HTTP API
+
+Every route sits under /api/v1, and a key carries the scopes evaluate, dispatch, deploy or read. Idempotency-Key makes a retry return the first answer instead of paying or acting twice, and a jev_pub_… key is safe in a browser behind an origin allowlist.
+
+| Route | What it does |
+| --- | --- |
+| `POST /api/v1/projects` | create a project, with its three environments |
+| `GET /api/v1/projects` | this organization's projects |
+| `GET /api/v1/projects/:slug` | one project, its environments and what each serves |
+| `PUT /api/v1/projects/:slug` | replace one environment's configuration |
+| `POST /api/v1/projects/:slug/deployments` | publish a policy artifact — the first becomes production, later ones move dev and preview |
+| `GET /api/v1/projects/:slug/deployments` | newest first |
+| `POST /api/v1/projects/:slug/promote` | {deployment, expect} moves production; {deployment, gate} replays real traces first and refuses when too much changed |
+| `POST /api/v1/projects/:slug/replay-diff` | production's recent traces decided again against another deployment; a trace whose inputs cannot be rebuilt is counted as refused, never skipped |
+| `POST /api/v1/projects/:slug/evaluate` | ask the model the policy's questions, then decide |
+| `POST /api/v1/projects/:slug/decide` | decide on answers you already have; no model is asked |
+| `POST /api/v1/projects/:slug/dispatch` | decide, then run the project's handlers (dry_run rehearses) |
+| `POST /api/v1/projects/:slug/state` | the project's managed journal: steps, cooldowns, budgets, scheduled work |
+| `GET /api/v1/projects/:slug/traces[/:id]` | what happened, newest first |
+| `POST /api/v1/projects/:slug/traces/:id/replay` | one trace decided again, against another deployment |
+| `GET/PUT/DELETE /api/v1/projects/:slug/secrets[/:name]` | names, versions and a hint; values never come back |
+| `GET/PATCH /api/v1/projects/:slug/escalations[/:id]` | the review queue; a resolution becomes a labeled fixture |
+| `GET/POST /api/v1/projects/:slug/fixtures` | what the project keeps to replay |
+| `GET /api/v1/projects/:slug/docs/:file` | generated per deployment: openapi.json, llms.txt, AGENTS.md, mcp.json, snippets.md |
+| `GET /api/v1/usage` | rows, and a total that separates money from estimates |
+| `GET /api/v1/audit` | what changed, and who did it |
+| `POST /api/v1/stripe/webhook` | the only writer of subscription state: Stripe signs, the raw body is verified, and the projection is idempotent |
+| `POST /api/public/evaluate` | the browser door: a publishable key, an origin allowlist, an end-user limit |
+
+
+## Free to start
+
+Signing in at cloud.jevlang.sh (https://cloud.jevlang.sh/sign-in) creates an organization you own; invite people with one of six roles. The plans are defined once, in a config the /pricing (https://cloud.jevlang.sh/pricing) page, the limits and the tests all read.
+
+| Plan | Price | How you pay |
+| --- | --- | --- |
+| Free | $0 | No card; the free limits apply |
+| Pro | $24/seat/month | Stripe-hosted Checkout at the member count |
+| Team | — | a conversation and a `mailto:` |
 
 
 ## Examples

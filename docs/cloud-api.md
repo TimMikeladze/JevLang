@@ -1,8 +1,25 @@
-# The hosted API
+# The hosted product
 
-Verbatim extract of `## The API` from the jevcloud-next README (the Next.js
-Jev Cloud). Re-copy it when the API changes; the landing page reads this file
-at build time and the site test checks it against the sibling repo.
+Verbatim extract of four sections of the jevcloud-next README (the Next.js
+Jev Cloud at cloud.jevlang.sh). Re-copy them when the sibling changes; the
+landing page reads this file at build time and the site test checks each
+section against the sibling repo when it is cloned.
+
+## Bring your own everything
+
+Every managed piece has a bring-your-own option, chosen per environment, with
+the same code path either way.
+
+| Piece | Managed | Bring your own |
+| --- | --- | --- |
+| Model keys | AI Gateway on the deployment's OIDC token, so we hold no gateway key | Your OpenAI, Anthropic or AI Gateway key, sealed as a secret. Never marked up |
+| Model endpoint | AI Gateway | Any OpenAI-compatible URL, including a self-hosted one |
+| State (journal, limits, budgets) | Our Upstash, namespaced per tenant | Your Upstash, or your Postgres |
+| Traces | Our Postgres, retention by plan, redaction on write | Your Postgres, or nothing at all |
+| Handlers | `http` and `webhook` behind an egress allowlist | Your own runner |
+
+The rate limits and the hard spend cap apply to your own key too, because the
+cap protects you as much as us.
 
 ## The API
 
@@ -34,8 +51,9 @@ that admits the resource exists. `x-jev-environment` picks `dev`, `preview` or
 | `GET /api/v1/projects/:slug/docs/:file` | generated per deployment: `openapi.json`, `llms.txt`, `AGENTS.md`, `mcp.json`, `snippets.md` |
 | `GET/POST /api/v1/keys`, `DELETE /api/v1/keys/:id` | credentials |
 | `GET /api/v1/usage` | rows, and a total that separates money from estimates |
-| `GET/PUT /api/v1/billing`, `POST /api/v1/billing/report` | the Stripe mapping, and reporting a closed month |
+| `GET/PUT /api/v1/billing`, `POST /api/v1/billing/report` | the plan and its limits (from one config), the Stripe mapping, and reporting a closed month |
 | `GET /api/v1/audit` | what changed, and who did it |
+| `POST /api/v1/stripe/webhook` | the only writer of subscription state: Stripe signs, the raw body is verified, and the projection is idempotent |
 | `POST /api/public/evaluate` | the browser door: a publishable key, an origin allowlist, an end-user limit |
 
 Scopes are `evaluate`, `dispatch`, `deploy` and `read`; a key missing one is
@@ -51,6 +69,22 @@ promotions racing cannot both win, and a rollback is a promotion back to an
 earlier deployment. Nothing a deployment did is undone by a rollback: it moves
 a pointer.
 
+## Billing
+
+Three plans — Free, Pro ($24/seat/month), Team — defined once in
+`src/lib/plans.ts`, which the pricing page, the gates and the tests all read,
+so they cannot drift apart ([docs/billing.md](docs/billing.md)). Pro is
+Stripe-hosted Checkout at the member count, with everything after the first
+payment in the Customer Portal; Team is a conversation and a `mailto:`. A
+signature-verified webhook is the only writer of subscription state, a lapsed
+payment keeps what was bought while the free limits apply, and a hand-set
+Team plan survives any Stripe event. Without `STRIPE_SECRET_KEY` and
+`STRIPE_PRICE_ID_PRO` both set, billing is off and every limit is unlimited —
+a self-hosted deployment is not a crippled one. `bun run stripe:setup` creates
+the Stripe objects idempotently and prints what to paste; a public
+[`/pricing`](https://cloud.jevlang.sh/pricing) page is generated from the same
+config.
+
 Bring your own everything: model keys and endpoints, Redis or Postgres for
 state, and where traces are kept, chosen per environment. The rate limits and
 the hard spend cap apply to a customer's own key too, because the cap protects
@@ -61,3 +95,17 @@ scrypt-hashed, never stored in the clear). Organizations are the default:
 signing up creates one you own, and people you invite join yours, with one of
 six roles — owner, admin, developer, approver, reviewer, viewer — enforced
 server-side on every route and action.
+
+## Isolation, by construction
+
+- **The tenant comes from the credential.** Every store function takes the
+  organization first; a wrong tenant is the 404 an unknown slug gets.
+- **Every Redis key and every journal name is prefixed** `t:{org}:p:{project}:e:{env}:`
+  server-side, so a project's configuration cannot reach another namespace —
+  and two tenants' identical `Idempotency-Key`s are not the same case.
+- **Row-level security on `org_id` is the second wall.** The app connects as
+  the database's owner and drops to a role with no `BYPASSRLS` inside every
+  transaction, naming the organization it is reading. A query that forgets
+  reads nothing rather than everything.
+- **The negatives are tested**: org B's key reads, writes, limits, spends and
+  promotes nothing of org A's.

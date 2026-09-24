@@ -50,8 +50,8 @@ can copy and run.
 - `README.md` — `file=` code blocks and `$` captured runs; module bullets; the
   question-kinds table. Diagrams read numbers, option names, clauses and gate
   bars out of them.
-- `docs/cloud-api.md` — API route table for the cloud section (vendored from
-  `../jevcloud/README.md`; a test keeps it in sync when the sibling is cloned).
+- `docs/cloud-api.md` — the cloud sections' tables and figures (vendored from
+  `../jevcloud-next/README.md`; a test keeps it in sync when the sibling is cloned).
 
 ## Sections (H2 → option named)
 
@@ -70,7 +70,21 @@ can copy and run.
    options, hook settings, offline allow/deny runs and one live model verdict.
 8. **Call it from anywhere** — `startServer`, `policyMcpServer`, `jev decide`.
    Doors diagram read from the README list, `serve.js`, module table.
-9. **Same engine, hosted** — Jev Cloud, the hosted HTTP API (not an npm package). Lifecycle flow, API table, aside.
+9. **Same engine, hosted** — `jevlang/cloud`, `jc.evaluate`. README client block.
+10. **Promote behind a replay gate** — `jev deploy`, `jev promote --expect --gate`. Lifecycle diagram + README CLI block.
+11. **Managed state, same interface** — `jc.journal(project)` into `makeDispatcher`. README block.
+12. **Bring your own everything** — table from the cloud README.
+13. **Tenants isolated by construction** — `org_id` RLS; the cloud README's isolation bullets as a table.
+14. **One HTTP API** — scopes, `Idempotency-Key`, `jev_pub_…`; the route table.
+15. **Free to start** — `/pricing`; plan names, the Pro price and how each is paid are read by regex out of the cloud README's Billing prose.
+
+An aside before 9 says Cloud is a hosted product, not something you `bun add`.
+The hero lede links the repo and cloud.jevlang.sh; the footer has a Jev Cloud
+column. The nav's Cloud link still waits on the `cloud-nav` flag.
+
+`docs/cloud-api.md` vendors four jevcloud-next README sections verbatim (Bring
+your own everything, The API, Billing, Isolation); the site test fails when any
+drifts from `../jevcloud-next/README.md`.
 
 ## Constraints honoured
 

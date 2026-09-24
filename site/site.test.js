@@ -3,10 +3,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
-import { sections, links, meta, agentsMistakes, showCloud } from './content.js';
+import { sections, links, meta, agentsMistakes, repo } from './content.js';
 import {
   makeResolver, figure, renderLanding, renderReference, llmsText, agentsMd, pageMarkdown, sitemap, robots, markdownHtml,
-  modulesTable, cloudApiTable, readmeTable, readmeList, version, bootScript, url,
+  modulesTable, cloudApiTable, cloudSection, cloudTable, cloudList, readmeTable, readmeList, version, bootScript, url,
 } from './render.js';
 import { css, chromeCss } from './styles.js';
 import { readPolicy, readAnswers, parseExplain } from './diagrams.js';
@@ -146,7 +146,8 @@ test('hero and capability sections', () => {
   const hero = index.split('<section class="hero"')[1].split('</section>')[0];
   assert.equal([...hero.matchAll(/<a class="control|<span class="control|<details class="control/g)].length, 3, 'three controls');
   assert.ok(!hero.includes(`Currently v${version}`), 'no version line in the hero');
-  assert.equal([...hero.match(/<p class="lede">([\s\S]*?)<\/p>/)[1].matchAll(/<a href="[^"]+">/g)].length, 1, 'one real link in the lede');
+  const ledeLinks = [...hero.match(/<p class="lede">([\s\S]*?)<\/p>/)[1].matchAll(/<a href="([^"]+)">/g)].map((m) => m[1]);
+  assert.deepEqual(ledeLinks, [repo, 'https://cloud.jevlang.sh'], 'lede links the repo and the hosted product');
   assert.ok(sections.length >= 4);
   for (const s of sections) {
     const sec = section(s.id);
@@ -265,8 +266,13 @@ test('diagrams render with values read from the docs', () => {
   const options = JSON.parse(r.file('gate-options.json').body);
   const gate = section('tool-gate');
   for (const t of [...options.deny, ...options.allow]) assert.ok(gate.includes(t), t);
-  if (showCloud) assert.ok(section('same-engine-hosted').includes('class="flow flow--3 flow--angles"'));
-  else assert.ok(!index.includes('id="same-engine-hosted"'), 'cloud landing section hidden');
+  assert.ok(section('promote').includes('class="flow flow--3 flow--angles"'));
+  // The cloud sections read their tables and figures out of docs/cloud-api.md.
+  assert.equal([...section('bring-your-own').matchAll(/<tr>/g)].length - 1, cloudTable(cloudReadme, 'Bring your own everything').rows.length);
+  assert.equal([...section('isolation').matchAll(/<tr>/g)].length - 1, cloudList(cloudReadme, 'Isolation, by construction').length);
+  const price = figure(cloudReadme.replace(/\s+/g, ' '), /Pro \((\$\d+\/seat\/month)\)/);
+  assert.ok(section('plans').includes(price), `plans shows ${price}`);
+  assert.ok(section('cloud').includes('jevlang/cloud') && section('managed-state').includes('jc.journal'));
 });
 
 // extra: code frames are highlighted, escaped, copyable and labelled; live runs say so.
@@ -286,10 +292,12 @@ test('frames', () => {
 });
 
 // extra: the vendored cloud API table matches the sibling repo when present.
-test('vendored cloud API table in sync', () => {
+test('vendored cloud sections in sync', () => {
   let sibling;
   try { sibling = read('../../jevcloud-next/README.md'); } catch { return; } // not cloned: skip
-  assert.deepEqual(cloudApiTable(cloudReadme), cloudApiTable(sibling));
+  for (const h of ['Bring your own everything', 'The API', 'Billing', 'Isolation, by construction']) {
+    assert.equal(cloudSection(cloudReadme, h).trim(), cloudSection(sibling, h).trim(), `docs/cloud-api.md '${h}' is stale`);
+  }
 });
 
 // 11. the agent files point at every live example, and the calls AGENTS.md shows really decide.

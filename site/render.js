@@ -88,9 +88,41 @@ export function modulesTable(readme) {
   return rows;
 }
 
+// A `## heading` section of the vendored jevcloud README (docs/cloud-api.md).
+export function cloudSection(cloudReadme, heading) {
+  const sec = cloudReadme.split(new RegExp(`^## ${heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'm'))[1]?.split(/^## /m)[0];
+  if (sec === undefined) throw new Error(`cloud README has no section '${heading}'`);
+  return sec;
+}
+
+// The first table under a cloud heading -> { head, rows }.
+export function cloudTable(cloudReadme, heading) {
+  const lines = cloudSection(cloudReadme, heading).split('\n').filter((l) => l.startsWith('|'));
+  const cells = (l) => l.split('|').slice(1, -1).map((c) => c.trim());
+  if (lines.length < 3) throw new Error(`cloud section '${heading}' has no table`);
+  return { head: cells(lines[0]), rows: lines.slice(2).map(cells) };
+}
+
+// Bullets `- **Label.** text` under a cloud heading -> [label, text].
+export function cloudList(cloudReadme, heading) {
+  const rows = cloudSection(cloudReadme, heading).split(/^- /m).slice(1).map((item) => {
+    const m = /^\*\*(.+?)\.?\*\*:?\s+([\s\S]*)$/.exec(item.trim());
+    if (!m) throw new Error(`cloud bullet without a bold label: ${item.slice(0, 40)}`);
+    return [m[1].replace(/\.$/, ''), m[2].replace(/\s+/g, ' ').trim()];
+  });
+  if (rows.length < 3) throw new Error(`cloud section '${heading}' has only ${rows.length} bullets`);
+  return rows;
+}
+
+// Plans read out of the Billing prose, cell by cell, by regex: never retyped.
+export function plansTable(cloudReadme, { heading, rows }) {
+  const text = cloudSection(cloudReadme, heading).replace(/\s+/g, ' ');
+  return rows.map((row) => ['plan', 'terms', 'how'].map((k) => (row[k] instanceof RegExp ? figure(text, row[k]) : row[k] ?? '')));
+}
+
 // Parse the jevcloud README API table.
 export function cloudApiTable(cloudReadme) {
-  const sec = cloudReadme.split(/^## The API$/m)[1]?.split(/^## /m)[0] ?? '';
+  const sec = cloudSection(cloudReadme, 'The API');
   const rows = [];
   for (const m of sec.matchAll(/^\| `([^`]+)` \| (.+) \|$/gm)) rows.push([m[1], m[2]]);
   if (rows.length < 8) throw new Error(`cloudApiTable: only ${rows.length} rows`);
@@ -490,7 +522,7 @@ function stepsHtml(steps, r) {
 }
 
 // Wider tables label each cell, so a phone can stack them as cards.
-const table = (head, rows, cell = inlineMd) => `<div class="tablewrap"><table><thead><tr>${head.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((c, i) => `<td${head.length > 2 ? ` data-label="${esc(head[i])}"` : ''}>${i === 0 && head.length === 2 ? inlineMd('`' + c + '`') : cell(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+const table = (head, rows, cell = inlineMd, firstCode = head.length === 2) => `<div class="tablewrap"><table><thead><tr>${head.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((c, i) => `<td${head.length > 2 ? ` data-label="${esc(head[i])}"` : ''}>${i === 0 && firstCode ? inlineMd('`' + c + '`') : cell(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 
 // ---------- landing page ----------
 
@@ -504,6 +536,10 @@ export function renderDemo(d, ctx) {
     case 'table': { const t = readmeTable(readme, d.table); return table(t.head, t.rows); }
     case 'modules': return `${d.title ? `<p class="table-title">${esc(d.title)}</p>` : ''}${table(['Export', 'What it carries'], modulesTable(readme))}`;
     case 'cloud-api': return `<p class="table-title">The API</p>${table(['Route', 'What it does'], cloudApiTable(cloudReadme))}`;
+    case 'snippet': { const body = r.snippet(d.marker); const lang = readBlocks(readme).find((b) => b.body === body).lang; return codeFrame({ name: d.name, code: body, lang }); }
+    case 'cloud-table': { const t = cloudTable(cloudReadme, d.heading); return table(t.head.map((h) => h || 'Piece'), t.rows); }
+    case 'cloud-list': return table(['Guarantee', 'How it holds'], cloudList(cloudReadme, d.heading), inlineMd, false);
+    case 'plans': return table(['Plan', 'Price', 'How you pay'], plansTable(cloudReadme, d).map((row) => row.map((c) => c || '—')));
     case 'diagram': return diagramHtml(d, ctx);
     default: throw new Error(`unknown demo type ${d.type}`);
   }
@@ -625,6 +661,10 @@ function demoMarkdown(d, ctx) {
     case 'table': { const t = readmeTable(readme, d.table); return mdTable(t.head, t.rows) + '\n'; }
     case 'modules': return mdTable(['Export', 'What it carries'], modulesTable(readme).map(([a, b]) => [`\`${a}\``, inlinePlain(b)])) + '\n';
     case 'cloud-api': return mdTable(['Route', 'What it does'], cloudApiTable(cloudReadme).map(([a, b]) => [`\`${a}\``, inlinePlain(b)])) + '\n';
+    case 'snippet': { const body = r.snippet(d.marker); return `**${d.name}**\n\n${fenceMd(readBlocks(readme).find((b) => b.body === body).lang, body)}`; }
+    case 'cloud-table': { const t = cloudTable(cloudReadme, d.heading); return mdTable(t.head.map((h) => h || 'Piece'), t.rows) + '\n'; }
+    case 'cloud-list': return mdTable(['Guarantee', 'How it holds'], cloudList(cloudReadme, d.heading)) + '\n';
+    case 'plans': return mdTable(['Plan', 'Price', 'How you pay'], plansTable(cloudReadme, d).map((row) => row.map((c) => c || '—'))) + '\n';
     default: return '';
   }
 }
