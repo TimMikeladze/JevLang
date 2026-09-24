@@ -45,6 +45,19 @@ can copy and run.
 - `site/verify.js` — real-browser checks and screenshots: layout defects, theme
   cycle and persistence, copy buttons, no-script mode, 390px overflow.
 
+## Hero: a live decision console
+
+The hero's right column is `support.js` running in the browser (`site/hero.js`).
+Presets are the three `decide.js` tickets; the model's answers are controls
+(option pills, confidence and probability sliders with the gate/rule bars
+marked); the gates and rules light up as checked, and the output prints in
+`explainDecision`'s format. Questions, gates and clauses are parsed from the
+README block (`whenTree` refuses clause forms it does not understand). One
+evaluator, `simDecide`: the server renders preset 0 with it (the no-script
+state), the page's second script is its source text (capped at 8 KB, end of
+`<body>`), and the site test checks all three presets against the captured
+`node decide.js` output, line for line.
+
 ## Sources the page quotes (anti-drift)
 
 - `README.md` — `file=` code blocks and `$` captured runs; module bullets; the
@@ -89,7 +102,7 @@ drifts from `../jevcloud-next/README.md`.
 ## Constraints honoured
 
 Self-contained (one inline stylesheet, one inline script in `<head>`: theme boot,
-theme toggle, copy buttons — `localStorage` key `jevlang-theme`), OKLCH tokens
+theme toggle, copy buttons; plus the hero console's script at the end of `<body>` — `localStorage` key `jevlang-theme`), OKLCH tokens
 dark + light + system, no network fonts, deterministic output, `og.png` shot from
 `site/card.html` at 1200×630.
 

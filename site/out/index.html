@@ -121,24 +121,55 @@ html[data-flags~=cloud-nav] .site-nav a[data-flag=cloud-nav]{display:block}
 .hero{position:relative;padding-block:clamp(3.5rem,7vw,6rem) clamp(3rem,6vw,5rem);isolation:isolate}
 .mark-tile{fill:var(--raise);stroke:var(--line)}
 .mark-glyph{stroke:var(--ink)}
-.hero-pattern{position:absolute;inset:0;width:100%;height:100%;z-index:-1}
-.hero-pattern-lines{stroke:var(--line);stroke-width:1.6}
-.hero-pattern-dot{fill:var(--band);stroke:var(--line);stroke-width:1.6}
-.hero-pattern-dot.hp-pivot{fill:var(--raise)}
-.hp-trunk,.hp-branch{stroke-width:1.7;stroke-dasharray:1.4 7;animation:hp-flow 2.8s linear infinite}
-.hp-accent{stroke:color-mix(in oklab,var(--accent) 55%,var(--line))}
-.hp-add{stroke:color-mix(in oklab,var(--add) 55%,var(--line))}
-.hp-warn{stroke:color-mix(in oklab,var(--warn) 55%,var(--line))}
-.hp-del{stroke:color-mix(in oklab,var(--del) 55%,var(--line))}
-.hp-accent-dot{stroke:color-mix(in oklab,var(--accent) 65%,var(--line))}
-.hp-add-dot{stroke:color-mix(in oklab,var(--add) 65%,var(--line))}
-.hp-warn-dot{stroke:color-mix(in oklab,var(--warn) 65%,var(--line))}
-.hp-del-dot{stroke:color-mix(in oklab,var(--del) 65%,var(--line))}
-.hero-pattern-dot.hp-action{animation:hp-pulse 3.4s ease-in-out infinite}
-@keyframes hp-flow{to{stroke-dashoffset:-25.2}}
-@keyframes hp-pulse{0%,100%{opacity:.5}50%{opacity:1}}
-@media (max-width:900px){.hero-pattern{display:none}}
-@media (prefers-reduced-motion:reduce){.hp-trunk,.hp-branch,.hero-pattern-dot.hp-action{animation:none}}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:clamp(2rem,4vw,3.5rem);align-items:center}
+.hero-copy h1{margin-top:0}
+@media (max-width:1020px){.hero-grid{grid-template-columns:1fr}}
+.sim{margin:0;border:1px solid var(--line);border-radius:.7rem;overflow:hidden;background:var(--paper)}
+.sim .frame-bar{background:var(--band)}
+.sim-chip{font-size:.7rem}
+html:not([data-js]) .sim-chip{display:none}
+@media (max-width:520px){.sim-chip{display:none}}
+.sim-body{padding:.9rem;display:grid;gap:.9rem}
+.sim-presets{display:flex;flex-wrap:wrap;gap:.4rem}
+.sim-preset,.sim-pill{font:500 .78rem/1.2 var(--sans);color:var(--soft);background:var(--raise);border:1px solid var(--line-soft);border-radius:999px;padding:.34rem .7rem;cursor:pointer;transition:color .14s ease,border-color .14s ease,background .14s ease}
+.sim-pill{font-family:var(--mono);font-size:.72rem;border-radius:.4rem;padding:.26rem .5rem}
+.sim-preset:hover,.sim-pill:hover{color:var(--ink);border-color:var(--line)}
+.sim-preset[aria-pressed=true],.sim-pill[aria-pressed=true]{color:var(--ink);border-color:color-mix(in oklab,var(--accent) 60%,transparent);background:color-mix(in oklab,var(--accent) 12%,var(--raise))}
+.sim-cols{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
+@media (max-width:620px){.sim-cols{grid-template-columns:1fr}}
+.sim-step{margin:0 0 .5rem;font:600 .7rem/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--soft);display:flex;align-items:center;gap:.45rem}
+.sim-step span{display:inline-grid;place-items:center;width:1.2rem;height:1.2rem;border-radius:50%;border:1px solid var(--line);color:var(--ink);letter-spacing:0}
+.sim-qs,.sim-rungs{list-style:none;margin:0;padding:0;display:grid;gap:.45rem}
+.sim-q{border:1px solid var(--line-soft);border-radius:.55rem;padding:.55rem .6rem;background:var(--band);display:grid;gap:.45rem}
+.sim-q-head{display:flex;align-items:center;gap:.45rem;font:500 .8rem/1.2 var(--mono);color:var(--ink)}
+.sim-kind{font-size:.68rem;color:var(--accent);background:color-mix(in oklab,var(--accent) 12%,var(--paper))}
+.sim-pills{display:flex;flex-wrap:wrap;gap:.3rem}
+.sim-slide{display:flex;align-items:center;gap:.55rem}
+.sim-slide output{font:600 .75rem/1 var(--mono);color:var(--ink);min-width:2.4rem;text-align:right}
+.sim-track{position:relative;flex:1;height:1.4rem;display:flex;align-items:center}
+.sim-track input{-webkit-appearance:none;appearance:none;width:100%;height:4px;margin:0;border-radius:4px;background:linear-gradient(to right,var(--accent) var(--v),var(--line) var(--v));cursor:pointer}
+.sim-track input::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--ink);border:2px solid var(--paper);box-shadow:0 0 0 1px var(--line)}
+.sim-track input::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--ink);border:2px solid var(--paper)}
+html:not([data-js]) .sim-track input{pointer-events:none}
+.sim-bar{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed var(--warn);pointer-events:none}
+.sim-bar span{position:absolute;top:-.55rem;left:3px;font:500 .58rem/1 var(--mono);color:var(--warn);white-space:nowrap}
+.sim-rung{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"k w" "t t";gap:.3rem .5rem;align-items:center;border:1px solid var(--line-soft);border-radius:.55rem;padding:.45rem .6rem;font-size:.76rem;line-height:1.35;color:var(--soft);transition:border-color .14s ease,background .14s ease,opacity .14s ease}
+.sim-rung-k{grid-area:k;font:600 .66rem/1 var(--mono);text-transform:uppercase;letter-spacing:.06em}
+.sim-rung-w{grid-area:w;min-width:0}
+.sim-rung .tag{grid-row:2;justify-self:start}
+.sim-rung code{grid-row:2;font-size:.72rem;justify-self:start}
+.sim-rung{grid-template-columns:auto auto 1fr;grid-template-areas:"k w w" ". . ."}
+.sim-rung-w{grid-column:2/4}
+.sim-rung .tag{grid-column:1}.sim-rung code{grid-column:2/4}
+.sim-rung[data-state=passed]{opacity:.55}
+.sim-rung[data-state=passed] .sim-rung-k::before{content:"\2713\00a0";color:var(--add)}
+.sim-rung[data-state=fired]{color:var(--ink);border-color:color-mix(in oklab,var(--accent) 65%,transparent);background:color-mix(in oklab,var(--accent) 9%,var(--band))}
+.sim-rung[data-state=fired] .sim-rung-k::before{content:"\2192\00a0";color:var(--accent)}
+.sim-rung[data-state=idle]{opacity:.4}
+.sim-out{border-top:1px solid var(--line-soft);padding-top:.8rem;display:grid;gap:.5rem}
+.sim-result{display:flex;align-items:center;gap:.5rem}
+.sim-result .tag{font-size:.8rem}
+.sim-explain{margin:0;font:.74rem/1.55 var(--mono);color:var(--body);white-space:pre-wrap;overflow-wrap:anywhere}
 .actions{display:flex;flex-wrap:wrap;gap:.7rem;align-items:center;margin:0 0 1.1rem}
 .control{display:inline-flex;align-items:center;gap:.5rem;padding:.62rem .85rem;border-radius:.6rem;border:1px solid var(--line);background:var(--raise);color:var(--ink);font:500 .9rem/1.15 var(--sans);text-decoration:none;transition:background .14s ease,border-color .14s ease;cursor:pointer}
 .control:hover{border-color:var(--line);background:color-mix(in oklab,var(--raise) 80%,var(--ink) 4%)}
@@ -407,49 +438,8 @@ h1{font-size:2.6rem}
 </div>
 </div></header>
 <main id="main">
-<section class="hero" aria-labelledby="top"><svg class="hero-pattern" aria-hidden="true" viewBox="0 0 1200 520" preserveAspectRatio="xMidYMid slice">
-<defs>
-<linearGradient id="hp-fade" x1="0" x2="1" y1="0" y2="0">
-<stop offset="0" stop-color="#fff" stop-opacity="0"/>
-<stop offset=".4" stop-color="#fff" stop-opacity="0"/>
-<stop offset=".68" stop-color="#fff" stop-opacity="1"/>
-</linearGradient>
-<mask id="hp-mask"><rect width="1200" height="520" fill="url(#hp-fade)"/></mask>
-</defs>
-<g mask="url(#hp-mask)" fill="none" stroke-linecap="round" stroke-linejoin="round">
-<g class="hero-pattern-lines">
-<path d="M860 132H1006V206"/>
-<path d="M1140 40V96"/>
-<path d="M980 366H1112"/>
-<path d="M840 400H930"/>
-<path d="M1180 250V326"/>
-<circle class="hero-pattern-dot" cx="860" cy="132" r="4"/>
-<circle class="hero-pattern-dot" cx="1006" cy="206" r="4"/>
-<circle class="hero-pattern-dot" cx="1140" cy="40" r="4"/>
-<circle class="hero-pattern-dot" cx="1140" cy="96" r="4"/>
-<circle class="hero-pattern-dot" cx="980" cy="366" r="4"/>
-<circle class="hero-pattern-dot" cx="1112" cy="366" r="4"/>
-<circle class="hero-pattern-dot" cx="840" cy="400" r="4"/>
-<circle class="hero-pattern-dot" cx="930" cy="400" r="4"/>
-<circle class="hero-pattern-dot" cx="1180" cy="250" r="4"/>
-<circle class="hero-pattern-dot" cx="1180" cy="326" r="4"/>
-</g>
-<g class="hp-trunk hp-accent"><path d="M900 60V120H980"/></g>
-<circle class="hero-pattern-dot hp-pivot hp-accent-dot" cx="900" cy="60" r="4"/>
-<circle class="hero-pattern-dot hp-pivot hp-accent-dot" cx="980" cy="120" r="5"/>
-<g class="hp-branch hp-add" style="animation-delay:-.6s"><path d="M980 120H1080"/></g>
-<circle class="hero-pattern-dot hp-action hp-add-dot" cx="1080" cy="120" r="4" style="animation-delay:-.6s"/>
-<g class="hp-branch hp-warn" style="animation-delay:-1.4s"><path d="M980 120V190"/></g>
-<circle class="hero-pattern-dot hp-action hp-warn-dot" cx="980" cy="190" r="4" style="animation-delay:-1.4s"/>
-<g class="hp-trunk hp-accent" style="animation-delay:-.9s"><path d="M1000 300V360"/></g>
-<circle class="hero-pattern-dot hp-pivot hp-accent-dot" cx="1000" cy="300" r="4"/>
-<circle class="hero-pattern-dot hp-pivot hp-accent-dot" cx="1000" cy="360" r="5"/>
-<g class="hp-branch hp-add" style="animation-delay:-2.1s"><path d="M1000 360H1100"/></g>
-<circle class="hero-pattern-dot hp-action hp-add-dot" cx="1100" cy="360" r="4" style="animation-delay:-2.1s"/>
-<g class="hp-branch hp-del" style="animation-delay:-.3s"><path d="M1000 360V430"/></g>
-<circle class="hero-pattern-dot hp-action hp-del-dot" cx="1000" cy="430" r="4" style="animation-delay:-.3s"/>
-</g>
-</svg><div class="shell">
+<section class="hero" aria-labelledby="top"><div class="shell hero-grid">
+<div class="hero-copy">
 <h1 id="top">Typesafe policy for LLM decisions</h1>
 <p class="lede"><code>jevlang</code> is a typesafe policy engine for decisions an LLM used to make inside a prompt: routing, triage, approvals, guarding an agent's tools. Declare the questions and the rules in plain <a href="https://github.com/TimMikeladze/JevLang">TypeScript</a>, and every decision explains itself. Embed it, or deploy the same policy to <a href="https://cloud.jevlang.sh">Jev Cloud</a> for traces, gated promotion and a spend cap.</p>
 <div class="actions">
@@ -465,6 +455,41 @@ h1{font-size:2.6rem}
 </details>
 <a class="control control--solid" href="/reference"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 1 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/></svg> Documentation</a>
 </div>
+</div>
+<div class="hero-demo"><figure class="sim" aria-label="A live console for the support.js policy: pick a ticket, change what the model answered, and watch the gates and rules decide.">
+<div class="frame-bar"><span class="dots" aria-hidden="true"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span><span class="name">support.js <b>·</b> policy.decide()</span><span class="chip sim-chip">runs in your browser</span></div>
+<div class="sim-body">
+<div class="sim-presets" role="group" aria-label="Tickets from decide.js"><button type="button" class="sim-preset" data-preset="0" aria-pressed="true">a clear billing question</button><button type="button" class="sim-preset" data-preset="1" aria-pressed="false">unsure which team owns it</button><button type="button" class="sim-preset" data-preset="2" aria-pressed="false">an angry refund request</button></div>
+<div class="sim-cols">
+<div class="sim-col"><p class="sim-step"><span>1</span> The model answers</p><ul class="sim-qs"><li class="sim-q"><div class="sim-q-head"><code class="sim-kind">choice</code><span class="sim-id">department</span></div>
+<div class="sim-pills" role="group" aria-label="department"><button type="button" class="sim-pill" data-pick="department" data-kind="choice" value="billing" aria-pressed="true">billing</button><button type="button" class="sim-pill" data-pick="department" data-kind="choice" value="technical" aria-pressed="false">technical</button><button type="button" class="sim-pill" data-pick="department" data-kind="choice" value="sales" aria-pressed="false">sales</button></div>
+<div class="sim-slide"><div class="sim-track">
+<input type="range" min="0" max="1" step="0.01" value="0.92" data-q="department" data-field="confidence" style="--v:92%" aria-label="department confidence"><i class="sim-bar" style="left:80%" title="gate 0.80"><span>gate 0.80</span></i></div>
+<output data-out="department">0.92</output></div></li>
+<li class="sim-q"><div class="sim-q-head"><code class="sim-kind">score</code><span class="sim-id">frustration</span></div>
+<div class="sim-pills" role="group" aria-label="frustration"><button type="button" class="sim-pill" data-pick="frustration" data-kind="score" value="0" aria-pressed="true" title="Calm and matter-of-fact">calm</button><button type="button" class="sim-pill" data-pick="frustration" data-kind="score" value="1" aria-pressed="false" title="Annoyed but polite">annoyed</button><button type="button" class="sim-pill" data-pick="frustration" data-kind="score" value="2" aria-pressed="false" title="Angry, threatening to leave">angry</button></div>
+<div class="sim-slide"><div class="sim-track">
+<input type="range" min="0" max="1" step="0.01" value="0.9" data-q="frustration" data-field="confidence" style="--v:90%" aria-label="frustration confidence"><i class="sim-bar" style="left:70%" title="gate 0.70"><span>gate 0.70</span></i></div>
+<output data-out="frustration">0.90</output></div></li>
+<li class="sim-q"><div class="sim-q-head"><code class="sim-kind">noul</code><span class="sim-id">refund-requested?</span></div>
+
+<div class="sim-slide"><div class="sim-track">
+<input type="range" min="0" max="1" step="0.01" value="0.05" data-q="refund-requested?" data-field="noul" style="--v:5%" aria-label="refund-requested? probability of yes"><i class="sim-bar" style="left:80%" title="rule 0.80"><span>rule 0.80</span></i></div>
+<output data-out="refund-requested?">0.05</output></div></li></ul></div>
+<div class="sim-col"><p class="sim-step"><span>2</span> Your policy decides</p><ol class="sim-rungs"><li class="sim-rung" data-rung="gate:0" data-state="passed"><span class="sim-rung-k">gate</span><span class="sim-rung-w">department below 0.80</span><span class="tag tag--escalate">escalate</span><code>human-triage</code></li>
+<li class="sim-rung" data-rung="gate:1" data-state="passed"><span class="sim-rung-k">gate</span><span class="sim-rung-w">frustration below 0.70</span><span class="tag tag--escalate">escalate</span><code>human-triage</code></li>
+<li class="sim-rung" data-rung="route:0" data-state="passed"><span class="sim-rung-k">rule 0</span><span class="sim-rung-w">refund-requested? is yes (0.8 or more) and frustration is “Angry, threatening to leave”</span><span class="tag tag--page">page</span><code>retention-oncall</code></li>
+<li class="sim-rung" data-rung="route:1" data-state="fired"><span class="sim-rung-k">rule 1</span><span class="sim-rung-w">department is “billing”</span><span class="tag tag--assign">assign</span><code>billing-queue</code></li>
+<li class="sim-rung" data-rung="route:2" data-state="idle"><span class="sim-rung-k">rule 2</span><span class="sim-rung-w">department is “technical”</span><span class="tag tag--assign">assign</span><code>engineering-oncall</code></li>
+<li class="sim-rung" data-rung="route:3" data-state="idle"><span class="sim-rung-k">rule 3</span><span class="sim-rung-w">department is “sales”</span><span class="tag tag--assign">assign</span><code>sales-inbox</code></li></ol></div>
+</div>
+<div class="sim-out"><div class="sim-result" data-result><span class="tag tag--assign">assign</span><code>billing-queue</code></div><pre class="sim-explain" data-explain>assign billing-queue
+  route 1, $.route.clauses[1]
+  because
+    department = billing   confidence 0.92</pre></div>
+</div>
+<script type="application/json" id="sim-data">{"m":{"questions":[{"id":"department","kind":"choice","options":["billing","technical","sales"],"levels":[]},{"id":"frustration","kind":"score","options":[],"levels":["Calm and matter-of-fact","Annoyed but polite","Angry, threatening to leave"]},{"id":"refund-requested?","kind":"noul","options":[],"levels":[]}],"gates":[{"q":"department","bar":0.8,"action":"escalate","target":"human-triage","reason":"unclear which team owns this"},{"q":"frustration","bar":0.7,"action":"escalate","target":"human-triage","reason":"unclear how upset they are"}],"clauses":[{"when":{"all":[{"yes":"refund-requested?","t":0.8},{"likely":"frustration","l":2}]},"gloss":"refund-requested? is yes (0.8 or more) and frustration is “Angry, threatening to leave”","action":"page","target":"retention-oncall","reason":"angry refund request"},{"when":{"is":"department","o":"billing"},"gloss":"department is “billing”","action":"assign","target":"billing-queue","reason":null},{"when":{"is":"department","o":"technical"},"gloss":"department is “technical”","action":"assign","target":"engineering-oncall","reason":null},{"when":{"is":"department","o":"sales"},"gloss":"department is “sales”","action":"assign","target":"sales-inbox","reason":null}]},"presets":[{"name":"a clear billing question","answers":{"department":{"choice":"billing","confidence":0.92},"frustration":{"score":0,"confidence":0.9},"refund-requested?":{"noul":0.05}}},{"name":"unsure which team owns it","answers":{"department":{"choice":"billing","confidence":0.55},"frustration":{"score":0,"confidence":0.9},"refund-requested?":{"noul":0.02}}},{"name":"an angry refund request","answers":{"department":{"choice":"billing","confidence":0.94},"frustration":{"score":2,"confidence":0.95,"probabilities":[0.01,0.04,0.95]},"refund-requested?":{"noul":0.97}}}]}</script>
+</figure></div>
 </div></section>
 <section id="how-it-works" class="section section--band" aria-labelledby="how-it-works-h">
 <div class="shell">
@@ -1050,5 +1075,125 @@ jev open support</code></pre>
 <div class="foot-icons"><a class="icon-link" href="https://github.com/TimMikeladze/JevLang" aria-label="JevLang on GitHub"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a><a class="icon-link" href="https://x.com/linesofcode" aria-label="linesofcode on X"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg></a><a class="icon-link" href="https://www.linkedin.com/in/tim-mikeladze" aria-label="Tim Mikeladze on LinkedIn"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a><a class="icon-link" href="https://discord.com/users/linesofcode" aria-label="linesofcode on Discord"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a></div>
 <p class="copyright">© 2026</p>
 </div></footer>
+<script>
+function simDecide(m, a) {
+  const n = (x) => String(Math.round(x * 100) / 100), conf = (id) => a[id].confidence ?? 1, best = (id) => {
+    const p = a[id].probabilities;
+    return p ? p.indexOf(Math.max(...p)) : a[id].score;
+  }, reading = (id, detail) => {
+    const x = a[id], kind = m.questions.find((q) => q.id === id).kind, v = kind === "choice" ? x.choice : kind === "score" ? x.score : n(x.noul);
+    return `    ${id} = ${v}${kind === "noul" ? "" : `   confidence ${n(x.confidence)}`}${detail ? `   (${detail})` : ""}`;
+  }, test = (w, reads) => {
+    if (w.all)
+      return w.all.every((x) => test(x, reads));
+    if (w.yes) {
+      reads.push([w.yes]);
+      return a[w.yes].noul >= w.t;
+    }
+    if (w.is) {
+      reads.push([w.is]);
+      return a[w.is].choice === w.o;
+    }
+    if (w.likely) {
+      const p = a[w.likely].probabilities;
+      reads.push([w.likely, p ? `most likely: ${best(w.likely)} (p=${n(p[best(w.likely)])})` : null]);
+      return best(w.likely) === w.l;
+    }
+    return !1;
+  }, route = () => {
+    for (let i = 0;i < m.clauses.length; i++) {
+      const reads = [];
+      if (test(m.clauses[i].when, reads))
+        return { i, reads, ...m.clauses[i] };
+    }
+    return null;
+  }, head = (d) => `${d.action} ${d.target}${d.reason ? `  // ${d.reason}` : ""}`, r = route();
+  for (let i = 0;i < m.gates.length; i++) {
+    const g = m.gates[i];
+    if (conf(g.q) < g.bar) {
+      const detail = `needed confidence >= ${g.bar.toFixed(2)}${r ? `; otherwise: ${r.action} ${r.target}` : ""}`;
+      return {
+        rule: "gate",
+        clause: i,
+        action: g.action,
+        target: g.target,
+        text: [head(g), `  gate ${i}, $.gates[${i}]`, "  because", reading(g.q, detail)].join(`
+`)
+      };
+    }
+  }
+  if (!r)
+    return { rule: "none", clause: -1, action: "hold", target: "no rule matched", text: "no rule matched" };
+  return {
+    rule: "route",
+    clause: r.i,
+    action: r.action,
+    target: r.target,
+    text: [head(r), `  route ${r.i}, $.route.clauses[${r.i}]`, "  because", ...r.reads.map(([id, d]) => reading(id, d))].join(`
+`)
+  };
+}
+function simWire(m, presets, root) {
+  let a = JSON.parse(JSON.stringify(presets[0].answers));
+  const $ = (s) => [...root.querySelectorAll(s)], pct = (x) => `${Math.round(x * 100)}%`, draw = () => {
+    const d = simDecide(m, a);
+    for (const q of m.questions) {
+      const x = a[q.id];
+      $(`[data-pick="${q.id}"]`).forEach((b) => b.setAttribute("aria-pressed", String(q.kind === "choice" ? b.value === x.choice : Number(b.value) === x.score)));
+      $(`input[data-q="${q.id}"]`).forEach((i) => {
+        i.value = String(q.kind === "noul" ? x.noul : x.confidence);
+        i.style.setProperty("--v", pct(i.value));
+      });
+      $(`[data-out="${q.id}"]`).forEach((o) => {
+        o.textContent = (q.kind === "noul" ? x.noul : x.confidence).toFixed(2);
+      });
+    }
+    $("[data-rung]").forEach((li) => {
+      const [kind, i] = li.dataset.rung.split(":"), hit = d.rule === kind && d.clause === Number(i), passed = kind === "gate" ? d.rule !== "gate" || Number(i) < d.clause : d.rule === "route" && Number(i) < d.clause;
+      li.dataset.state = hit ? "fired" : passed ? "passed" : "idle";
+    });
+    const res = root.querySelector("[data-result]");
+    res.innerHTML = `<span class="tag tag--${d.action}">${d.action}</span><code>${d.target}</code>`;
+    root.querySelector("[data-explain]").textContent = d.text;
+  };
+  root.addEventListener("click", (e) => {
+    const p = e.target.closest("[data-preset]");
+    if (p) {
+      a = JSON.parse(JSON.stringify(presets[Number(p.dataset.preset)].answers));
+      $("[data-preset]").forEach((b) => b.setAttribute("aria-pressed", String(b === p)));
+      return draw();
+    }
+    const b = e.target.closest("[data-pick]");
+    if (!b)
+      return;
+    const x = a[b.dataset.pick];
+    if (b.dataset.kind === "choice")
+      x.choice = b.value;
+    else {
+      x.score = Number(b.value);
+      x.probabilities = null;
+    }
+    $("[data-preset]").forEach((t) => t.setAttribute("aria-pressed", "false"));
+    draw();
+  });
+  root.addEventListener("input", (e) => {
+    const i = e.target.closest("input[data-q]");
+    if (!i)
+      return;
+    const x = a[i.dataset.q];
+    if (i.dataset.field === "noul")
+      x.noul = Number(i.value);
+    else {
+      x.confidence = Number(i.value);
+      x.probabilities = null;
+    }
+    $("[data-preset]").forEach((t) => t.setAttribute("aria-pressed", "false"));
+    draw();
+  });
+  root.dataset.live = "";
+  draw();
+}
+(function(){var s=document.getElementById('sim-data');if(!s)return;var d=JSON.parse(s.textContent);simWire(d.m,d.presets,s.closest('.sim'));})();
+</script>
 </body>
 </html>

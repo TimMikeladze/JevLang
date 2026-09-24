@@ -6,9 +6,10 @@ import { readFileSync, existsSync } from 'node:fs';
 import { sections, links, meta, agentsMistakes, repo } from './content.js';
 import {
   makeResolver, figure, renderLanding, renderReference, llmsText, agentsMd, pageMarkdown, sitemap, robots, markdownHtml,
-  modulesTable, cloudApiTable, cloudSection, cloudTable, cloudList, readmeTable, readmeList, version, bootScript, url,
+  heroModel, esc, modulesTable, cloudApiTable, cloudSection, cloudTable, cloudList, readmeTable, readmeList, version, bootScript, url,
 } from './render.js';
 import { css, chromeCss } from './styles.js';
+import { heroScript, simModel, simDecide } from './hero.js';
 import { readPolicy, readAnswers, parseExplain } from './diagrams.js';
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
@@ -41,8 +42,15 @@ test('pages are self-contained', () => {
   for (const page of [index, reference]) {
     assert.doesNotMatch(page, /<(?:link[^>]*rel="(?:stylesheet|preload|icon)"|script|img)[^>]+(?:src|href)="https?:/);
     assert.equal([...page.matchAll(/<script[^>]*src=/g)].length, 0);
-    const inline = [...page.matchAll(/<script(?:\s[^>]*)?>[\s\S]*?<\/script>/g)].filter((m) => !m[0].includes('application/ld+json'));
-    assert.equal(inline.length, 1, 'exactly one non-JSON-LD script');
+    const inline = [...page.matchAll(/<script(?:\s[^>]*)?>[\s\S]*?<\/script>/g)].filter((m) => !/^<script type="application\/(?:ld\+)?json"/.test(m[0]));
+    // The boot script, plus — on the landing page only — the hero console's
+    // script at the end of <body>, capped in size; the page works without it.
+    assert.equal(inline.length, page === index ? 2 : 1, 'boot script (+ hero console on the landing page)');
+    if (page === index) {
+      assert.equal(inline[1][0], heroScript);
+      assert.ok(heroScript.length < 8000, `hero script ${heroScript.length} bytes`);
+      assert.ok(page.indexOf(heroScript) > page.indexOf('</footer>'), 'hero script runs after the markup');
+    }
     assert.ok(inline[0][0].split('\n').length < 30, 'boot script under 30 lines');
     const head = page.split('</head>')[0];
     assert.ok(head.indexOf(inline[0][0]) > 0 && head.indexOf(inline[0][0]) < head.indexOf('<style>'), 'the boot script sits in <head>, before the stylesheet');
@@ -317,4 +325,17 @@ test('llms.txt, AGENTS.md and index.md cover the examples', async () => {
     assert.ok(policy.decide(e.answers, { state, facts }).action, `${e.route} decides offline`);
   }
   assert.ok(llms.includes('jevlang/redis') && agents.includes('rateLimit'));
+});
+
+// extra: the hero console decides each decide.js ticket exactly as the captured run did.
+test('hero console matches node decide.js', () => {
+  const { policy, presets } = heroModel(r);
+  const m = simModel(policy);
+  const cases = r.run('node decide.js').output.split(/^# .*\n/m).filter(Boolean).map((t) => t.trimEnd());
+  assert.equal(presets.length, 3);
+  presets.forEach((p, i) => assert.equal(simDecide(m, p.answers).text, cases[i], p.name));
+  const hero = index.split('<section class="hero"')[1].split('</section>')[0];
+  assert.ok(hero.includes('<pre class="sim-explain" data-explain>' + esc(cases[0]) + '</pre>'), 'no-script state is the first ticket');
+  assert.equal([...hero.matchAll(/data-rung="/g)].length, policy.gates.length + policy.clauses.length);
+  for (const p of presets) assert.ok(hero.includes(`>${esc(p.name)}</button>`), p.name);
 });

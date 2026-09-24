@@ -22,6 +22,9 @@ export const meta = {
   license: 'MIT',
 };
 
+// The hero's live console: this policy, deciding the tickets this file decides.
+export const hero = { policy: 'support.js', decide: 'decide.js', run: 'node decide.js' };
+
 export const sections = [
   {
     id: 'how-it-works',

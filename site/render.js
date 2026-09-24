@@ -2,7 +2,8 @@
 // metadata and the sibling artefacts. No copy lives here (icons and markup do).
 import { readFileSync } from 'node:fs';
 import { css } from './styles.js';
-import { sections as contentSections, asides, links, nav, footerColumns, meta, origin, repo, cloudRepo, copyrightYear, agentsMistakes, agentsGateNote, examples, examplesSource, serverlessNotes } from './content.js';
+import { hero, sections as contentSections, asides, links, nav, footerColumns, meta, origin, repo, cloudRepo, copyrightYear, agentsMistakes, agentsGateNote, examples, examplesSource, serverlessNotes } from './content.js';
+import { heroConsole, heroScript } from './hero.js';
 import { esc, tag, isAction, readPolicy, readAnswers, parseExplain, decisionFlow, lifecycle, answerShapes, gateMeter, ruleLadder, toolLadder, doors } from './diagrams.js';
 
 export const version = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
@@ -241,49 +242,7 @@ export const favicon = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="htt
 // forks flow (a slow marching dashoffset) and their end dots breathe; the
 // decide nodes and the plain grey connectors, which are only there for
 // density, sit still. `prefers-reduced-motion` turns all of it off.
-export const heroPattern = `<svg class="hero-pattern" aria-hidden="true" viewBox="0 0 1200 520" preserveAspectRatio="xMidYMid slice">
-<defs>
-<linearGradient id="hp-fade" x1="0" x2="1" y1="0" y2="0">
-<stop offset="0" stop-color="#fff" stop-opacity="0"/>
-<stop offset=".4" stop-color="#fff" stop-opacity="0"/>
-<stop offset=".68" stop-color="#fff" stop-opacity="1"/>
-</linearGradient>
-<mask id="hp-mask"><rect width="1200" height="520" fill="url(#hp-fade)"/></mask>
-</defs>
-<g mask="url(#hp-mask)" fill="none" stroke-linecap="round" stroke-linejoin="round">
-<g class="hero-pattern-lines">
-<path d="M860 132H1006V206"/>
-<path d="M1140 40V96"/>
-<path d="M980 366H1112"/>
-<path d="M840 400H930"/>
-<path d="M1180 250V326"/>
-<circle class="hero-pattern-dot" cx="860" cy="132" r="4"/>
-<circle class="hero-pattern-dot" cx="1006" cy="206" r="4"/>
-<circle class="hero-pattern-dot" cx="1140" cy="40" r="4"/>
-<circle class="hero-pattern-dot" cx="1140" cy="96" r="4"/>
-<circle class="hero-pattern-dot" cx="980" cy="366" r="4"/>
-<circle class="hero-pattern-dot" cx="1112" cy="366" r="4"/>
-<circle class="hero-pattern-dot" cx="840" cy="400" r="4"/>
-<circle class="hero-pattern-dot" cx="930" cy="400" r="4"/>
-<circle class="hero-pattern-dot" cx="1180" cy="250" r="4"/>
-<circle class="hero-pattern-dot" cx="1180" cy="326" r="4"/>
-</g>
-<g class="hp-trunk hp-accent"><path d="M900 60V120H980"/></g>
-<circle class="hero-pattern-dot hp-pivot hp-accent-dot" cx="900" cy="60" r="4"/>
-<circle class="hero-pattern-dot hp-pivot hp-accent-dot" cx="980" cy="120" r="5"/>
-<g class="hp-branch hp-add" style="animation-delay:-.6s"><path d="M980 120H1080"/></g>
-<circle class="hero-pattern-dot hp-action hp-add-dot" cx="1080" cy="120" r="4" style="animation-delay:-.6s"/>
-<g class="hp-branch hp-warn" style="animation-delay:-1.4s"><path d="M980 120V190"/></g>
-<circle class="hero-pattern-dot hp-action hp-warn-dot" cx="980" cy="190" r="4" style="animation-delay:-1.4s"/>
-<g class="hp-trunk hp-accent" style="animation-delay:-.9s"><path d="M1000 300V360"/></g>
-<circle class="hero-pattern-dot hp-pivot hp-accent-dot" cx="1000" cy="300" r="4"/>
-<circle class="hero-pattern-dot hp-pivot hp-accent-dot" cx="1000" cy="360" r="5"/>
-<g class="hp-branch hp-add" style="animation-delay:-2.1s"><path d="M1000 360H1100"/></g>
-<circle class="hero-pattern-dot hp-action hp-add-dot" cx="1100" cy="360" r="4" style="animation-delay:-2.1s"/>
-<g class="hp-branch hp-del" style="animation-delay:-.3s"><path d="M1000 360V430"/></g>
-<circle class="hero-pattern-dot hp-action hp-del-dot" cx="1000" cy="430" r="4" style="animation-delay:-.3s"/>
-</g>
-</svg>`;
+
 
 // ---------- script ----------
 
@@ -564,6 +523,15 @@ function diagramHtml(d, { r, readme, cloudReadme }) {
   }
 }
 
+// The hero console runs the README's support.js on the tickets decide.js decides.
+export function heroModel(r) {
+  const policy = readPolicy(r.file(hero.policy).body);
+  const names = parseExplain(r.run(hero.run).output).map((c) => c.name);
+  const clean = (x) => Object.fromEntries(Object.entries(x).filter(([, v]) => v !== null));
+  const presets = names.map((name) => ({ name, answers: Object.fromEntries(Object.entries(readAnswers(r.file(hero.decide).body, name, policy.questions)).map(([k, v]) => [k, clean(v)])) }));
+  return { policy, presets };
+}
+
 const unescapeJs = (s) => s.replace(/\\(["'\\])/g, '$1');
 
 export function renderLanding({ readme, cloudReadme }) {
@@ -596,10 +564,13 @@ ${demos}
 <a class="control control--solid" href="/reference">${icon('book')} Documentation</a>
 </div>`;
 
-  const hero = `<section class="hero" aria-labelledby="top">${heroPattern}<div class="shell">
+  const hero = `<section class="hero" aria-labelledby="top"><div class="shell hero-grid">
+<div class="hero-copy">
 <h1 id="top">${esc(meta.h1)}</h1>
 <p class="lede">${inlineMd(meta.lede)}</p>
 ${actions}
+</div>
+<div class="hero-demo">${heroConsole(heroModel(r))}</div>
 </div></section>`;
 
   return `<!doctype html>
@@ -612,6 +583,7 @@ ${hero}
 ${sectionHtml}
 </main>
 ${footer()}
+${heroScript}
 </body>
 </html>`;
 }
