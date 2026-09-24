@@ -1093,6 +1093,7 @@ jev open support</code></pre>
 <p class="copyright">© 2026</p>
 </div></footer>
 <script>
+// The evaluator. Self-contained on purpose: its source text is the page script.
 function simDecide(m, a) {
   const n = (x) => String(Math.round(x * 100) / 100);
   const conf = (id) => (a[id].confidence ?? 1);
@@ -1134,6 +1135,9 @@ function simDecide(m, a) {
   return { rule: 'route', clause: r.i, action: r.action, target: r.target,
     text: [head(r), `  route ${r.i}, $.route.clauses[${r.i}]`, '  because', ...r.reads.map(([id, d]) => reading(id, d))].join('\n') };
 }
+
+// The page's wiring: presets, controls, and what lights up. Runs only with
+// script; without it the console is the first preset, fully rendered.
 function simWire(m, presets, root) {
   let a = JSON.parse(JSON.stringify(presets[0].answers));
   const $ = (s) => [...root.querySelectorAll(s)];

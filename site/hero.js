@@ -7,6 +7,7 @@
 // evaluator — the server renders the first preset with it, the page's script
 // is its source text, and the site test checks every preset against the
 // captured `node decide.js` run, line for line.
+import { readFileSync } from 'node:fs';
 import { esc, tag, isAction } from './diagrams.js';
 
 // A clause's `when` as a tree the evaluator can walk. Only the forms support.js
@@ -45,6 +46,7 @@ export function simModel(policy) {
   };
 }
 
+// @sim-begin — from here to @sim-end is copied, as written, into the page script.
 // The evaluator. Self-contained on purpose: its source text is the page script.
 export function simDecide(m, a) {
   const n = (x) => String(Math.round(x * 100) / 100);
@@ -135,6 +137,8 @@ function simWire(m, presets, root) {
   draw();
 }
 
+// @sim-end
+
 // The console's markup, drawn in the state of the first preset.
 export function heroConsole({ policy, presets }) {
   const m = simModel(policy);
@@ -182,8 +186,15 @@ ${slider(q.id, q.kind === 'noul' ? 'noul' : 'confidence', q.kind === 'noul' ? x.
 }
 
 // The one extra script: the evaluator and the wiring, as their own source.
+// Read from this file rather than Function#toString, which changes with
+// whatever transpiled the module (a test runner does), so the bytes would too.
+const simSource = (() => {
+  const text = readFileSync(new URL(import.meta.url), 'utf8');
+  const body = text.slice(text.indexOf('// @sim-begin'), text.indexOf('// @sim-end'));
+  return body.split('\n').slice(1).join('\n').replace(/^export function/gm, 'function').trim();
+})();
+
 export const heroScript = `<script>
-${simDecide.toString()}
-${simWire.toString()}
+${simSource}
 (function(){var s=document.getElementById('sim-data');if(!s)return;var d=JSON.parse(s.textContent);simWire(d.m,d.presets,s.closest('.sim'));})();
 </script>`;
