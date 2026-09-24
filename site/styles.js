@@ -286,30 +286,9 @@ td:first-child{font-family:var(--mono);font-size:.82rem;color:var(--ink);white-s
 td code{font-size:.8rem}
 .table-title{margin:2.4rem 0 0;font:600 .72rem/1.3 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--soft)}
 .table-title+.tablewrap{margin-top:.5rem}
-/* boundaries */
-.boundaries{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line-soft);border:1px solid var(--line-soft);border-radius:.7rem;overflow:hidden;margin-top:1.6rem}
-.boundary{background:var(--paper);padding:1.4rem 1.3rem;border-top:3px solid transparent}
-.boundary:nth-child(1){border-top-color:var(--add)}
-.boundary:nth-child(2){border-top-color:var(--warn)}
-.boundary:nth-child(3){border-top-color:var(--del)}
-.boundary h3{display:flex;align-items:baseline;justify-content:space-between;font:600 .85rem/1.2 var(--sans);margin:0 0 .8rem}
-.boundary:nth-child(1) h3{color:var(--add)}
-.boundary:nth-child(2) h3{color:var(--warn)}
-.boundary:nth-child(3) h3{color:var(--del)}
-.boundary h3 span{font:500 .75rem/1 var(--mono);color:var(--soft)}
-.boundary li{margin:.55rem 0;font-size:.9rem;line-height:1.5}
-.boundary ul{margin:0;padding-left:1.1rem}
 /* aside */
 .aside{padding-block:1.4rem;border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft);background:var(--paper)}
 .aside p{margin:0;max-width:68ch;font-size:.95rem}
-/* start */
-.panels{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:1.6rem}
-.panels>*{min-width:0}
-.panels .demo:first-of-type{margin-top:0}
-.panel-title{margin:0 0 .6rem;font:600 .72rem/1.3 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--soft)}
-.figures{display:flex;gap:2rem;flex-wrap:wrap;margin:0 0 .8rem}
-.figure b{display:block;font:650 1.15rem/1.2 var(--mono);color:var(--accent)}
-.figure span{font:.8rem/1.4 var(--mono);color:var(--soft)}
 /* footer */
 .site-foot{border-top:1px solid var(--line);padding-block:3rem 2rem}
 .site-foot .credit{max-width:60ch;color:var(--soft);font-size:.9rem;margin:0 0 2rem}
@@ -360,7 +339,6 @@ td code{font-size:.8rem}
 .site-nav>a[href="/"]{display:none}
 .head-icons .icon-link,.head-div{display:none}
 .nav-menu{left:auto;right:-4rem}
-.panels,.boundaries{grid-template-columns:minmax(0,1fr)}
 h1{font-size:2.6rem}
 .frame{border-radius:0;border-left:0;border-right:0;margin-inline:-1rem}
 .diagram{border-radius:0;border-left:0;border-right:0;margin-inline:-1rem;padding-inline:1rem}

@@ -642,9 +642,7 @@ and verdicts match byte-for-byte — and the Python port
 (`jevlang-sh` on PyPI) runs the same product on a pure-Python engine with the
 same oracles. Those differential tests read the Racket monorepo, so they skip
 unless it is checked out beside this package; everything else runs offline with
-no Racket anywhere. See [COMPATIBILITY.md](COMPATIBILITY.md) for the full
-evidence table and the short list of known gaps (code lookup, a hosted offering,
-and a few compile-time conveniences).
+no Racket anywhere.
 
 The suite in this checkout (the version banner and timings are trimmed):
 

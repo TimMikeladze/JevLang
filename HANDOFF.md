@@ -1,8 +1,8 @@
 # Portable platform: where the work stands
 
-The contract is [portable-platform.md](../jev-lang/docs/portable-platform.md);
-the evidence table is [COMPATIBILITY.md](COMPATIBILITY.md). This file is the
-working note: what is finished, what is next, and how each piece was proved.
+The contract is [portable-platform.md](../jev-lang/docs/portable-platform.md).
+This file is the working note: what is finished, what is next, and how each piece
+was proved.
 
 ## How this port is checked
 

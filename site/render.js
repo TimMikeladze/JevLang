@@ -2,7 +2,7 @@
 // metadata and the sibling artefacts. No copy lives here (icons and markup do).
 import { readFileSync } from 'node:fs';
 import { css } from './styles.js';
-import { sections as contentSections, asides, boundaries, start, links, nav, footerColumns, meta, origin, repo, cloudRepo, copyrightYear, agentsMistakes, agentsGateNote, examples, examplesSource, serverlessNotes } from './content.js';
+import { sections as contentSections, asides, links, nav, footerColumns, meta, origin, repo, cloudRepo, copyrightYear, agentsMistakes, agentsGateNote, examples, examplesSource, serverlessNotes } from './content.js';
 import { esc, tag, isAction, readPolicy, readAnswers, parseExplain, decisionFlow, lifecycle, answerShapes, gateMeter, ruleLadder, toolLadder, doors } from './diagrams.js';
 
 export const version = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
@@ -492,11 +492,6 @@ function stepsHtml(steps, r) {
 // Wider tables label each cell, so a phone can stack them as cards.
 const table = (head, rows, cell = inlineMd) => `<div class="tablewrap"><table><thead><tr>${head.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((c, i) => `<td${head.length > 2 ? ` data-label="${esc(head[i])}"` : ''}>${i === 0 && head.length === 2 ? inlineMd('`' + c + '`') : cell(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 
-function figuresRow(figs) {
-  if (!figs?.length) return '';
-  return `<div class="figures">${figs.map((f) => `<div class="figure"><b>${esc(f.value)}</b><span>${esc(f.label)}</span></div>`).join('')}</div>`;
-}
-
 // ---------- landing page ----------
 
 export function renderDemo(d, ctx) {
@@ -535,13 +530,6 @@ function diagramHtml(d, { r, readme, cloudReadme }) {
 
 const unescapeJs = (s) => s.replace(/\\(["'\\])/g, '$1');
 
-// `{name}` in a boundary item is a figure from a captured run.
-const fill = (text, figs, r) => text.replace(/\{(\w+)\}/g, (_, k) => {
-  const f = figs?.[k];
-  if (!f) throw new Error(`boundary item uses {${k}} but names no figure for it`);
-  return figure(r.run(f.run).output, f.from);
-});
-
 export function renderLanding({ readme, cloudReadme }) {
   const r = makeResolver(readme);
   const ctx = { r, readme, cloudReadme };
@@ -557,28 +545,6 @@ ${demos}
 </div>
 </section>`;
   }).join('\n');
-
-  const boundaryHtml = `<section id="boundaries" class="section" aria-labelledby="boundaries-h">
-<div class="shell">
-<h2 id="boundaries-h">${esc(boundaries.h2)}</h2>
-<p class="expl">${inlineMd(boundaries.intro)}</p>
-<div class="boundaries">
-${boundaries.columns.map((c) => `<div class="boundary"><h3>${esc(c.title)} <span>${c.items.length}</span></h3><ul>${c.items.map((i) => `<li>${inlineMd(fill(i, c.figures, r))}</li>`).join('')}</ul></div>`).join('')}
-</div>
-</div>
-</section>`;
-
-  const verify = r.run(start.verify.run);
-  const startHtml = `<section id="start" class="section section--band" aria-labelledby="start-h">
-<div class="shell">
-<h2 id="start-h">${esc(start.h2)}</h2>
-<p class="expl">${inlineMd(start.p)}</p>
-<div class="panels">
-<div><p class="panel-title">Install</p>${start.install.map((c) => `<div class="demo">${commandFrame(c)}</div>`).join('')}</div>
-<div><p class="panel-title">Verify</p>${figuresRow(start.verify.figures.map((f) => ({ label: f.label, value: figure(verify.output, f.from) })))}${runFrame(verify)}</div>
-</div>
-</div>
-</section>`;
 
   const actions = `<div class="actions">
 <span class="control control--chip"><code>${esc(meta.install)}</code><button class="copy-btn" type="button" data-copy="${esc(meta.install)}" aria-label="Copy install command">${icon('copy')}</button></span>
@@ -608,8 +574,6 @@ ${header('/')}
 <main id="main">
 ${hero}
 ${sectionHtml}
-${boundaryHtml}
-${startHtml}
 </main>
 ${footer()}
 </body>
@@ -667,8 +631,6 @@ function demoMarkdown(d, ctx) {
 
 const capabilityMarkdown = (s, ctx) => [`## ${s.h2}`, '', inlinePlain(s.p), '', ...s.demos.map((d) => demoMarkdown(d, ctx)).filter(Boolean).flatMap((x) => [x, ''])].join('\n');
 
-const boundariesMarkdown = (r) => [`## ${boundaries.h2}`, '', inlinePlain(boundaries.intro), '', ...boundaries.columns.flatMap((c) => [`**${c.title}**`, '', ...c.items.map((i) => `- ${inlinePlain(fill(i, c.figures, r))}`), ''])].join('\n');
-
 // The examples as Markdown: each live page, its route, and an offline call
 // (answers in the body, so it decides without a model and costs nothing).
 function examplesMarkdown({ calls = false } = {}) {
@@ -690,7 +652,6 @@ export function llmsText({ readme, cloudReadme }) {
     `> ${meta.description}`, '',
     `${inlinePlain(meta.lede)} Install with \`${meta.install}\`. ${meta.license} licensed.`, '',
     ...contentSections.flatMap((s) => [capabilityMarkdown(s, ctx)]),
-    boundariesMarkdown(r),
     examplesMarkdown(), '',
     serverlessMarkdown(),
     '## Links', '',
@@ -749,9 +710,7 @@ export function pageMarkdown({ readme, cloudReadme }) {
     inlinePlain(meta.lede), '',
     `Install: \`${meta.install}\``, '',
     ...contentSections.flatMap((s) => [capabilityMarkdown(s, ctx)]),
-    boundariesMarkdown(r),
     examplesMarkdown(), '',
-    `## ${start.h2}`, '', inlinePlain(start.p), '', fenceMd('sh', start.install.map((c) => `$ ${c}`).join('\n')),
   ].join('\n');
 }
 

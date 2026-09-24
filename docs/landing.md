@@ -52,7 +52,6 @@ can copy and run.
   bars out of them.
 - `docs/cloud-api.md` — API route table for the cloud section (vendored from
   `../jevcloud/README.md`; a test keeps it in sync when the sibling is cloned).
-- `COMPATIBILITY.md` — the "not here yet" column traces to its known gaps.
 
 ## Sections (H2 → option named)
 
@@ -72,9 +71,6 @@ can copy and run.
 8. **Call it from anywhere** — `startServer`, `policyMcpServer`, `jev decide`.
    Doors diagram read from the README list, `serve.js`, module table.
 9. **Same engine, hosted** — Jev Cloud, the hosted HTTP API (not an npm package). Lifecycle flow, API table, aside.
-
-Then **What holds, what doesn't** (three counted columns: holds / judgement / not
-here yet) and **Start** (install, verify).
 
 ## Constraints honoured
 

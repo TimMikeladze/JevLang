@@ -400,30 +400,6 @@ escalate human-triage  // unclear which team owns this
 | `jevlang/serve` | an HTTP sidecar (/decide, /evaluate, /dispatch with dry_run, /policy, /healthz) so any language can use the policy; MCP and webhook routes mount alongside it. |
 
 
-## What holds, and what doesn't
-
-Proven, judged and missing, in that order — the same honesty the engine ships with. The full evidence table is in COMPATIBILITY.md (https://github.com/TimMikeladze/JevLang/blob/main/COMPATIBILITY.md).
-
-**What holds**
-
-- Every example on this page that is not marked live is re-run by the test suite, and its output must match what the page shows.
-- Decisions, wire questions, built state and reports are pinned by differential tests against the Racket reference, and recorded runs replay byte for byte.
-- bun test here: 101 pass, 25 skip, 0 fail, offline. The skips are the differential tests that need the Racket monorepo beside this package.
-- Deciding, validating and replaying need no account and no network.
-
-**A judgement**
-
-- Confidence is the model's own number. calibrate reports ECE and a reliability table over your labels, and says when you have too few to trust them.
-- A gate bar like 0.8 is yours to choose. tune searches a grid over labelled cases, and under 200 labels it calls the result exploratory.
-- Cost estimates are fitted to your recorded usage, or a stated ~4 characters per token when you have none.
-
-**Not here yet**
-
-- Code lookup (jev/code) needs an SGX executable and is out of scope for now.
-- A running JavaScript handler cannot be killed: past its timeout it is abandoned, and the error says it may have acted.
-- The Python SDK decides but does not dispatch, because handlers are host functions.
-- A stability run's statistics are ported; collecting the repeated provider calls is still yours.
-
 ## Examples
 
 Three live Next.js route handlers, each decided by a policy. Try them at https://jevlang.sh/examples/maintenance; source: https://github.com/TimMikeladze/JevLang/tree/main/examples/nextjs.

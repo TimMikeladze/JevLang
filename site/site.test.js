@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
-import { sections, boundaries, start, links, meta, agentsMistakes, showCloud } from './content.js';
+import { sections, links, meta, agentsMistakes, showCloud } from './content.js';
 import {
   makeResolver, figure, renderLanding, renderReference, llmsText, agentsMd, pageMarkdown, sitemap, robots, markdownHtml,
   modulesTable, cloudApiTable, readmeTable, readmeList, version, bootScript, url,
@@ -32,11 +32,6 @@ test('references resolve and figures match', () => {
     if (d.options) r.file(d.options);
   };
   for (const s of sections) for (const d of s.demos) walk(d);
-  const verify = r.run(start.verify.run).output;
-  for (const f of start.verify.figures) figure(verify, f.from);
-  assert.equal(figure(verify, /(\d+) fail/), '0');
-  assert.ok(Number(figure(verify, /(\d+) pass/)) > 0);
-  for (const c of boundaries.columns) for (const f of Object.values(c.figures ?? {})) figure(r.run(f.run).output, f.from);
   assert.throws(() => r.terminal('no such command'), /expected 1 block/);
   assert.throws(() => r.file('nope.js'), /expected 1 block/);
 });
@@ -164,7 +159,7 @@ test('hero and capability sections', () => {
     assert.ok(sentences >= 1 && sentences <= 3, `${s.id}: ${sentences} sentences`);
     assert.ok(expl.includes('<code>'), `${s.id}: no inline code`);
   }
-  // Headings descend without skipping: h1, h2 sections, and no h3 outside the boundaries and footer.
+  // Headings descend without skipping: h1, h2 sections, and no h3 outside the footer.
   assert.ok(!/<h4/.test(index));
 });
 
@@ -288,16 +283,6 @@ test('frames', () => {
   // A README `file=` block is shown exactly as written.
   const shown = index.match(/<pre class="frame-body"><code>([\s\S]*?)<\/code><\/pre>/)[1].replace(/<[^>]+>/g, '');
   assert.ok(shown.length > 100);
-});
-
-// extra: boundaries are three counted columns with their figures filled in.
-test('boundaries', () => {
-  const sec = section('boundaries');
-  assert.equal([...sec.matchAll(/<div class="boundary">/g)].length, 3);
-  assert.doesNotMatch(sec, /\{\w+\}/);
-  const verify = r.run(start.verify.run).output;
-  assert.ok(sec.includes(`${figure(verify, /(\d+) pass/)} pass`));
-  for (const c of boundaries.columns) assert.ok(sec.includes(`<span>${c.items.length}</span>`));
 });
 
 // extra: the vendored cloud API table matches the sibling repo when present.

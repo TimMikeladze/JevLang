@@ -145,56 +145,6 @@ const allAsides = [
 
 export const asides = showCloud ? allAsides : allAsides.filter((a) => a.before !== 'same-engine-hosted');
 
-// Three counted columns: what holds, what is a judgement, what is not here yet.
-// `{name}` in an item is a figure read out of a captured run.
-export const boundaries = {
-  h2: 'What holds, and what doesn\'t',
-  intro: 'Proven, judged and missing, in that order — the same honesty the engine ships with. The full evidence table is in [COMPATIBILITY.md](REPO/blob/main/COMPATIBILITY.md).',
-  columns: [
-    {
-      title: 'What holds',
-      items: [
-        'Every example on this page that is not marked live is re-run by the test suite, and its output must match what the page shows.',
-        'Decisions, wire questions, built state and reports are pinned by differential tests against the Racket reference, and recorded runs replay byte for byte.',
-        '`bun test` here: {pass} pass, {skip} skip, {fail} fail, offline. The skips are the differential tests that need the Racket monorepo beside this package.',
-        'Deciding, validating and replaying need no account and no network.',
-      ],
-      figures: {
-        pass: { run: 'bun install', from: /(\d+) pass/ },
-        skip: { run: 'bun install', from: /(\d+) skip/ },
-        fail: { run: 'bun install', from: /(\d+) fail/ },
-      },
-    },
-    {
-      title: 'A judgement',
-      items: [
-        'Confidence is the model\'s own number. `calibrate` reports ECE and a reliability table over your labels, and says when you have too few to trust them.',
-        'A gate bar like `0.8` is yours to choose. `tune` searches a grid over labelled cases, and under 200 labels it calls the result exploratory.',
-        'Cost estimates are fitted to your recorded usage, or a stated ~4 characters per token when you have none.',
-      ],
-    },
-    {
-      title: 'Not here yet',
-      items: [
-        'Code lookup (`jev/code`) needs an SGX executable and is out of scope for now.',
-        'A running JavaScript handler cannot be killed: past its timeout it is abandoned, and the error says it may have acted.',
-        'The Python SDK decides but does not dispatch, because handlers are host functions.',
-        'A stability run\'s statistics are ported; collecting the repeated provider calls is still yours.',
-      ],
-    },
-  ],
-};
-
-export const start = {
-  h2: 'Start',
-  p: 'Install the package, or clone the repo and run the suite yourself. The Verify panel is a real run of that suite, read at build time.',
-  install: ['bun add jevlang'],
-  verify: { run: 'bun install', figures: [
-    { label: 'Tests passing', from: /(\d+) pass/ },
-    { label: 'Failures', from: /(\d+) fail/ },
-  ] },
-};
-
 // One authored link table drives header and footer. `href: "repo"` follows the
 // repo variable; `where` says which slots it appears in.
 export const links = [

@@ -125,8 +125,7 @@
   },
   "files": [
     "src",
-    "README.md",
-    "COMPATIBILITY.md"
+    "README.md"
   ],
   "scripts": {
     "test": "bun test test/*.test.js",
