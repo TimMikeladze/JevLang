@@ -228,6 +228,33 @@ test('the parallelism a provider advertises is respected, and the runner can be 
   } finally { runner.run = original; }
 });
 
+test('resolution discovers only the candidates it tries, stopping at the winner', async () => {
+  const discovered = [];
+  const registry = new ProviderRegistry();
+  for (const [id, status] of [['slow-cli', 'ready'], ['http', 'ready'], ['offline', 'missing']]) {
+    registry.register(provider({ id, caps: capabilities(), discover: async () => { discovered.push(id); return availability(status); }, run: async () => ({}) }));
+  }
+  const exact = await resolveProvider(providerRequest('review', 'structured', { target: targetSpec({ provider: 'http' }) }), mergeProviderConfig({}), registry);
+  assert.equal(exact.target.provider.id, 'http');
+  assert.deepEqual(discovered, ['http']);
+  const preferred = await resolveProvider(providerRequest('review', 'structured'), mergeProviderConfig({ project: { preferences: ['offline', 'http', 'slow-cli'] } }), registry);
+  assert.equal(preferred.target.provider.id, 'http');
+  assert.deepEqual(preferred.rejections.map(r => [r.provider, r.kind]), [['offline', 'missing']]);
+  assert.deepEqual(discovered, ['http', 'offline']);
+});
+
+test('only a ready discovery is remembered, so a later login is seen', async () => {
+  let loggedIn = false, discoveries = 0;
+  const registry = new ProviderRegistry();
+  registry.register(provider({ id: 'cli', caps: capabilities(), discover: async () => { discoveries += 1; return availability(loggedIn ? 'ready' : 'unauthenticated'); }, run: async () => ({}) }));
+  const request = providerRequest('review', 'structured', { target: targetSpec({ provider: 'cli' }) });
+  await assert.rejects(resolveProvider(request, mergeProviderConfig({}), registry));
+  loggedIn = true;
+  assert.equal((await resolveProvider(request, mergeProviderConfig({}), registry)).target.provider.id, 'cli');
+  await resolveProvider(request, mergeProviderConfig({}), registry);
+  assert.equal(discoveries, 2);
+});
+
 test('the JSON Schema subset checks types, enums, closed objects and bounds', () => {
   assert.ok(jsonSchemaValid(null, { anything: true }));
   assert.ok(jsonSchemaValid({ type: 'object', required: ['a'], properties: { a: { type: 'integer' } } }, { a: 1 }));

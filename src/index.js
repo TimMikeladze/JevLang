@@ -4,7 +4,7 @@ export { validatePolicy } from './validate.js';
 export * from './expressions.js';
 export { redact, redactString, redactQuestions, restoreAnswerKeys, capValue, checkTokenBudget, stateSize, redactorNames } from './state.js';
 export { replay, diff, tune, validateFixture, matches } from './fixtures.js';
-export { questionsAnswerSchema, policyPrompt, typesafeProvider, makePolicyRegistry, policyProviderRequest, runPolicyProvider, normalizeAnswers, evaluateWithProvider, evaluateConfiguredPolicy, explicitPolicySelection, fixtureFromRun, policyConfigDefaults } from './evaluate.js';
+export { questionsAnswerSchema, policyPrompt, typesafeProvider, makePolicyRegistry, sharedPolicyRegistry, answerCacheKey, policyProviderRequest, runPolicyProvider, normalizeAnswers, evaluateWithProvider, evaluateConfiguredPolicy, explicitPolicySelection, fixtureFromRun, policyConfigDefaults } from './evaluate.js';
 export { evaluateMany, makePacer } from './batch.js';
 export { runPipeline, pipelineToJson, topOptions, defaultNextInput } from './pipeline.js';
 export { jevCall, settings as clientSettings, defaultRetryPolicy, defaultModel, apiKeyConfigured, JevApiError } from './client.js';

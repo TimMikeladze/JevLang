@@ -10,7 +10,8 @@ import { policyActions } from './json-schema.js';
 import { summarize, calibrate } from './monitor.js';
 import { cost } from './cost.js';
 import { loadProviderConfig, makeDefaultRegistry, discoverProviders, resolveProvider, providerRequest, targetSpec } from './provider/index.js';
-import { evaluateWithProvider, runPolicyProvider, fixtureFromRun, policyConfigDefaults, makePolicyRegistry } from './evaluate.js';
+import { evaluateWithProvider, runPolicyProvider, fixtureFromRun, policyConfigDefaults, makePolicyRegistry, sharedPolicyRegistry, policyProviderRequest } from './evaluate.js';
+import { evaluateMany } from './batch.js';
 import { makeGate, hookResponse, approveOnce, parseToolList } from './gate.js';
 import { cloud, runner } from './cloud.js';
 import { loadHandlers } from './handlers.js';
@@ -129,6 +130,53 @@ async function runnerCommand(args) {
   await r.start();
 }
 
+// `jev batch POLICY.json ROWS.ndjson`: one input per line (`-` reads stdin),
+// one line out per row in input order, a summary on stderr. Identical rows are
+// asked once.
+async function readRows(path) {
+  let text;
+  if (path === '-') { const chunks = []; for await (const chunk of process.stdin) chunks.push(chunk); text = Buffer.concat(chunks).toString('utf8'); }
+  else text = await readFile(path, 'utf8');
+  return text.split('\n').flatMap((line, i) => {
+    if (!line.trim()) return [];
+    try { return [JSON.parse(line)]; } catch (error) { throw new Error(`${path}:${i + 1}: not a JSON line (${error.message})`); }
+  });
+}
+async function batchCommand(args) {
+  const { rest, options } = flags(args);
+  const [policyPath, rowsPath] = rest;
+  if (!policyPath || !rowsPath) throw new Error('jev batch needs a policy and a rows file: jev batch policy.json rows.ndjson');
+  const policy = compile(await jsonFile(policyPath));
+  const rows = await readRows(rowsPath);
+  const text = name => typeof options[name] === 'string' ? options[name] : null;
+  const selection = { provider: text('provider'), model: text('model'), effort: text('effort') };
+  const workers = Number(options.workers ?? 8), rpm = Number(options.rpm ?? 1200);
+  const config = loadProviderConfig({ defaults: policyConfigDefaults, role: 'policy' });
+  const registry = sharedPolicyRegistry(config);
+  // More workers than the provider takes at once only queue behind its slots.
+  try {
+    const { target } = await resolveProvider(policyProviderRequest('', policy.staticQuestions(), selection), config, registry);
+    const limit = target.provider.caps.maxParallel;
+    if (workers > limit) console.error(`jev batch: ${target.provider.id} runs at most ${limit} calls at once; raise its max_parallel in the provider configuration to use ${workers} workers`);
+  } catch { /* each row reports why it could not be asked */ }
+  const cache = new Map(), done = new Array(rows.length).fill(false), results = new Array(rows.length);
+  let next = 0, cached = 0;
+  const started = performance.now();
+  const line = (i, r) => r && typeof r === 'object' && typeof r.action === 'string'
+    ? { row: i, decision: r }
+    : { row: i, error: r?.toJSON?.() ?? { code: 'error', message: String(r?.message ?? r) } };
+  const { failed, tokens } = await evaluateMany(row => evaluateWithProvider(policy, row, { ...selection, config, registry, cache }), rows, {
+    workers, rpm,
+    onResult: (i, r) => {
+      done[i] = true; results[i] = r;
+      if (r?.cached) cached += 1;
+      for (; next < rows.length && done[next]; next++) { process.stdout.write(`${JSON.stringify(line(next, results[next]))}\n`); results[next] = null; }
+    },
+  });
+  console.error(`jev batch: ${rows.length} rows, ${failed} failed, ${cached} cached, ${tokens} input tokens, ${((performance.now() - started) / 1000).toFixed(1)}s`);
+  if (failed) process.exitCode = 1;
+}
+
 async function cloudCommand(command, args) {
   const { rest, options } = flags(args);
   const jc = cloud({ ...(options.url ? { baseUrl: options.url } : {}), ...(options.environment ? { environment: options.environment } : {}) });
@@ -179,9 +227,10 @@ async function main(args) {
   }
   const [command, path, input, extra] = args;
   if (!command || ['help', '--help', '-h'].includes(command)) {
-    console.log('jev validate POLICY.json\njev decide POLICY.json ANSWERS.json [FACTS.json]\njev state POLICY.json INPUT.json\njev schema POLICY.json\njev stats POLICY.json FIXTURE_DIR\njev calibrate POLICY.json FIXTURE_DIR\njev cost POLICY.json [INPUT.json] [FIXTURE_DIR]\njev evaluate POLICY.json INPUT.json   (calls the selected provider)\njev record POLICY.json INPUT.json     (calls it, and writes a fixture)\njev providers\njev gate hook POLICY.json [OPTIONS.json] < event.json   (calls the provider)\njev gate approve-once FINGERPRINT\njev replay POLICY.json FIXTURE_DIR\njev diff BEFORE.json AFTER.json FIXTURE_DIR\njev tune POLICY.json FIXTURE_DIR GRID.json\njev deploy PROJECT POLICY.json [--note "what changed"]   (JevLang Cloud)\njev promote PROJECT DEPLOYMENT [--expect N] [--gate 0.05]\njev logs PROJECT [--limit 20]\njev open PROJECT                    (prints the playground link)\njev runner POOL HANDLERS.json [--concurrency N] [--name NAME]   (runs runner targets here)\njev rpc'); return;
+    console.log('jev validate POLICY.json\njev decide POLICY.json ANSWERS.json [FACTS.json]\njev state POLICY.json INPUT.json\njev schema POLICY.json\njev stats POLICY.json FIXTURE_DIR\njev calibrate POLICY.json FIXTURE_DIR\njev cost POLICY.json [INPUT.json] [FIXTURE_DIR]\njev evaluate POLICY.json INPUT.json   (calls the selected provider)\njev record POLICY.json INPUT.json     (calls it, and writes a fixture)\njev batch POLICY.json ROWS.ndjson [--workers 8] [--rpm 1200] [--provider ID] [--model M] [--effort E]   (one input per line, - for stdin)\njev providers\njev gate hook POLICY.json [OPTIONS.json] < event.json   (calls the provider)\njev gate approve-once FINGERPRINT\njev replay POLICY.json FIXTURE_DIR\njev diff BEFORE.json AFTER.json FIXTURE_DIR\njev tune POLICY.json FIXTURE_DIR GRID.json\njev deploy PROJECT POLICY.json [--note "what changed"]   (JevLang Cloud)\njev promote PROJECT DEPLOYMENT [--expect N] [--gate 0.05]\njev logs PROJECT [--limit 20]\njev open PROJECT                    (prints the playground link)\njev runner POOL HANDLERS.json [--concurrency N] [--name NAME]   (runs runner targets here)\njev rpc'); return;
   }
   if (command === 'runner') { await runnerCommand(args.slice(1)); return; }
+  if (command === 'batch') { await batchCommand(args.slice(1)); return; }
   if (['deploy', 'promote', 'logs', 'open'].includes(command)) {
     await cloudCommand(command, args.slice(1));
     return;

@@ -2,7 +2,7 @@
 // questions, ask the selected provider for the answers, validate them, and
 // decide. The provider is chosen by the same layered routing every other call
 // uses, and the decision carries which provider, model and effort answered.
-import { object, requireAt } from './common.js';
+import { object, own, requireAt, canonical, fingerprint, jsonCopy } from './common.js';
 import { validateAnswers } from './engine.js';
 import { checkTokenBudget } from './state.js';
 import { jevCall, apiKeyConfigured, settings as clientSettings } from './client.js';
@@ -108,9 +108,27 @@ export function typesafeProvider({ maxParallel = 4 } = {}) {
 // The registry a policy asks through: TypeSafe first, then every configured
 // executable, then the direct HTTP providers (openai, gateway, anthropic), each
 // ready once its key is set. An application's own registration of an id wins.
+// `providers.<id>.max_parallel` sets each one's limit, as it does for the CLIs.
 export function makePolicyRegistry(config = loadProviderConfig()) {
-  return makeDefaultRegistry(config).overlay([typesafeProvider()], { prepend: true })
-    .overlay([openaiProvider(), gatewayProvider(), anthropicProvider()]);
+  const parallel = id => {
+    const settings = object(config.providers) && object(config.providers[id]) ? config.providers[id] : {};
+    if (!own(settings, 'max_parallel')) return {};
+    requireAt(Number.isInteger(settings.max_parallel) && settings.max_parallel > 0, `providers.${id}.max_parallel`, 'max_parallel must be a positive integer');
+    return { maxParallel: settings.max_parallel };
+  };
+  return makeDefaultRegistry(config).overlay([typesafeProvider(parallel('typesafe'))], { prepend: true })
+    .overlay([openaiProvider(parallel('openai')), gatewayProvider(parallel('gateway')), anthropicProvider(parallel('anthropic'))]);
+}
+// One registry per configuration, so calls that pass none share discovery and
+// parallelism slots: max_parallel then holds across concurrent calls.
+const sharedRegistries = new Map();
+export function sharedPolicyRegistry(config) {
+  const key = canonical(config);
+  if (!sharedRegistries.has(key)) {
+    if (sharedRegistries.size >= 16) sharedRegistries.clear();
+    sharedRegistries.set(key, makePolicyRegistry(config));
+  }
+  return sharedRegistries.get(key);
 }
 export const policyConfigDefaults = { provider: 'typesafe', preferences: ['typesafe', 'claude', 'codex'] };
 
@@ -166,7 +184,7 @@ export function normalizeAnswers(questions, answers) {
 export async function runPolicyProvider(state, questions, { provider: id = null, model = null, effort = null, config = null, registry = null, role = 'policy' } = {}) {
   const request = policyProviderRequest(state, questions, { provider: id, model, effort, role });
   const resolvedConfig = config ?? loadProviderConfig({ defaults: policyConfigDefaults, role });
-  const resolvedRegistry = registry ?? makePolicyRegistry(resolvedConfig);
+  const resolvedRegistry = registry ?? sharedPolicyRegistry(resolvedConfig);
   return runProviderRequest(request, resolvedConfig, resolvedRegistry, {
     observe: result => { if (result.target.provider.id !== 'typesafe' && result.usage) clientSettings.onUsage?.(result.usage); },
     validate: answers => {
@@ -185,8 +203,17 @@ export function explicitPolicySelection(config, request, { provider: id = null, 
     name !== 'default' && ['provider', 'prefer', 'preferences', 'model', 'effort', 'fallback'].some(key => Object.hasOwn(layer, key)));
 }
 
+// The answers a provider gave, keyed by what it was asked and who was asked:
+// the built state, the questions and the provider/model/effort selection. The
+// routes are not in the key, so editing them keeps the cache.
+export const answerCacheKey = (state, questions, selection) =>
+  fingerprint({ state, questions, provider: selection.provider, model: selection.model, effort: selection.effort });
+
 // policy : a CompiledPolicy
-export async function evaluateWithProvider(policy, input, { provider: id = null, model = null, effort = null, profile = null, config = null, registry = null, role = 'policy' } = {}) {
+// cache  : a Map-like store with synchronous get/set (optional delete) holding
+//          each call's promise; an identical row waits on the same call, and a
+//          failed call is not kept
+export async function evaluateWithProvider(policy, input, { provider: id = null, model = null, effort = null, profile = null, config = null, registry = null, role = 'policy', cache = null } = {}) {
   const spec = policy.policy;
   const selection = { provider: id ?? spec.provider ?? null, model: model ?? spec.model ?? null, effort: effort ?? spec.effort ?? null };
   const { state, facts } = policy.buildState(input);
@@ -195,9 +222,25 @@ export async function evaluateWithProvider(policy, input, { provider: id = null,
   const questions = policy.questions(state);
   checkTokenBudget(state, questions);
   const resolvedConfig = config ?? loadProviderConfig({ defaults: policyConfigDefaults, role });
-  const resolvedRegistry = registry ?? makePolicyRegistry(resolvedConfig);
-  const result = await runPolicyProvider(state, questions, { ...selection, config: resolvedConfig, registry: resolvedRegistry, role });
-  const answers = result.output;
+  const resolvedRegistry = registry ?? sharedPolicyRegistry(resolvedConfig);
+  const ask = () => runPolicyProvider(state, questions, { ...selection, config: resolvedConfig, registry: resolvedRegistry, role });
+  let result, cached = false;
+  if (cache) {
+    // Looked up and claimed with no await between, so rows that start together
+    // share one call.
+    const key = answerCacheKey(state, questions, selection);
+    const hit = cache.get(key);
+    if (hit !== undefined && hit !== null) {
+      result = await hit; cached = true;
+    } else {
+      const pending = ask();
+      cache.set(key, pending);
+      try { result = await pending; } catch (error) { cache.delete?.(key); throw error; }
+    }
+  } else {
+    result = await ask();
+  }
+  const answers = jsonCopy(result.output);
   validateAnswers(questions, answers);
   const decision = policy.decide(answers, { facts, state, profile });
   const target = result.target;
@@ -209,6 +252,7 @@ export async function evaluateWithProvider(policy, input, { provider: id = null,
     requested_effort: target.requestedEffort ?? null,
     effective_effort: target.effectiveEffort ?? null,
     request_id: result.requestId ?? null,
+    ...(cached ? { cached: true } : {}),
   };
 }
 
@@ -217,7 +261,7 @@ export async function evaluateWithProvider(policy, input, { provider: id = null,
 // keep its documented facts-only behaviour.
 export async function evaluateConfiguredPolicy(policy, input, { start = process.cwd(), package: pkg = {}, provider: id = null, model = null, effort = null, registry = null } = {}) {
   const config = loadProviderConfig({ start, defaults: policyConfigDefaults, package: pkg, role: 'policy' });
-  const resolvedRegistry = registry ?? makePolicyRegistry(config);
+  const resolvedRegistry = registry ?? sharedPolicyRegistry(config);
   const request = policyProviderRequest('', policy.staticQuestions(), { provider: id, model, effort });
   try {
     await resolveProvider(request, config, resolvedRegistry);

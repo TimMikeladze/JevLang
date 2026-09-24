@@ -235,16 +235,20 @@ export function samplesFromFixtures(policy: CompiledPolicy, fixtures: JSONValue[
 export function usageCost(usage: { input_tokens?: number }, price?: number): number;
 export const inputPricePerMtok: number;
 export function budgetWarnings(estimator: { tokens(chars: number): number; label: string }, stateChars: number, questions: Record<string, JSONValue>, bodyChars: number): string[];
-export interface ProvenancedDecision extends Decision { provider: string | null; request_id: string | null }
+export interface ProvenancedDecision extends Decision { provider: string | null; request_id: string | null; cached?: true }
+/** A Map, or any store with synchronous get/set; it holds each call's in-flight promise. */
+export interface AnswerCache { get(key: string): unknown; set(key: string, value: unknown): unknown; delete?(key: string): unknown }
 export function questionsAnswerSchema(questions: Record<string, QuestionSchema>): JSONValue;
 export function policyPrompt(state: JSONValue, questions: Record<string, QuestionSchema>): string;
-export function evaluateWithProvider(policy: CompiledPolicy, input: JSONValue, options?: { provider?: string | null; model?: string | null; effort?: string | null; profile?: string | null; config?: Record<string, JSONValue>; registry?: unknown; role?: string }): Promise<ProvenancedDecision>;
+export function evaluateWithProvider(policy: CompiledPolicy, input: JSONValue, options?: { provider?: string | null; model?: string | null; effort?: string | null; profile?: string | null; config?: Record<string, JSONValue>; registry?: unknown; role?: string; cache?: AnswerCache | null }): Promise<ProvenancedDecision>;
 export function evaluateConfiguredPolicy(policy: CompiledPolicy, input: JSONValue, options?: { start?: string; package?: JSONValue; provider?: string | null; model?: string | null; effort?: string | null; registry?: unknown }): Promise<ProvenancedDecision | null>;
 export function normalizeAnswers(questions: Record<string, QuestionSchema>, answers: Record<string, JSONValue>): Record<string, JSONValue>;
 export function runPolicyProvider(state: JSONValue, questions: Record<string, QuestionSchema>, options?: { provider?: string | null; model?: string | null; effort?: string | null; config?: Record<string, JSONValue>; registry?: unknown; role?: string }): Promise<unknown>;
 export function fixtureFromRun(options: { name: string; policy: CompiledPolicy; state: JSONValue; questions: Record<string, QuestionSchema>; decision?: Decision | null; result: { output: JSONValue; model: string | null; usage: JSONValue; requestId: string | null; target: { provider: { id: string }; model: string | null; requestedEffort: string | null; effectiveEffort: string | null } }; synthetic?: boolean; expect?: JSONValue }): JSONValue;
 export function typesafeProvider(options?: { maxParallel?: number }): unknown;
 export function makePolicyRegistry(config?: Record<string, JSONValue>): unknown;
+export function sharedPolicyRegistry(config: Record<string, JSONValue>): unknown;
+export function answerCacheKey(state: JSONValue, questions: Record<string, QuestionSchema>, selection: { provider: string | null; model: string | null; effort: string | null }): string;
 export function policyProviderRequest(state: JSONValue, questions: Record<string, QuestionSchema>, options?: { provider?: string | null; model?: string | null; effort?: string | null; role?: string }): unknown;
 export function explicitPolicySelection(config: Record<string, JSONValue>, request: unknown, selection?: { provider?: string | null; model?: string | null; effort?: string | null }): boolean;
 export const policyConfigDefaults: Record<string, JSONValue>;

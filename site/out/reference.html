@@ -21,7 +21,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://jevlang.sh/og-reference.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2048%2048%22%3E%3Crect%20width%3D%2248%22%20height%3D%2248%22%20rx%3D%2211%22%20fill%3D%22%231c1c1c%22%2F%3E%3Cpath%20d%3D%22M30%2012v16.5c0%204.5-3%207.5-7.5%207.5S15%2033%2015%2029.5%22%20fill%3D%22none%22%20stroke%3D%22%23f7f7f7%22%20stroke-width%3D%223.4%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"JevLang","description":"jevlang is a typesafe policy engine for LLM decisions: the model answers small questions, your policy decides, and every decision explains itself.","url":"https://jevlang.sh/","applicationCategory":"DeveloperApplication","softwareVersion":"1.1.0","offers":{"@type":"Offer","price":"0"},"license":"https://opensource.org/licenses/MIT"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"JevLang","description":"jevlang is a typesafe policy engine for LLM decisions: the model answers small questions, your policy decides, and every decision explains itself.","url":"https://jevlang.sh/","applicationCategory":"DeveloperApplication","softwareVersion":"1.2.0","offers":{"@type":"Offer","price":"0"},"license":"https://opensource.org/licenses/MIT"}</script>
 <script>
 (function(){
 var K='jevlang-theme',r=document.documentElement,mq=matchMedia('(prefers-color-scheme: dark)');
@@ -437,7 +437,7 @@ h1{font-size:2.6rem}
 </div>
 </div></header>
 <main id="main"><div class="shell ref-layout">
-<nav class="ref-toc" aria-label="Contents"><p class="toc-title">Contents</p><a href="#why-you-need-this">Why you need this</a><a href="#hello-world">Hello, world</a><a href="#three-kinds-of-question">Three kinds of question</a><a href="#a-real-one-support-routing">A real one: support routing</a><a href="#mistakes-are-build-errors">Mistakes are build errors</a><a href="#guard-an-agent-s-tools">Guard an agent's tools</a><a href="#call-it-from-anywhere">Call it from anywhere</a><a href="#self-hosted-decisions-with-laya">Self-hosted decisions with Laya</a><a href="#run-it-on-serverless-vercel-upstash">Run it on serverless: Vercel + Upstash</a><a href="#the-hosted-product-jevlang-cloud">The hosted product: `jevlang/cloud`</a><a href="#everything-else-in-the-box">Everything else in the box</a><a href="#verify-it-yourself">Verify it yourself</a></nav>
+<nav class="ref-toc" aria-label="Contents"><p class="toc-title">Contents</p><a href="#why-you-need-this">Why you need this</a><a href="#hello-world">Hello, world</a><a href="#three-kinds-of-question">Three kinds of question</a><a href="#a-real-one-support-routing">A real one: support routing</a><a href="#mistakes-are-build-errors">Mistakes are build errors</a><a href="#guard-an-agent-s-tools">Guard an agent's tools</a><a href="#call-it-from-anywhere">Call it from anywhere</a><a href="#classify-a-whole-file">Classify a whole file</a><a href="#self-hosted-decisions-with-laya">Self-hosted decisions with Laya</a><a href="#run-it-on-serverless-vercel-upstash">Run it on serverless: Vercel + Upstash</a><a href="#the-hosted-product-jevlang-cloud">The hosted product: `jevlang/cloud`</a><a href="#everything-else-in-the-box">Everything else in the box</a><a href="#verify-it-yourself">Verify it yourself</a></nav>
 <article class="ref-doc">
 <h1 id="jevlang">JevLang</h1>
 <p><strong>Decide once, trust everywhere.</strong> JevLang is a policy engine for decisions that used to live inside a prompt: routing, triage, approvals, escalation, guarding an agent's tools. You write the policy once in plain TypeScript (or Python); JevLang asks the model only the questions the policy needs, checks the answers, decides — and can prove, from a signed journal, exactly why it decided that.</p>
@@ -703,7 +703,7 @@ wrote gate.json</code></pre>
 <p>One policy, five ways in.</p>
 <ul>
 <li><strong>In code</strong> — <code>policy.decide(answers)</code> for answers you have, <code>evaluateWithProvider(policy, input)</code> to let a model answer. <a href="examples/nextjs"><code>examples/nextjs</code></a> wraps three policies in Next.js API routes with a UI each (building maintenance, a restaurant SMS host, courier doorstep dispatch), journals decisions to Vercel Blob and prunes them with a daily cron.</li>
-<li><strong>From a shell</strong> — <code>bunx jev decide policy.json answers.json</code>, after <code>policy.toJSON()</code> froze the policy to a file.</li>
+<li><strong>From a shell</strong> — <code>bunx jev decide policy.json answers.json</code>, after <code>policy.toJSON()</code> froze the policy to a file. <code>bunx jev batch policy.json rows.ndjson</code> runs it over a whole file; see <a href="#classify-a-whole-file">Classify a whole file</a>.</li>
 <li><strong>Over HTTP</strong> — <code>startServer(policy)</code> from <code>jevlang/serve</code>: <code>POST /decide</code>, <code>/evaluate</code> and <code>/dispatch</code>, <code>GET /policy</code> and <code>/healthz</code>.</li>
 <li><strong>As MCP tools</strong> — <code>policyMcpServer(policy)</code> from <code>jevlang/mcp</code>, over stdio or <code>POST /mcp</code>.</li>
 <li><strong>As an agent hook</strong> — <code>jev gate hook gate.json</code> in front of Claude Code or Codex.</li>
@@ -722,6 +722,21 @@ listening on http://127.0.0.1:8080</code></pre>
 <span class="tk-dim">  gate 0, $.gates[0]</span>
 <span class="tk-dim">  because</span>
     <span class="tk-ink">department</span> = <span class="tk-ink">billing</span><span class="tk-dim">   confidence 0.55   (needed confidence &gt;= 0.80; otherwise: assign billing-queue)</span></code></pre>
+<h2 id="classify-a-whole-file">Classify a whole file</h2>
+<p><code>jev batch</code> runs a policy over one input per line and writes one decision per line, in input order. Identical rows are asked once, and a row a precheck decides is never sent:</p>
+<pre><code>bunx jev batch policy.json rows.ndjson --workers 16 --rpm 3000 &gt; decisions.ndjson</code></pre>
+<p>Each output line is <code>{&quot;row&quot;:0,&quot;decision&quot;:{…}}</code> or <code>{&quot;row&quot;:0,&quot;error&quot;:{…}}</code>. A decision whose answers were reused carries <code>cached: true</code>. The summary (rows, failed, cached, input tokens, seconds) goes to stderr, and the exit code is 1 if any row failed. <code>-</code> reads the rows from stdin, and <code>--provider</code>, <code>--model</code> and <code>--effort</code> pick who answers.</p>
+<p>In code, it is the same two pieces: <code>evaluateMany</code> for concurrency under the rate limits, and a <code>cache</code> so identical rows share one call:</p>
+<pre><code><span class="tk-kw">import</span> { evaluateMany, evaluateWithProvider } <span class="tk-kw">from</span> <span class="tk-str">'jevlang'</span>;
+
+<span class="tk-kw">const</span> cache = <span class="tk-kw">new</span> <span class="tk-fn">Map</span>();
+<span class="tk-kw">const</span> { results, failed, tokens } = <span class="tk-kw">await</span> <span class="tk-fn">evaluateMany</span>(
+  row =&gt; <span class="tk-fn">evaluateWithProvider</span>(policy, row, { provider: <span class="tk-str">'gateway'</span>, cache }),
+  rows,
+  { workers: <span class="tk-num">16</span>, rpm: <span class="tk-num">3000</span> },
+);</code></pre>
+<p>The cache key is the built state, the questions and the provider, model and effort. It does not include the routes, so you can re-tune the routes over a warm cache. Calls share one provider registry per configuration, so a provider's parallelism limit holds across all of them: <code>typesafe</code> takes 4 at once, and <code>openai</code>, <code>gateway</code> and <code>anthropic</code> take 8. Raise a limit in <code>.jev/providers.json</code>:</p>
+<pre><code>{ <span class="tk-key">&quot;providers&quot;</span>: { <span class="tk-key">&quot;gateway&quot;</span>: { <span class="tk-key">&quot;max_parallel&quot;</span>: <span class="tk-num">16</span> } } }</code></pre>
 <h2 id="self-hosted-decisions-with-laya">Self-hosted decisions with Laya</h2>
 <p><a href="https://huggingface.co/convaiinnovations/laya">Laya</a> is an open-weights (Apache 2.0) model that answers exactly the three question kinds JevLang asks — <code>choice</code>, <code>score</code>, <code>noul</code> — with calibrated probabilities in one forward pass. It is a built-in provider: <code>pip install laya</code> once, then name it.</p>
 <pre><code><span class="tk-kw">import</span> { evaluateWithProvider } <span class="tk-kw">from</span> <span class="tk-str">'jevlang'</span>;

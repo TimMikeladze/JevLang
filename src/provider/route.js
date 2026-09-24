@@ -27,13 +27,18 @@ async function safeDiscover(value) {
     return availability('unavailable', { detail: error.message });
   }
 }
+// Only a ready provider is remembered: a key set or a login made after a miss
+// is seen on the next call.
+async function discoverOne(value, refresh) {
+  if (refresh) discoveryCache.delete(value);
+  if (discoveryCache.has(value)) return discoveryCache.get(value);
+  const found = await safeDiscover(value);
+  if (found.status === 'ready') discoveryCache.set(value, found);
+  return found;
+}
 export async function discoverProviders(registry, { refresh = false } = {}) {
   const out = [];
-  for (const value of registry.providers()) {
-    if (refresh) discoveryCache.delete(value);
-    if (!discoveryCache.has(value)) discoveryCache.set(value, await safeDiscover(value));
-    out.push({ provider: value, availability: discoveryCache.get(value) });
-  }
+  for (const value of registry.providers()) out.push({ provider: value, availability: await discoverOne(value, refresh) });
   return out;
 }
 
@@ -176,7 +181,8 @@ export async function resolveProvider(request, config, registry, { refresh = fal
   const requestProvider = request.target.provider ?? null;
   const exactRequest = requestProvider && !isAuto(requestProvider) ? requestProvider : null;
   const exact = Boolean(exactRequest || (!requestProvider && providerField && providerField.value !== 'auto'));
-  const discovered = new Map((await discoverProviders(registry, { refresh })).map(entry => [entry.provider.id, entry]));
+  // Only candidates are discovered, and only until one wins: discovering a CLI
+  // provider starts processes, which an HTTP request should never wait on.
   const rejections = [];
   const reject = (id, kind, detail) => rejections.push({ provider: id, kind, detail });
   let winner = null;
@@ -184,10 +190,10 @@ export async function resolveProvider(request, config, registry, { refresh = fal
     const id = candidateProvider(candidate);
     const candidateReq = candidateRequest(request, candidate);
     const settings = providerSettings(config, id);
-    const discovery = discovered.get(id);
     if (settings.enabled === false) { reject(id, 'disabled', 'disabled by configuration'); continue; }
-    if (!discovery) { reject(id, 'missing', 'provider is not registered'); continue; }
-    const value = discovery.provider, available = discovery.availability;
+    const value = registry.get(id);
+    if (!value) { reject(id, 'missing', 'provider is not registered'); continue; }
+    const available = await discoverOne(value, refresh);
     if (available.status !== 'ready') { reject(id, available.status, available.detail); continue; }
     const model = resolveModel(candidateReq, config, route, id, settings);
     const modelSettings = { ...modelCapabilitySettings(value, model), ...(model ? keyRef(settings.model_capabilities ?? {}, model, {}) : {}) };

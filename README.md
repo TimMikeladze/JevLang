@@ -400,6 +400,7 @@ One policy, five ways in.
 - **In code** — `policy.decide(answers)` for answers you have, `evaluateWithProvider(policy, input)` to let a model answer.
   [`examples/nextjs`](examples/nextjs) wraps three policies in Next.js API routes with a UI each (building maintenance, a restaurant SMS host, courier doorstep dispatch), journals decisions to Vercel Blob and prunes them with a daily cron.
 - **From a shell** — `bunx jev decide policy.json answers.json`, after `policy.toJSON()` froze the policy to a file.
+  `bunx jev batch policy.json rows.ndjson` runs it over a whole file; see [Classify a whole file](#classify-a-whole-file).
 - **Over HTTP** — `startServer(policy)` from `jevlang/serve`: `POST /decide`, `/evaluate` and `/dispatch`, `GET /policy` and `/healthz`.
 - **As MCP tools** — `policyMcpServer(policy)` from `jevlang/mcp`, over stdio or `POST /mcp`.
 - **As an agent hook** — `jev gate hook gate.json` in front of Claude Code or Codex.
@@ -431,6 +432,47 @@ escalate human-triage  // unclear which team owns this
   gate 0, $.gates[0]
   because
     department = billing   confidence 0.55   (needed confidence >= 0.80; otherwise: assign billing-queue)
+```
+
+## Classify a whole file
+
+`jev batch` runs a policy over one input per line and writes one decision per
+line, in input order. Identical rows are asked once, and a row a precheck
+decides is never sent:
+
+```sh
+bunx jev batch policy.json rows.ndjson --workers 16 --rpm 3000 > decisions.ndjson
+```
+
+Each output line is `{"row":0,"decision":{…}}` or `{"row":0,"error":{…}}`. A
+decision whose answers were reused carries `cached: true`. The summary (rows,
+failed, cached, input tokens, seconds) goes to stderr, and the exit code is 1
+if any row failed. `-` reads the rows from stdin, and `--provider`, `--model`
+and `--effort` pick who answers.
+
+In code, it is the same two pieces: `evaluateMany` for concurrency under the
+rate limits, and a `cache` so identical rows share one call:
+
+```js
+import { evaluateMany, evaluateWithProvider } from 'jevlang';
+
+const cache = new Map();
+const { results, failed, tokens } = await evaluateMany(
+  row => evaluateWithProvider(policy, row, { provider: 'gateway', cache }),
+  rows,
+  { workers: 16, rpm: 3000 },
+);
+```
+
+The cache key is the built state, the questions and the provider, model and
+effort. It does not include the routes, so you can re-tune the routes over a
+warm cache. Calls share one provider registry per configuration, so a
+provider's parallelism limit holds across all of them: `typesafe` takes 4 at
+once, and `openai`, `gateway` and `anthropic` take 8. Raise a limit in
+`.jev/providers.json`:
+
+```json
+{ "providers": { "gateway": { "max_parallel": 16 } } }
 ```
 
 ## Self-hosted decisions with Laya
