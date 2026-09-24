@@ -5,7 +5,7 @@
 // server's retry-after honoured up to a minute, and a total budget.
 //
 // Nothing here invents an API detail: every field and status comes from the
-// documented behaviour the Racket client implements.
+// documented API behaviour.
 import { object, own, requireAt } from './common.js';
 
 export const settings = {

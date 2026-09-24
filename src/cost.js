@@ -8,8 +8,7 @@
 import { own, object, requireAt, finite } from './common.js';
 import { stateSize } from './state.js';
 
-// The characters a request body serializes to, counted in code points as the
-// Racket implementation counts them.
+// The characters a request body serializes to, counted in code points.
 export const chars = v => stateSize(v);
 export const requestBody = (state, model, questions) => ({ state, model, questions });
 export const estimateTokens = n => Math.ceil(n / 4);

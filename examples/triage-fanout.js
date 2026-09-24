@@ -1,4 +1,4 @@
-// Speculative fan-out: the portable mirror of jev-lang/examples/triage-fanout.rkt.
+// Speculative fan-out.
 // One request asks every question the route might need; the gates are on-read, so
 // a speculative question only escalates when the route actually reads it.
 import { choice, definePolicy, gate, rule, all, not, compare, threshold, record, assign, escalate } from '../src/index.js';

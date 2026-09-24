@@ -4,18 +4,16 @@ import { createServer } from 'node:http';
 import { readFile, mkdtemp, writeFile, chmod } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
   mcpConnect, mcpClose, mcpListTools, mcpCallTool, mcpRequest, mcpResultText, mcpToolHandler, mcpHandlers,
   McpClientError, paramHeadersProblem,
 } from '../src/mcp-client.js';
 import { McpError, modernVersion, legacyVersions, metaProtocolVersion, metaClientCapabilities } from '../src/mcp.js';
-import { toolToAction, toolConfirm, snapshotDrift, snapshotToActions, writeMcpImport, readMcpSnapshot, mcpImportSnapshot, jsonSchemaToParameter } from '../src/mcp-import.js';
+import { snapshotDrift, snapshotToActions, writeMcpImport, readMcpSnapshot, mcpImportSnapshot, jsonSchemaToParameter } from '../src/mcp-import.js';
 import { policyActions } from '../src/json-schema.js';
 import { makeDispatcher, dispatch } from '../src/dispatch.js';
 import { definePolicy, choice, gate, rule, act, confirm, hold } from '../src/index.js';
-import { skipUnlessInMonorepo } from './monorepo.js';
 
 const serverPath = fileURLToPath(new URL('../examples/mcp-policy-server.js', import.meta.url));
 const answers = {
@@ -183,56 +181,6 @@ test("another server's tools become dispatcher handlers", async t => {
   await assert.rejects(asking({}, { action: 'act', target: 'which-room', data: {} }), /asked for more input/);
   // Naming a tool the server does not have is an error, with its tool list.
   await assert.rejects(mcpHandlers(client, { only: ['nope'] }), /has no tool named nope[\s\S]*its tools: decide/);
-});
-
-test('Racket oracle: a tool list imports to the same action declarations, and drift reads the same', async t => {
-  if (skipUnlessInMonorepo(t)) return;
-  const oracle = fileURLToPath(new URL('./mcp-import-oracle.rkt', import.meta.url));
-  const run = spawnSync('racket', [oracle], { encoding: 'utf8', env: { ...process.env, TYPESAFE_API_KEY: '', ANTHROPIC_API_KEY: '', OPENAI_API_KEY: '' } });
-  assert.equal(run.status, 0, run.stderr);
-  const expected = JSON.parse(run.stdout);
-  const cases = JSON.parse(await readFile(new URL('./parity/mcp-import-cases.json', import.meta.url), 'utf8'));
-
-  // The portable declaration, written the way the Racket form prints.
-  const typeText = t => t.type === 'one-of' ? `(one-of ${t.values.join(' ')})`
-    : t.type === 'member-of' ? `(member-of ${t.field})`
-    : t.type === 'list-of' ? `(list-of ${typeText(t.of)})`
-    : t.type;
-  const normalize = (name, action) => ({
-    name,
-    params: Object.entries(action.params).map(([param, t]) => ({
-      name: param, type: typeText(t),
-      rest: [
-        ...(t.type === 'number' && t.min !== undefined ? ['#:range', String(t.min), String(t.max)] : []),
-        ...(t.optional ? ['#:optional'] : []),
-      ],
-    })),
-    flags: {
-      ...(action.doc ? { doc: action.doc } : {}),
-      ...(action.confirm ? { confirm: true } : {}),
-      ...(action.minConfidence ? { 'min-confidence': action.minConfidence } : {}),
-      ...(action.cooldown ? { cooldown: action.cooldown } : {}),
-      ...(action.allow ? { allow: action.allow } : {}),
-      ...(action.timeout ? { timeout: action.timeout } : {}),
-      ...(action.undo ? { undo: { target: action.undo.target, args: Object.fromEntries(Object.entries(action.undo.params).map(([k, x]) => [k, x.op === 'variable' ? ['param', x.args[0]] : ['value', x.args[0]]])) } } : {}),
-    },
-  });
-  cases.tools.forEach((tool, i) => {
-    const mine = toolToAction(tool);
-    const want = expected.imported[i];
-    assert.equal(toolConfirm(tool), expected.confirm[i], `${tool.name}: confirm`);
-    if (want.action === null) {
-      // Both refuse the same tools; the sentence differs in its quoting.
-      assert.ok(mine.warning, `${tool.name}: expected a warning`);
-      assert.match(mine.warning, /^skipped tool /);
-    } else {
-      assert.ok(!mine.warning, `${tool.name}: ${mine.warning}`);
-      assert.deepEqual(normalize(mine.name, mine.action), want.action, `${tool.name}`);
-    }
-  });
-  cases.drift.forEach(([before, after], i) => {
-    assert.deepEqual(snapshotDrift(before, after), expected.drift[i], `drift ${i}`);
-  });
 });
 
 test('imported actions validate, and their JSON Schema round-trips back to the tool', async () => {

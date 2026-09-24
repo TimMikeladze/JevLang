@@ -72,9 +72,8 @@ backend.
 
 `test/store.test.js`: record normalization and fingerprint idempotency; memory,
 ndjson (tmp file), SQLite (node:sqlite) round-trips; `withStore` passthrough and
-recording; loop `store` option. No Racket oracle — this is host-side
-infrastructure like the journal's SQL layer (its oracle covers engine semantics,
-not SQL).
+recording; loop `store` option. This is host-side infrastructure like the
+journal's SQL layer.
 
 ## Docs
 

@@ -340,8 +340,7 @@ function checkActionParams(d, target, params, facts) {
 async function dispatchOne(d, context, decisionIn, fromPolicyIn, path) {
   const state = context.state;
   const j = d.journal;
-  // No result yet is false, as it is in the Racket implementation, so an audit
-  // record made from either says the same thing.
+  // No result yet is false.
   let dec = decisionIn, fromPolicy = fromPolicyIn, hops = [], handler = null, result = false, link = null;
   for (;;) {
     const dry = d.dryRun;

@@ -1,4 +1,4 @@
-// The smallest useful policy: the portable mirror of jev-lang/examples/hello.rkt.
+// The smallest useful policy.
 // One question, one branch.
 import { noul, definePolicy, rule, assign, hold } from '../src/index.js';
 

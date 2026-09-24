@@ -91,7 +91,7 @@ export async function evaluateMany(evaluate, rows, {
       if (i >= n) return;
       nextRow += 1;
       try { out[i] = await evaluate(rows[i]); } catch (error) { out[i] = error; }
-      // A throwing onResult stops the batch, as it does in Racket.
+      // A throwing onResult stops the batch.
       if (onResult) await onResult(i, out[i]);
     }
   };

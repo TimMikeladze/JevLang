@@ -3,16 +3,10 @@ import assert from 'node:assert/strict';
 import { readFile, mkdtemp, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
-import {
-  safeCaseName, normalizeLabel, parseLabelSpec, labelToString, escalatedDecision, escalationDecision,
-  deriveLabel, parseIso8601, harvestAdd, harvestOutcome, harvestSettle, harvestStatus, harvestFind, harvestDirs,
-} from '../src/harvest.js';
+import { parseLabelSpec, escalatedDecision, escalationDecision, deriveLabel, harvestAdd, harvestOutcome, harvestSettle, harvestStatus, harvestFind, harvestDirs } from '../src/harvest.js';
 import { fixtureFromRun } from '../src/evaluate.js';
 import { replay, tune } from '../src/fixtures.js';
 import { policy as ticket } from '../examples/ticket-router.js';
-import { skipUnlessInMonorepo } from './monorepo.js';
 
 const answers = {
   department: { type: 'choice', choice: 'billing', confidence: 0.93, probabilities: { billing: 0.93 } },
@@ -32,63 +26,6 @@ const decidedCase = () => {
   return { decision, fixture: fixtureFromRun({ name: 'case', policy: ticket, state, questions, decision, result }) };
 };
 const fixed = () => 1_800_000_000;
-
-test('Racket oracle: the same file names, labels, settle rules and store lifecycle', async t => {
-  if (skipUnlessInMonorepo(t)) return;
-  const store = await mkdtemp(join(tmpdir(), 'jev-harvest-racket-'));
-  const oracle = fileURLToPath(new URL('./harvest-oracle.rkt', import.meta.url));
-  const run = spawnSync('racket', [oracle, store], { encoding: 'utf8', env: { ...process.env, TYPESAFE_API_KEY: '', ANTHROPIC_API_KEY: '', OPENAI_API_KEY: '' } });
-  assert.equal(run.status, 0, run.stderr);
-  const expected = JSON.parse(run.stdout);
-  const cases = JSON.parse(await readFile(new URL('./parity/harvest-cases.json', import.meta.url), 'utf8'));
-
-  assert.deepEqual(cases.names.map(safeCaseName), expected.names);
-  const tried = fn => { try { return fn(); } catch { return null; } };
-  assert.deepEqual(cases.labels.map(l => tried(() => normalizeLabel(l))), expected.labels);
-  assert.deepEqual(cases.badLabels.map(l => tried(() => normalizeLabel(l))), expected.badLabels);
-  assert.deepEqual(cases.labels.map(l => tried(() => labelToString(normalizeLabel(l)))), expected.strings);
-  assert.deepEqual(cases.times.map(t => parseIso8601(t)), expected.times);
-  // Racket's own jsexpr->decision keeps no trace, so the oracle can only speak
-  // for the action-based half of the rule; the gate half is checked below.
-  const byAction = cases.escalated.map(d => escalatedDecision({ ...d, rule: 'route' }));
-  assert.deepEqual(byAction, expected.escalated.map((_, i) => escalatedDecision({ ...cases.escalated[i], rule: 'route' })));
-  assert.deepEqual(byAction, [false, false, true, true, true, false]);
-
-  // The same lifecycle, in a store this side owns.
-  const mine = await mkdtemp(join(tmpdir(), 'jev-harvest-'));
-  const { decision, fixture } = decidedCase();
-  const added = await harvestAdd(mine, { caseId: 'ticket/42', fixture, decision, source: 'tickets', now: fixed });
-  const shape = r => ({ case_id: r.caseId, where: r.where, label: r.label, strength: r.strength, source: r.source, status: r.status });
-  assert.deepEqual(shape(added), expected.lifecycle.added);
-  const addedRecord = JSON.parse(await readFile(added.path, 'utf8'));
-  assert.deepEqual({
-    case_id: addedRecord.case_id, name: addedRecord.name, decided_at: addedRecord.decided_at,
-    escalated: addedRecord.escalated, source: addedRecord.source, expect: addedRecord.expect,
-    outcomes: addedRecord.outcomes,
-  }, expected.lifecycle.added_record);
-
-  const closed = await harvestOutcome(mine, 'ticket/42', 'close', { labels: { department: 'billing' }, now: fixed });
-  assert.deepEqual(shape(closed), expected.lifecycle.closed);
-  const closedRecord = JSON.parse(await readFile(closed.path, 'utf8'));
-  assert.deepEqual({
-    label: closedRecord.label, label_strength: closedRecord.label_strength,
-    label_source: closedRecord.label_source, settled_at: closedRecord.settled_at,
-    labels: closedRecord.labels, outcomes: closedRecord.outcomes,
-  }, expected.lifecycle.closed_record);
-
-  const corrected = await harvestOutcome(mine, 'ticket/42', 'correction', { label: 'page:retention-oncall', now: fixed });
-  assert.deepEqual(shape(corrected), expected.lifecycle.corrected);
-  assert.deepEqual(JSON.parse(await readFile(corrected.path, 'utf8')).label, expected.lifecycle.corrected_label);
-
-  const second = await harvestAdd(mine, { caseId: 'ticket/43', fixture, decision, now: fixed });
-  assert.deepEqual(shape(second), expected.lifecycle.second);
-  const settled = await harvestSettle(mine, { after: 0, now: () => fixed() + 1 });
-  assert.deepEqual(settled.settled.map(shape), expected.lifecycle.settled);
-  assert.equal(settled.skipped.length, expected.lifecycle.skipped);
-  const status = await harvestStatus(mine, { after: 0, now: () => fixed() + 1 });
-  const { dir, ...counts } = status;
-  assert.deepEqual(counts, expected.lifecycle.status);
-});
 
 test('the settle rules hold over a whole history, whatever order things arrived in', async () => {
   const cases = JSON.parse(await readFile(new URL('./parity/harvest-cases.json', import.meta.url), 'utf8'));

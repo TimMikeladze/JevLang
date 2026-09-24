@@ -1,5 +1,4 @@
-// Fraud review on a payment dispute: the portable mirror of
-// jev-lang/examples/dispute-review.rkt. The state form declares exactly which
+// Fraud review on a payment dispute. The state form declares exactly which
 // fields leave the network, what is stripped from them, and how large they get.
 import { choice, score, noul, definePolicy, gate, rule, all, assign, escalate } from '../src/index.js';
 

@@ -452,8 +452,8 @@ const decisionResult = (policy, decision) => {
     },
   });
 };
-// What the jev://policy resource carries: the policy as JSON, with the same keys
-// the Racket server uses. The action entries are the portable declarations.
+// What the jev://policy resource carries: the policy as JSON. The action entries
+// are the portable declarations.
 export const policyToJson = policy => {
   const spec = policy.policy;
   return {

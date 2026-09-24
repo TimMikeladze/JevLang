@@ -11,11 +11,6 @@ import { memoryJournal } from '../src/journal.js';
 import { sqliteJournal } from '../src/journal-db.js';
 import { definePolicy, choice, noul, gate, rule, assign, escalate, hold, act, confirm, plan, schedule, hold as holdDecision } from '../src/index.js';
 import { policy as ticket } from '../examples/ticket-router.js';
-import { policy as home } from '../examples/smart-home.js';
-import { readFile } from 'node:fs/promises';
-import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
-import { skipUnlessInMonorepo } from './monorepo.js';
 
 const decision = (action, target, extra = {}) => ({
   action, target, reason: null, data: null, rule: 'route', clause: 0, source: null, line: null, file: null,
@@ -292,60 +287,3 @@ test('handlers receive the state the policy sent, redacted, unless the caller as
   assert.deepEqual(seen[2], input);
 });
 
-// A handler built from data: "ok", "decline", {raise}, {decide}, {chain}.
-const behaviour = b => {
-  if (b === 'ok') return () => 'ok';
-  if (b === 'decline') return () => false;
-  if (b.raise) return () => { throw new Error(b.raise); };
-  if (b.decide) return () => ({ ...decision(b.decide.action, b.decide.target), data: b.decide.data ?? null });
-  if (b.chain) return handlerChain(...b.chain.map(behaviour));
-  throw new Error(`unknown behaviour ${JSON.stringify(b)}`);
-};
-const scenarioDecision = j => ({
-  ...decision(j.action, j.target ?? null),
-  reason: j.reason ?? null, data: j.data ?? null,
-  proposed: j.proposed ? scenarioDecision(j.proposed) : null,
-  steps: (j.steps ?? []).map(scenarioDecision),
-  rule: null, clause: null,
-});
-
-test('Racket oracle: cascade dispatch over the shared scenarios', async t => {
-  if (skipUnlessInMonorepo(t)) return;
-  const oracle = fileURLToPath(new URL('./dispatch-oracle.rkt', import.meta.url));
-  const run = spawnSync('racket', [oracle], { encoding: 'utf8', env: { ...process.env, TYPESAFE_API_KEY: '', ANTHROPIC_API_KEY: '', OPENAI_API_KEY: '' } });
-  assert.equal(run.status, 0, run.stderr);
-  const expected = JSON.parse(run.stdout);
-  const scenarios = JSON.parse(await readFile(new URL('./parity/dispatch-scenarios.json', import.meta.url), 'utf8'));
-  assert.equal(scenarios.length, expected.length);
-  for (const [i, s] of scenarios.entries()) {
-    const want = expected[i];
-    assert.equal(want.name, s.name);
-    const handlers = Object.fromEntries(Object.entries(s.handlers ?? {}).map(([target, b]) => [target, behaviour(b)]));
-    const d = makeDispatcher(handlers, {
-      policy: home, actions: home.policy.actions, policyTargets: Object.keys(handlers), allowExtra: true,
-      guards: Object.fromEntries(Object.entries(s.guards ?? {}).map(([target, allow]) => [target, () => Boolean(allow)])),
-      budgets: (s.budgets ?? []).map(b => budget(b.name, { max: b.max, per: b.per })),
-      dryRun: s.dry_run === true, planFailure: s.plan_failure ?? 'stop',
-      clock: () => 1_000_000, confirm: () => s.confirm !== false, autoRunDue: false,
-    });
-    try {
-      const o = await dispatch(d, { request: 'the request' }, scenarioDecision(s.decision), { principal: s.principal ?? null, key: s.key ?? null, facts: s.facts ?? null });
-      assert.ok(!want.error, `${s.name}: expected an error, got ${o.status}`);
-      const mine = outcomeToJson(o);
-      // Source spelling, line numbers and a handler's own name differ per host.
-      const comparable = record => ({
-        status: record.status, handler: record.handler, result: record.result, rehandled: record.rehandled,
-        confirmed: record.confirmed, action: record.action, target: record.target, data: record.data,
-        chain: record.chain, link: record.link && { key: record.link.key, index: record.link.index },
-        final: record.final && { action: record.final.action, target: record.final.target, data: record.final.data },
-        steps: record.steps.map(comparable),
-      });
-      assert.deepEqual(comparable(mine), comparable(want.outcome), s.name);
-    } catch (error) {
-      if (error?.code === 'ERR_ASSERTION') throw error;
-      assert.ok(want.error, `${s.name}: unexpected ${error.message}`);
-      // Both implementations name the target and why nothing ran.
-      assert.match(error.message, /failed or declined|no handler for target/, s.name);
-    }
-  }
-});

@@ -161,5 +161,5 @@ export function evaluateExpression(x, ctx) {
     }
   }
 }
-// Conditions have the same false-only semantics as Racket; null is JSON null.
+// Conditions are false-only: only false is falsy; null is JSON null.
 export const truth = v => v !== false;

@@ -1,38 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile, mkdtemp } from 'node:fs/promises';
+import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
-import { memoryJournal } from '../src/journal.js';
 import { sqliteJournal } from '../src/journal-db.js';
-import { skipUnlessInMonorepo } from './monorepo.js';
-
-const opsPath = new URL('./parity/journal-ops.json', import.meta.url);
-async function runOps(journal, ops) {
-  const out = [];
-  for (const [op, args] of ops) {
-    const value = await journal[op](...args);
-    out.push(value === undefined ? null : value);
-  }
-  return out;
-}
-
-test('Racket oracle: the in-memory and SQLite journals answer the same script', async t => {
-  if (skipUnlessInMonorepo(t)) return;
-  const ops = JSON.parse(await readFile(opsPath, 'utf8'));
-  const dir = await mkdtemp(join(tmpdir(), 'jev-journal-'));
-  const oracle = fileURLToPath(new URL('./journal-oracle.rkt', import.meta.url));
-  const run = spawnSync('racket', [oracle, join(dir, 'racket.sqlite')], { encoding: 'utf8', env: { ...process.env, TYPESAFE_API_KEY: '', ANTHROPIC_API_KEY: '', OPENAI_API_KEY: '' } });
-  assert.equal(run.status, 0, run.stderr);
-  const expected = JSON.parse(run.stdout);
-  assert.deepEqual(expected.memory, expected.sqlite, 'the Racket backends agree with each other');
-  assert.deepEqual(await runOps(memoryJournal(), ops), expected.memory);
-  const durable = await sqliteJournal(join(dir, 'portable.sqlite'));
-  assert.deepEqual(await runOps(durable, ops), expected.sqlite);
-  await durable.close();
-});
 
 test('a shared SQLite journal gives one claim to one process, and survives reopening', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'jev-journal-'));

@@ -1,57 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { readFile } from 'node:fs/promises';
-import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
-import {
-  standardWebhooksSign, standardWebhooksKey, standardWebhooksVerifier, githubVerifier, stripeVerifier,
-  slackVerifier, hmacVerifier, verifierProblem, envSecret, headerRef, keyToMessageId, redactUrl,
-  webhookHandler, webhookHandlerFromSpec, webhookSource, caseEvent, outcomeEvent, isCaseEvent, isOutcomeEvent,
-} from '../src/webhooks.js';
+import { standardWebhooksVerifier, envSecret, headerRef, keyToMessageId, redactUrl, webhookHandler, webhookHandlerFromSpec, webhookSource, caseEvent, outcomeEvent, isCaseEvent, isOutcomeEvent } from '../src/webhooks.js';
 import { loadHandlers } from '../src/handlers.js';
-import { skipUnlessInMonorepo } from './monorepo.js';
 
 const decision = (action, target, reason = null) => ({
   action, target, reason, data: null, rule: 'route', clause: 0, source: null, line: null, file: null,
   model: null, provider: null, requested_model: null, requested_effort: null, effective_effort: null,
   request_id: null, stage: null, proposed: null, evidence: [], steps: [], readings: [],
-});
-const casesPath = new URL('./parity/webhook-cases.json', import.meta.url);
-
-test('Racket oracle: the same signature, and the same verdict from every verifier', async t => {
-  if (skipUnlessInMonorepo(t)) return;
-  const oracle = fileURLToPath(new URL('./webhooks-oracle.rkt', import.meta.url));
-  const run = spawnSync('racket', [oracle], { encoding: 'utf8', env: { ...process.env, JEV_NO_SUCH_SECRET: '' } });
-  assert.equal(run.status, 0, run.stderr);
-  const expected = JSON.parse(run.stdout);
-  const cases = JSON.parse(await readFile(casesPath, 'utf8'));
-  const { secret, body, now } = cases;
-
-  assert.deepEqual(cases.sign.map(([id, ts]) => standardWebhooksSign(secret, id, ts, body)), expected.sign);
-  assert.deepEqual(cases.keys.map(s => {
-    const key = standardWebhooksKey(s);
-    return key === null ? null : [...key];
-  }), expected.keys);
-
-  const shape = ({ ok, deliveryId, reason }) => ({ ok, id: deliveryId ?? null, reason: reason ?? null });
-  const run_ = (verifier, entry) => shape(verifier(entry.headers, body, now));
-  assert.deepEqual(cases.standard.map(e => run_(standardWebhooksVerifier(secret), e)), expected.standard);
-  assert.deepEqual(cases.github.map(e => run_(githubVerifier('gh-secret'), e)), expected.github);
-  assert.deepEqual(cases.stripe.map(e => run_(stripeVerifier('stripe-secret'), e)), expected.stripe);
-  assert.deepEqual(cases.slack.map(e => run_(slackVerifier('slack-secret'), e)), expected.slack);
-  assert.deepEqual(cases.hmac.map(e => run_(hmacVerifier('plain-secret', {
-    header: 'x-signature', encoding: e.encoding, prefix: e.prefix, idHeader: e.idHeader,
-  }), e)), expected.hmac);
-
-  // A verifier with no secret says so instead of rejecting silently.
-  const missing = standardWebhooksVerifier(envSecret('JEV_NO_SUCH_SECRET'));
-  assert.deepEqual({ ok: missing({}, body, now).ok, reason: missing({}, body, now).reason }, expected['missing-secret']);
-  assert.deepEqual([
-    verifierProblem(standardWebhooksVerifier(envSecret('JEV_NO_SUCH_SECRET'))),
-    verifierProblem(standardWebhooksVerifier('whsec_not!base64')),
-    verifierProblem(githubVerifier('gh-secret')),
-  ], expected.problems);
 });
 
 const secret = `whsec_${Buffer.from('a'.repeat(32)).toString('base64')}`;

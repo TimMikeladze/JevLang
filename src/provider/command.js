@@ -83,8 +83,8 @@ export function commandProvider(id, command, { caps, environment = [], timeoutSe
     },
     run: async (request, target) => {
       const timeout = own(request.limits, 'timeout_seconds') ? request.limits.timeout_seconds : timeoutSeconds;
-      // Resolved before spawning, as the Racket implementation resolves it, so a
-      // restricted environment cannot change which executable runs.
+      // Resolved before spawning, so a restricted environment cannot change
+      // which executable runs.
       const resolved = findExecutable(executable) ?? executable;
       const { status, stdout } = await runProgram(resolved, args, {
         stdin: JSON.stringify(requestWire(request, target)),

@@ -1,29 +1,21 @@
-// The mistakes in jev-lang/examples/broken/ are compile errors in Racket. The
-// portable engine has no compiler, so its validator has to refuse the same
-// policies — and name the same fix.
+// Common policy mistakes: the validator has to refuse each one and name the fix.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
-import {
-  definePolicy, choice, score, noul, gate, band, rule, all, any, assign, page, hold, escalate, act, confirm, fact, threshold,
-} from '../src/index.js';
-import { skipUnlessInMonorepo } from './monorepo.js';
+import { definePolicy, choice, score, noul, gate, band, rule, all, any, assign, page, hold, escalate, act, confirm, fact } from '../src/index.js';
 
-const brokenDir = new URL('../../jev-lang/examples/broken/', import.meta.url);
 const refuse = build => {
   try { build(); } catch (error) { return `${error.message}${error.fix ? `\n  ${error.fix}` : ''}`; }
-  assert.fail('the validator accepted a policy Racket refuses');
+  assert.fail('the validator accepted a broken policy');
 };
 
 const department = () => choice('department', 'Which team?', { billing: 'money', technical: 'bugs' });
 const frustration = () => score('frustration', 'How upset?', ['Calm', 'Annoyed', 'Angry']);
 
-// Each entry: the broken example, the portable policy with the same mistake, and
+// Each entry: the mistake, a policy that makes it, and
 // the words the refusal has to carry.
 const cases = [
   {
-    file: 'bad-level.rkt', says: ['is not a level'],
+    name: 'bad-level', says: ['is not a level'],
     build: () => {
       const f = frustration();
       return definePolicy({
@@ -34,7 +26,7 @@ const cases = [
     },
   },
   {
-    file: 'gate-bypass.rkt', says: ['without a confidence gate'],
+    name: 'gate-bypass', says: ['without a confidence gate'],
     build: () => {
       const d = department();
       return definePolicy({
@@ -51,7 +43,7 @@ const cases = [
     },
   },
   {
-    file: 'no-confidence-gate.rkt', says: ['without a confidence gate'],
+    name: 'no-confidence-gate', says: ['without a confidence gate'],
     build: () => {
       const d = department();
       return definePolicy({
@@ -61,7 +53,7 @@ const cases = [
     },
   },
   {
-    file: 'not-exhaustive.rkt', says: ['not exhaustive'],
+    name: 'not-exhaustive', says: ['not exhaustive'],
     build: () => {
       const d = choice('department', 'Which team?', { billing: 'money', technical: 'bugs', sales: 'pricing' });
       return definePolicy({
@@ -72,7 +64,7 @@ const cases = [
     },
   },
   {
-    file: 'noul-confidence.rkt', says: ['noul', 'confidence'],
+    name: 'noul-confidence', says: ['noul', 'confidence'],
     build: () => {
       const urgent = noul('urgent?', 'Is this urgent?');
       return definePolicy({
@@ -83,7 +75,7 @@ const cases = [
     },
   },
   {
-    file: 'too-many-levels.rkt', says: ['2 to 10 ordered levels'],
+    name: 'too-many-levels', says: ['2 to 10 ordered levels'],
     build: () => {
       const severity = score('severity', 'How severe is the issue?',
         ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'], { ungated: 'demo' });
@@ -91,7 +83,7 @@ const cases = [
     },
   },
   {
-    file: 'typo-option.rkt', says: ['is not an option', "Did you mean 'billing'?"],
+    name: 'typo-option', says: ['is not an option', "Did you mean 'billing'?"],
     build: () => {
       const d = department();
       return definePolicy({
@@ -102,7 +94,7 @@ const cases = [
     },
   },
   {
-    file: 'unconfirmed-action.rkt', says: ['requires confirmation'],
+    name: 'unconfirmed-action', says: ['requires confirmation'],
     build: () => {
       const unlock = noul('unlock?', 'Does the person ask to unlock the front door?');
       return definePolicy({
@@ -113,7 +105,7 @@ const cases = [
     },
   },
   {
-    file: 'unknown-fact.rkt', says: ['unknown fact', "Did you mean 'door-open'?"],
+    name: 'unknown-fact', says: ['unknown fact', "Did you mean 'door-open'?"],
     build: () => {
       const lock = noul('lock?', 'Does `request` ask to lock the door?');
       return definePolicy({
@@ -124,7 +116,7 @@ const cases = [
     },
   },
   {
-    file: 'hold-target.rkt', says: ['hold takes no target', 'escalate'],
+    name: 'hold-target', says: ['hold takes no target', 'escalate'],
     build: () => {
       const spam = noul('spam?', 'Is this message spam?');
       // hold takes no target: a target given to it is not a known key.
@@ -137,27 +129,8 @@ const cases = [
 ];
 
 test('every broken example is refused here too, with the fix named', () => {
-  for (const { file, says, build } of cases) {
+  for (const { name, says, build } of cases) {
     const message = refuse(build);
-    for (const words of says) assert.ok(message.includes(words), `${file}: refusal should mention ${words}\n${message}`);
+    for (const words of says) assert.ok(message.includes(words), `${name}: refusal should mention ${words}\n${message}`);
   }
-});
-
-test('Racket refuses exactly these examples, and dead-action cannot be written here', t => {
-  if (skipUnlessInMonorepo(t)) return;
-  // The Racket compiler is the oracle: every file in broken/ must fail to compile.
-  const files = spawnSync('ls', [fileURLToPath(brokenDir)], { encoding: 'utf8' }).stdout.split('\n').filter(f => f.endsWith('.rkt'));
-  assert.deepEqual(files.sort(), [...cases.map(c => c.file), 'dead-action.rkt'].sort());
-  for (const file of files) {
-    const run = spawnSync('raco', ['make', fileURLToPath(new URL(file, brokenDir))], { encoding: 'utf8' });
-    assert.notEqual(run.status, 0, `${file} should not compile`);
-  }
-  // dead-action.rkt puts two actions in one clause, so the first is discarded. A
-  // portable clause holds exactly one decision, so there is nothing to discard.
-  const spam = noul('spam?', 'Is this message spam?');
-  const policy = definePolicy({
-    name: 'one-decision', questions: [spam], thresholds: { 'spam-min': 0.9 },
-    route: { clauses: [rule(spam.yes(threshold('spam-min')), assign('spam-folder'))], otherwise: assign('inbox') },
-  });
-  assert.equal(policy.decide({ 'spam?': { type: 'noul', noul: 0.95 } }).target, 'spam-folder');
 });

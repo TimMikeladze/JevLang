@@ -1,6 +1,6 @@
 // The provider contract: what a provider is, what a request asks for, and the
 // registry that holds them. Ids, modes, modalities, permissions and controls are
-// plain strings here, where the Racket implementation uses symbols.
+// plain strings.
 import { own, object } from '../common.js';
 
 export class ProviderError extends Error {

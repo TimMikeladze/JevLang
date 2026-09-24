@@ -201,11 +201,10 @@ export function calibrate(cases) {
 // Text reports
 //
 // The JSON views above are what a program reads. These are what a person reads,
-// and they are the same text `raco jev` prints: every line here is compared with
-// monitor.rkt's over shared data (test/monitor-text-oracle.rkt).
+// and they are what `jev` prints.
 // ---------------------------------------------------------------------------
 
-// Racket's real->decimal-string: the exact value of the double, rounded half to
+// A decimal string: the exact value of the double, rounded half to
 // even at `places`. toFixed rounds half away from zero on some values, so the
 // exact expansion is taken first.
 export function decimalString(x, places = 2) {
@@ -241,7 +240,7 @@ const trimmed = x => decimalString(x, 3).replace(/\.?0+$/, '');
 export const edgeString = e => (Number.isInteger(e) ? String(e) : trimmed(e));
 export const bucketLabel = (i, edges = confidenceEdges) => `${edgeString(edges[i])}-${edgeString(edges[i + 1])}`;
 
-// Racket's ~a with #:min-width, #:max-width and #:align.
+// Pad or truncate to a column width, aligned left, right or center.
 const fit = (value, width, align = 'left', max = null) => {
   let s = String(value);
   if (max !== null && s.length > max) s = s.slice(0, max);
@@ -351,7 +350,7 @@ export function formatCalibration(c) {
 // Running the repeats calls a provider, so that part is not here and not under
 // test; what is here is everything that turns the answers into numbers, and the
 // report a person reads. A caller collects the runs (the local CLI does it by
-// evaluating n times with a throwaway `_uid` in the state, as monitor.rkt does)
+// evaluating n times with a throwaway `_uid` in the state)
 // and hands them to `stabilityReport`.
 // ---------------------------------------------------------------------------
 
@@ -538,7 +537,7 @@ export function formatStability(r) {
     `${r.usage.input_tokens} input tokens over ${n} calls, $${decimalString(r.cost, 6)}`,
   ].join('\n');
 }
-// Racket's exact-round: half to even.
+// Round half to even.
 const roundHalfEven = x => {
   const down = Math.floor(x);
   const rest = x - down;

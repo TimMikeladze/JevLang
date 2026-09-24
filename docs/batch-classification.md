@@ -19,7 +19,7 @@ HTTP provider.
    parallelism slots are then shared across calls, so `max_parallel` holds
    across concurrent calls instead of per call. `providers.<id>.max_parallel`
    now also sets the limit for `typesafe`, `openai`, `gateway` and `anthropic`
-   (the defaults stay 4, 8, 8 and 8, matching Racket). A batch with more
+   (the defaults stay 4, 8, 8 and 8). A batch with more
    workers than the provider's limit runs at the limit.
 3. **Answer cache.** `evaluateWithProvider(policy, input, { cache })` takes a
    Map-like store with synchronous `get`/`set` (optional `delete`) that holds
@@ -40,5 +40,5 @@ HTTP provider.
 
 ## Not changed
 
-Engine semantics, decisions, wire prompts and fixtures. The Racket and Python
+Engine semantics, decisions, wire prompts and fixtures. The Python
 oracles still pass unchanged. Items 2–4 are JavaScript only.

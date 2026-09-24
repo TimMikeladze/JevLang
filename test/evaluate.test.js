@@ -1,19 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
 import { writeFile, mkdtemp, chmod } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { questionsAnswerSchema, policyPrompt, evaluateWithProvider, evaluateConfiguredPolicy, typesafeProvider, fixtureFromRun, runPolicyProvider, normalizeAnswers } from '../src/evaluate.js';
+import { evaluateWithProvider, evaluateConfiguredPolicy, typesafeProvider, fixtureFromRun, runPolicyProvider, normalizeAnswers } from '../src/evaluate.js';
 import { validateAnswers } from '../src/engine.js';
 import { jevCall, settings as client, defaultRetryPolicy, JevApiError } from '../src/client.js';
 import { ProviderRegistry, mergeProviderConfig, capabilities, commandProvider, clearProviderDiscoveryCache, environmentReader } from '../src/provider/index.js';
 import { replay } from '../src/fixtures.js';
 import { policy as ticket } from '../examples/ticket-router.js';
 import { policy as home } from '../examples/smart-home.js';
-import { skipUnlessInMonorepo } from './monorepo.js';
 
 const answers = {
   department: { type: 'choice', choice: 'billing', confidence: 0.93, probabilities: { billing: 0.93, technical: 0.05, sales: 0.02 } },
@@ -25,25 +22,6 @@ const restore = () => {
   client.clock = () => Date.now(); client.random = () => 0; client.onRetryAfter = null; client.onUsage = null; client.extraBody = null;
   client.environment = name => ({ TYPESAFE_API_KEY: 'test-key' })[name];
 };
-
-test('Racket oracle: the answer schema and the prompt that carries the questions', t => {
-  if (skipUnlessInMonorepo(t)) return;
-  const oracle = fileURLToPath(new URL('./evaluate-oracle.rkt', import.meta.url));
-  const run = spawnSync('racket', [oracle], { encoding: 'utf8', env: { ...process.env, TYPESAFE_API_KEY: '', ANTHROPIC_API_KEY: '', OPENAI_API_KEY: '', JEV_PROVIDER: '', JEV_MODEL: '', JEV_EFFORT: '' } });
-  assert.equal(run.status, 0, run.stderr);
-  const expected = JSON.parse(run.stdout);
-  assert.deepEqual(questionsAnswerSchema(ticket.questions()), expected.ticket.schema);
-  const state = home.buildState({ request: 'lock the front door' }).state;
-  const questions = home.questions(state);
-  assert.deepEqual(questionsAnswerSchema(questions), expected['smart-home'].schema);
-  // The prompt is the same text carrying the same JSON; only key order differs.
-  const parts = prompt => {
-    const [, head, stateText, questionsText] = /^([\s\S]*?)<jev-state>\n([\s\S]*?)\n<\/jev-state>\n\n<jev-questions>\n([\s\S]*?)\n<\/jev-questions>$/.exec(prompt);
-    return { head, state: JSON.parse(stateText), questions: JSON.parse(questionsText) };
-  };
-  assert.deepEqual(parts(policyPrompt({ ticket: 'a ticket' }, ticket.questions())), parts(expected.ticket.prompt));
-  assert.deepEqual(parts(policyPrompt(state, questions)), parts(expected['smart-home'].prompt));
-});
 
 test('the TypeSafe call sends state, model and questions, and reports its provenance', async t => {
   restore();

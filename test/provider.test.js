@@ -1,75 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile, writeFile, mkdtemp, chmod } from 'node:fs/promises';
+import { writeFile, mkdtemp, chmod } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
-import {
-  ProviderRegistry, ProviderError, capabilities, availability, provider, providerRequest, targetSpec,
-  mergeProviderConfig, resolveProvider, runProviderRequest, commandProvider, makeDefaultRegistry,
-  clearProviderDiscoveryCache, jsonSchemaValid, runner, environmentReader,
-} from '../src/provider/index.js';
-import { skipUnlessInMonorepo } from './monorepo.js';
-
-const scenarioPath = new URL('./parity/routing-scenarios.json', import.meta.url);
-const stub = entry => provider({
-  id: entry.id,
-  caps: capabilities({
-    modes: entry.caps?.modes, modalities: entry.caps?.modalities, permissions: entry.caps?.permissions,
-    controls: entry.caps?.controls, efforts: entry.caps?.efforts, maxParallel: entry.caps?.max_parallel,
-  }),
-  discover: async () => availability(entry.availability?.status ?? 'ready', { detail: entry.availability?.detail ?? null }),
-  run: async () => { throw new Error('the scenarios never run a provider'); },
-});
-const scenarioConfig = s => mergeProviderConfig({
-  defaults: s.layers?.default ?? {}, user: s.layers?.user ?? {}, project: s.layers?.project ?? {},
-  package: s.layers?.package ?? {}, environment: s.layers?.environment ?? {}, request: s.layers?.request ?? {},
-  role: s.role ?? null,
-});
-const scenarioRequest = r => providerRequest(r.operation, r.mode, {
-  role: r.role ?? r.operation, kind: r.kind ?? null, tier: r.tier ?? null,
-  modalities: r.modalities ?? ['text'], permissions: r.permissions ?? ['read'],
-  schema: r.schema ?? null, metadata: r.metadata ?? {},
-  target: targetSpec({ provider: r.target?.provider ?? null, model: r.target?.model ?? null, effort: r.target?.effort ?? null, fallback: r.target?.fallback ?? [] }),
-});
-const projectTarget = t => ({
-  provider: t.provider.id, model: t.model ?? null,
-  requested_effort: t.requestedEffort ?? null, effective_effort: t.effectiveEffort ?? null,
-  sources: t.sources,
-});
-const projectRejection = r => ({ provider: String(r.provider), kind: String(r.kind), detail: typeof r.detail === 'string' ? r.detail : null });
-
-test('Racket oracle: provider resolution over the shared routing scenarios', async t => {
-  if (skipUnlessInMonorepo(t)) return;
-  const oracle = fileURLToPath(new URL('./routing-oracle.rkt', import.meta.url));
-  const run = spawnSync('racket', [oracle], { encoding: 'utf8', env: { ...process.env, TYPESAFE_API_KEY: '', ANTHROPIC_API_KEY: '', OPENAI_API_KEY: '', JEV_PROVIDER: '', JEV_MODEL: '', JEV_EFFORT: '' } });
-  assert.equal(run.status, 0, run.stderr);
-  const expected = JSON.parse(run.stdout);
-  const scenarios = JSON.parse(await readFile(scenarioPath, 'utf8'));
-  assert.equal(scenarios.length, expected.length);
-  for (const [i, s] of scenarios.entries()) {
-    const want = expected[i];
-    assert.equal(want.name, s.name);
-    const registry = new ProviderRegistry();
-    for (const entry of s.providers) registry.register(stub(entry));
-    clearProviderDiscoveryCache(registry);
-    const exclude = (s.exclude ?? []).map(id => ({ provider: registry.get(id), model: null, effectiveEffort: null }));
-    try {
-      const resolution = await resolveProvider(scenarioRequest(s.request), scenarioConfig(s), registry, { exclude });
-      assert.ok(!want.error, `${s.name}: expected an error`);
-      assert.deepEqual(projectTarget(resolution.target), want.target, s.name);
-      assert.deepEqual(resolution.rejections.map(projectRejection), want.rejections, `${s.name}: rejections`);
-      assert.deepEqual(resolution.matchedRoute, want.matched_route === null ? null : want.matched_route, `${s.name}: route`);
-    } catch (error) {
-      if (!(error instanceof ProviderError)) throw error;
-      assert.ok(want.error, `${s.name}: unexpected ${error.message}`);
-      assert.equal(error.kind, want.error.kind, s.name);
-      assert.equal(error.message, want.error.message, s.name);
-      assert.deepEqual((Array.isArray(error.detail) ? error.detail : []).map(projectRejection), want.error.rejections, `${s.name}: rejections`);
-    }
-  }
-});
+import { ProviderRegistry, capabilities, availability, provider, providerRequest, targetSpec, mergeProviderConfig, resolveProvider, runProviderRequest, commandProvider, makeDefaultRegistry, clearProviderDiscoveryCache, jsonSchemaValid, runner, environmentReader } from '../src/provider/index.js';
 
 const script = async (body, { name = 'fake-provider' } = {}) => {
   const dir = await mkdtemp(join(tmpdir(), 'jev-provider-'));
@@ -268,44 +202,4 @@ test('the JSON Schema subset checks types, enums, closed objects and bounds', ()
   assert.ok(!jsonSchemaValid({ type: 'array', items: { type: 'string' }, maxItems: 1 }, ['a', 'b']));
   assert.ok(!jsonSchemaValid({ type: 'string', minLength: 2 }, 'a'));
   assert.ok(!jsonSchemaValid({ type: 'number', maximum: 1 }, 2));
-});
-
-test('Racket oracle: the custom executable sees the same jev-provider/1 request', async t => {
-  if (skipUnlessInMonorepo(t)) return;
-  const echo = await script(`
-    let input = '';
-    process.stdin.on('data', c => { input += c; });
-    process.stdin.on('end', () => {
-      process.stdout.write(JSON.stringify({
-        output: { request: JSON.parse(input) },
-        model: 'fake-1-served', usage: { input_tokens: 7, output_tokens: 2 },
-        cost: { mode: 'reported-usd', usd: 0.0001 }, provider_request_id: 'req_wire', changed: ['x.txt'],
-      }));
-    });
-  `, { name: 'wire-provider' });
-  const directory = await mkdtemp(join(tmpdir(), 'jev-workspace-'));
-  const oracle = fileURLToPath(new URL('./command-oracle.rkt', import.meta.url));
-  const run = spawnSync('racket', [oracle, echo, directory], { encoding: 'utf8', env: { ...process.env, TYPESAFE_API_KEY: '', ANTHROPIC_API_KEY: '', OPENAI_API_KEY: '', JEV_PROVIDER: '', JEV_MODEL: '', JEV_EFFORT: '' } });
-  assert.equal(run.status, 0, run.stderr);
-  const expected = JSON.parse(run.stdout);
-
-  const registry = new ProviderRegistry();
-  registry.register(commandProvider('fake', echo, {
-    caps: capabilities({ modes: ['structured', 'workspace'], permissions: ['read', 'write'], controls: ['structured-output', 'tool-policy'], efforts: ['low', 'high'] }),
-    environment: ['ALLOWED'], timeoutSeconds: 30,
-  }));
-  clearProviderDiscoveryCache(registry);
-  const request = providerRequest('review', 'workspace', {
-    role: 'audit', kind: 'diff', tier: 'deep', permissions: ['read', 'write'],
-    prompt: 'look at this', schema: { type: 'object' }, images: ['/tmp/a.png'],
-    directory, limits: { timeout_seconds: 30 }, metadata: { disallowed: ['Bash'] },
-  });
-  const result = await runProviderRequest(request, mergeProviderConfig({ project: { provider: 'fake', model: 'fake-1', effort: 'high' } }), registry);
-  assert.deepEqual(result.output.request, expected.wire);
-  assert.deepEqual({
-    model: result.model, usage: result.usage,
-    cost: { mode: result.cost.mode, usd: result.cost.usd },
-    request_id: result.requestId, exit_status: result.exitStatus, changed: result.changed,
-    attempts: result.attempts.map(a => a.outcome),
-  }, expected.result);
 });

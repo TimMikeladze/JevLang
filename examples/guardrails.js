@@ -1,4 +1,4 @@
-// Guardrails for an LLM app: the portable mirror of jev-lang/examples/guardrails.rkt.
+// Guardrails for an LLM app.
 // Every clause is evaluated (collect) and the most severe outcome wins
 // (precedence). The thresholds are named, so tune can sweep them.
 import { noul, score, definePolicy, gate, rule, all, threshold, assign, escalate } from '../src/index.js';

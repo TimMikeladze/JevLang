@@ -1,16 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import { PassThrough } from 'node:stream';
-import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
 import {
   policyMcpServer, makeMcpServer, makeMcpConn, mcpTool, mcpResource, handleMessage, httpHandle,
   mcpTextResult, mcpToolError, mcpInputRequired, inputRequired, originAllowed, encodeHeaderValue, decodeHeaderValue,
   serveStdio, modernVersion, legacyVersions, supportedVersions, metaProtocolVersion, metaClientCapabilities, metaServerInfo, policyToJson,
 } from '../src/mcp.js';
 import { policy as ticket } from '../examples/ticket-router.js';
-import { skipUnlessInMonorepo } from './monorepo.js';
 
 const modernMeta = { [metaProtocolVersion]: modernVersion, [metaClientCapabilities]: {} };
 const answers = {
@@ -18,67 +14,6 @@ const answers = {
   frustration: { type: 'score', score: 0.2, confidence: 0.9, probabilities: { 0: 0.8, 1: 0.2, 2: 0 } },
   'refund-requested?': { type: 'noul', noul: 0.1 },
 };
-
-test('Racket oracle: the same MCP messages get the same replies', async t => {
-  if (skipUnlessInMonorepo(t)) return;
-  const oracle = fileURLToPath(new URL('./mcp-oracle.rkt', import.meta.url));
-  const run = spawnSync('racket', [oracle], { encoding: 'utf8', env: { ...process.env, TYPESAFE_API_KEY: '', ANTHROPIC_API_KEY: '', OPENAI_API_KEY: '' } });
-  assert.equal(run.status, 0, run.stderr);
-  const expected = JSON.parse(run.stdout).map(row => row.reply);
-  const session = (await readFile(new URL('../../jev-lang/examples/mcp-session.jsonl', import.meta.url), 'utf8'))
-    .split('\n').filter(line => line.trim() !== '').map(line => JSON.parse(line));
-  const extra = [
-    { jsonrpc: '2.0', id: 10, method: 'tools/list', params: { _meta: { [metaProtocolVersion]: modernVersion } } },
-    { jsonrpc: '2.0', id: 11, method: 'ping', params: { _meta: { [metaProtocolVersion]: '1999-01-01', [metaClientCapabilities]: {} } } },
-    { jsonrpc: '2.0', id: 12, method: 'nonsense/method', params: {} },
-    { jsonrpc: '2.0', id: 13, method: 'tools/call', params: { name: 'nope', arguments: {} } },
-    { jsonrpc: '2.0', id: 14, method: 'resources/list', params: {} },
-    { jsonrpc: '2.0', id: 15, method: 'resources/read', params: { uri: 'jev://policy/actions' } },
-    { jsonrpc: '2.0', id: 16, method: 'resources/read', params: { uri: 'jev://nowhere' } },
-    { jsonrpc: '2.0', id: 17, method: 'tools/list', params: { cursor: 'abc' } },
-    { jsonrpc: '2.0', id: { bad: true }, method: 'ping', params: {} },
-    { jsonrpc: '2.0', method: 'notifications/cancelled', params: {} },
-  ];
-  const server = policyMcpServer(ticket);
-  const conn = makeMcpConn();
-  const replies = [];
-  for (const msg of [...session, ...extra]) replies.push(await handleMessage(server, msg, conn));
-  assert.equal(replies.length, expected.length);
-  for (const [i, reply] of replies.entries()) {
-    const want = expected[i];
-    if (want === null) { assert.equal(reply, null, `message ${i}`); continue; }
-    if (want.error) {
-      assert.equal(reply.error.code, want.error.code, `message ${i} code`);
-      // The first line of the message is the same sentence in both.
-      assert.equal(reply.error.message.split('\n')[0], want.error.message.split('\n')[0], `message ${i} message`);
-      assert.deepEqual(reply.error.data ?? null, want.error.data ?? null, `message ${i} data`);
-      continue;
-    }
-    assert.equal(reply.id, want.id, `message ${i} id`);
-    // Protocol fields, cache hints and structure are the contract; a tool's own
-    // text prose is not.
-    if (want.result.contents) {
-      // A resource's JSON is the same content; neither side canonicalizes it.
-      const parsed = list => list.map(({ text, ...rest }) => ({ ...rest, text: rest.mimeType === 'application/json' ? JSON.parse(text) : text }));
-      assert.deepEqual(parsed(reply.result.contents), parsed(want.result.contents), `message ${i} contents`);
-    }
-    for (const key of ['resultType', 'ttlMs', 'cacheScope', 'protocolVersion', 'supportedVersions', 'capabilities', 'isError', 'resources']) {
-      if (Object.hasOwn(want.result, key)) assert.deepEqual(reply.result[key], want.result[key], `message ${i} ${key}`);
-    }
-    if (want.result.structuredContent) {
-      // The source file, line and prose are the host's; everything else is the
-      // contract, including the policy's identity hash.
-      const comparable = ({ file, line, source, explain, policy, ...rest }) => ({ ...rest, policyName: policy?.name, policyHash: policy?.hash });
-      assert.deepEqual(comparable(reply.result.structuredContent), comparable(want.result.structuredContent), `message ${i} structuredContent`);
-    }
-    if (want.result.tools) {
-      assert.deepEqual(reply.result.tools.map(t => t.name), want.result.tools.map(t => t.name), `message ${i} tool names`);
-      assert.deepEqual(reply.result.tools.map(t => t.inputSchema), want.result.tools.map(t => t.inputSchema), `message ${i} tool schemas`);
-      assert.deepEqual(reply.result.tools.map(t => t.annotations), want.result.tools.map(t => t.annotations), `message ${i} tool annotations`);
-    }
-    if (want.result._meta) assert.deepEqual(Object.keys(reply.result._meta), Object.keys(want.result._meta), `message ${i} _meta keys`);
-  }
-});
 
 test('a modern request is served statelessly, and a legacy one only after initialize', async () => {
   const server = policyMcpServer(ticket);

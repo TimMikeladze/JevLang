@@ -21,7 +21,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://jevlang.sh/og-reference.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2048%2048%22%3E%3Crect%20width%3D%2248%22%20height%3D%2248%22%20rx%3D%2211%22%20fill%3D%22%231c1c1c%22%2F%3E%3Cpath%20d%3D%22M30%2012v16.5c0%204.5-3%207.5-7.5%207.5S15%2033%2015%2029.5%22%20fill%3D%22none%22%20stroke%3D%22%23f7f7f7%22%20stroke-width%3D%223.4%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"JevLang","description":"jevlang is a typesafe policy engine for LLM decisions: the model answers small questions, your policy decides, and every decision explains itself.","url":"https://jevlang.sh/","applicationCategory":"DeveloperApplication","softwareVersion":"1.2.0","offers":{"@type":"Offer","price":"0"},"license":"https://opensource.org/licenses/MIT"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"JevLang","description":"jevlang is a typesafe policy engine for LLM decisions: the model answers small questions, your policy decides, and every decision explains itself.","url":"https://jevlang.sh/","applicationCategory":"DeveloperApplication","softwareVersion":"1.3.0","offers":{"@type":"Offer","price":"0"},"license":"https://opensource.org/licenses/MIT"}</script>
 <script>
 (function(){
 var K='jevlang-theme',r=document.documentElement,mq=matchMedia('(prefers-color-scheme: dark)');
@@ -442,7 +442,7 @@ h1{font-size:2.6rem}
 <h1 id="jevlang">JevLang</h1>
 <p><strong>Decide once, trust everywhere.</strong> JevLang is a policy engine for decisions that used to live inside a prompt: routing, triage, approvals, escalation, guarding an agent's tools. You write the policy once in plain TypeScript (or Python); JevLang asks the model only the questions the policy needs, checks the answers, decides — and can prove, from a signed journal, exactly why it decided that.</p>
 <pre><code>bun add jevlang</code></pre>
-<p>No runtime dependencies. Node 22+. Pure decisions, validation and replay work fully offline — no Racket, no account, no network.</p>
+<p>No runtime dependencies. Node 22+. Pure decisions, validation and replay work fully offline — no account, no network.</p>
 <h2 id="why-you-need-this">Why you need this</h2>
 <p>If an LLM picks a branch in your product today, you probably have some version of these problems:</p>
 <ul>
@@ -847,15 +847,15 @@ bun install
 bun test
 bun run test:types</code></pre>
 <p>Every example above that is not marked live is re-run by <code>bun test</code>: the <code>file=</code> blocks are written to a scratch project with <code>jevlang</code> installed as a plain <code>node_modules/jevlang</code>, each <code>$</code> command runs there, and its output must match the block. Editing an example without re-running it fails the suite, and so does the landing page build.</p>
-<p>The engine is pinned by differential tests against the Racket <code>jev</code> implementation — decisions, wire questions, built state, reports, signatures and verdicts match byte-for-byte — and the Python port (<code>jevlang-sh</code> on PyPI) runs the same product on a pure-Python engine with the same oracles. Those differential tests read the Racket monorepo, so they skip unless it is checked out beside this package; everything else runs offline with no Racket anywhere.</p>
+<p>The Python port (<code>jevlang-sh</code> on PyPI) runs the same product on a pure-Python engine. The whole suite runs offline.</p>
 <p>The suite in this checkout (the version banner and timings are trimmed):</p>
 <pre><code><span class="cmd">$ bun install  # live: the suite that re-runs the examples above</span>
 Checked 20 installs across 21 packages (no changes)
 <span class="cmd">$ bun test</span>
- 101 pass
- 25 skip
+ 158 pass
+ 7 skip
  0 fail
-Ran 126 tests across 20 files.</code></pre>
+Ran 165 tests across 26 files.</code></pre>
 <p>MIT licensed.</p>
 </article>
 </div></main>

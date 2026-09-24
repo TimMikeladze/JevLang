@@ -1,9 +1,7 @@
-// Pre-parsed value extraction: the portable mirror of
-// jev-lang/examples/extraction.rkt. Code finds the candidates; the model picks
+// Pre-parsed value extraction. Code finds the candidates; the model picks
 // one. The candidate addresses are the options of a choice built at run time, and
-// each amount gets its own yes/no question. Racket computes both inside its
-// `state` form; here `receiptInput` is that code, so the state a host sends is
-// built the same way and passes the same whitelist.
+// each amount gets its own yes/no question. `receiptInput` is that code, so the
+// state a host sends is built the same way and passes the same whitelist.
 //
 // Choosing an email address is the task, so emails are not redacted here: the
 // model has to see which address the sender asked for. Phones, cards and keys
@@ -13,7 +11,7 @@ import { choice, noulEach, definePolicy, gate, rule, assign, escalate, record, t
 const emailRx = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 const amountRx = /\$[0-9][0-9,]*(?:\.[0-9]{2})?/g;
 
-// The state fields the Racket policy computes from the message body.
+// The state fields computed from the message body.
 export const receiptInput = message => ({
   body: message.body,
   addresses: [...new Set(message.body.match(emailRx) ?? [])],

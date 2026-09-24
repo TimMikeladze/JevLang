@@ -1,21 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
-import { redact, redactString, redactorNames, capValue, redactQuestions, restoreAnswerKeys, checkTokenBudget } from '../src/state.js';
+import { redactorNames, capValue, redactQuestions, restoreAnswerKeys, checkTokenBudget } from '../src/state.js';
 import { definePolicy, rule, hold, fact, eq } from '../src/index.js';
-import { skipUnlessInMonorepo } from './monorepo.js';
-
-test('redaction and state cap oracle over all strings in existing Racket regression tests', t => {
-  if (skipUnlessInMonorepo(t)) return;
-  const run = spawnSync('racket', [fileURLToPath(new URL('./state-oracle.rkt', import.meta.url))], { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
-  assert.equal(run.status, 0, run.stderr);
-  const cases = JSON.parse(run.stdout);
-  assert.ok(cases.strings.length > 500);
-  for (const c of cases.strings) assert.equal(redactString(c.value, c.specs), c.expected, JSON.stringify({ value: c.value, specs: c.specs }));
-  for (const c of cases.values) assert.deepEqual(redact(c.value, c.specs), c.expected, JSON.stringify(c.value));
-  for (const c of cases.caps) assert.deepEqual(capValue(c.value, c.limit), c.expected, `cap ${c.limit}`);
-});
 
 test('redaction before caps never leaves partial secrets or markers; local facts are trace-redacted', () => {
   const p = definePolicy({ name: 'private', questions: [], stateOptions: { redact: ['cards', 'emails'] }, state: { request: { maxChars: 1200 }, observed: { local: true } }, route: { clauses: [rule(eq(fact('observed'), 'ops@example.com'), hold())], otherwise: hold() } });

@@ -1,6 +1,4 @@
-// A smart-home assistant: a sentence in, device actions out. The portable mirror
-// of jev-lang/examples/smart-home.rkt, which the recorded fixtures in
-// jev-lang/examples/recorded/smart-home were captured against.
+// A smart-home assistant: a sentence in, device actions out.
 //
 // It shows typed actions checked at compile and decide time, a home whose rooms
 // and doors arrive with the request (a family per room, a runtime choice of

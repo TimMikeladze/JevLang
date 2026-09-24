@@ -99,18 +99,16 @@ export class CompiledPolicy {
   fingerprint(state = {}) { return fingerprint(this.questions(state)); }
   // The questions that do not depend on runtime state. This is the policy's
   // recorded identity: what a fixture's questions_sha256 is compared against,
-  // as in the Racket implementation, so a home with different rooms does not
-  // make every recorded answer stale.
+  // so a home with different rooms does not make every recorded answer stale.
   staticQuestions() {
     return Object.fromEntries(Object.entries(this.#policy.questions)
       .filter(([, q]) => !q.optionsFrom && !q.over)
       .map(([id, q]) => [id, wireQuestion(q)]));
   }
   // A policy with runtime questions folds in a portable description of each
-  // template. This identity is this engine's own: a fixture recorded by the
-  // Racket implementation carries a hash of a Racket-printed template list,
-  // which nothing here can recompute, so replay compares the recorded
-  // questions themselves whenever a fixture carries them.
+  // template. A fixture recorded elsewhere may carry a hash this engine cannot
+  // recompute, so replay compares the recorded questions themselves whenever a
+  // fixture carries them.
   identity() {
     const templates = Object.entries(this.#policy.questions)
       .filter(([, q]) => q.optionsFrom || q.over)
@@ -182,9 +180,8 @@ export class CompiledPolicy {
       }
       if (q.over) {
         const items = facts[q.over];
-        // An aggregator reads the answers the family came back with, as Racket's
-        // family-values does; only yesItems needs the inventory itself, because
-        // it returns the items.
+        // An aggregator reads the answers the family came back with; only
+        // yesItems needs the inventory itself, because it returns the items.
         requireAt(op !== 'yesItems' || Array.isArray(items), `facts.${q.over}`, 'yesItems needs the inventory in facts');
         const members = Array.isArray(items)
           ? items.map((_, i) => i)
@@ -231,7 +228,7 @@ export class CompiledPolicy {
         case 'runnerUp': return probabilities(a, id)[1]?.[0] ?? false;
         case 'margin': { const ps = probabilities(a, id); return ps[0][1] - (ps[1]?.[1] ?? 0); }
         // The nearest level is named the way the policy names it: its code name
-        // where it has one, otherwise the level text, as Racket's does.
+        // where it has one, otherwise the level text.
         case 'nearest': {
           const i = Math.max(0, Math.min(q.criteria.length - 1, roundedEven(a.score)));
           return q.levelNames?.[i] ?? q.criteria[i];

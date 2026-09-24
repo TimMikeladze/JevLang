@@ -1,5 +1,4 @@
-// Knowledge-graph entity alignment: the portable mirror of
-// jev-lang/examples/entity-alignment.rkt. The score's three levels are the three
+// Knowledge-graph entity alignment. The score's three levels are the three
 // things you can do with a pair, so there is no threshold to fit: the question is
 // ungated with the reason on record, and the middle level is the review path. The
 // nouls ride along as evidence for the curator.

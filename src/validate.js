@@ -242,7 +242,7 @@ export function checkDecision(d, p, path, options = {}) {
   };
   requireAt(own(shapes, d.action), path, `unknown decision '${d.action}'`);
   // hold parks the case for a person, so a target given to it is a mistake worth
-  // naming, as the Racket compiler names it.
+  // naming.
   requireAt(d.action !== 'hold' || !own(d, 'target'), `${path}.target`, 'hold takes no target; it parks the case for a person to pick up',
     "For a named destination use assign('target') or escalate('target').");
   keysOnly(d, ['action', 'reason', 'data', 'show', ...shapes[d.action]], path);

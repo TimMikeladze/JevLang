@@ -1,5 +1,5 @@
-// Redaction and bounded state assembly ported from jev-lang/state.rkt.
-// These are heuristics with the same documented false positives/negatives.
+// Redaction and bounded state assembly.
+// Redaction is heuristic, with documented false positives/negatives.
 import { object, requireAt, own } from './common.js';
 
 export const redactorNames = ['emails', 'ssn', 'cards', 'phones', 'ips', 'keys', 'urls'];

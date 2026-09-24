@@ -6,41 +6,15 @@ import { Readable } from 'node:stream';
 import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
-import { loadHandlers, handlerFromSpec, confirmHandler, fillTemplate, registerHandlerType, mqttPublish } from '../src/handlers.js';
+import { loadHandlers, handlerFromSpec, confirmHandler, registerHandlerType, mqttPublish } from '../src/handlers.js';
 import { makeLoop, loopStart, loopStop, loopPost, loopIdle, makeEvent, runEvents, timerSource, iterableSource, lineSource } from '../src/loop.js';
-import { makeSessions, sessionMessage, sessionPending, sessionForget, defaultMerge } from '../src/session.js';
+import { makeSessions, sessionMessage, sessionPending, sessionForget } from '../src/session.js';
 import { makeDispatcher, dispatch } from '../src/dispatch.js';
-import { skipUnlessInMonorepo } from './monorepo.js';
 
 const decision = (action, target, data = null, extra = {}) => ({
   action, target, reason: null, data, rule: 'route', clause: 0, source: null, line: null, file: null,
   model: null, provider: null, requested_model: null, requested_effort: null, effective_effort: null,
   request_id: null, stage: null, proposed: null, evidence: [], steps: [], readings: [], ...extra,
-});
-
-test('Racket oracle: the template grammar and the clarify merge', t => {
-  if (skipUnlessInMonorepo(t)) return;
-  const oracle = fileURLToPath(new URL('./automation-oracle.rkt', import.meta.url));
-  const run = spawnSync('racket', [oracle], { encoding: 'utf8', env: { ...process.env, TYPESAFE_API_KEY: '', ANTHROPIC_API_KEY: '', OPENAI_API_KEY: '' } });
-  assert.equal(run.status, 0, run.stderr);
-  const expected = JSON.parse(run.stdout);
-  const cases = [
-    ['home/{room}/light', { room: 'kitchen' }],
-    ['{action}:{target}', { action: 'act', target: 'lights-on' }],
-    ['count={n} on={on} missing-nothing', { n: 3, on: true }],
-    ['{list}', { list: ['a', 'b'] }],
-    ['{obj}', { obj: { a: 1 } }],
-    ['no placeholders', {}],
-    ['{a-b?}', { 'a-b?': 'yes' }],
-  ];
-  assert.deepEqual(cases.map(([text, vars]) => ({ filled: fillTemplate(text, vars, 'oracle') })), expected.templates);
-  // A name the decision does not have is an error, not an empty string.
-  assert.equal(expected.missing, 'error');
-  assert.throws(() => fillTemplate('{nope}', { room: 'kitchen' }, 'oracle'), /is not a parameter/);
-  assert.equal(defaultMerge('turn the lights on', 'Which room?', 'the bedroom'), expected['merge-string']);
-  assert.deepEqual(defaultMerge({ request: 'turn the lights on', rooms: ['kitchen'] }, 'Which room?', 'the bedroom'), expected['merge-object']);
 });
 
 test('a shell handler runs a declared argv, one argument per placeholder, and never a shell', async () => {

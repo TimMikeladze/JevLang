@@ -56,8 +56,7 @@ export function keysOnly(v, allowed, path) {
   for (const k of Object.keys(v)) requireAt(allowed.includes(k), `${path}.${k}`, `unknown field '${k}'`, `Allowed fields: ${allowed.join(', ')}.`);
 }
 
-// The nearest known name, for an error that names the fix the way the Racket
-// implementation's "did you mean" does.
+// The nearest known name, for an error that names the fix with a "did you mean".
 const editDistance = (a, b) => {
   let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
   for (let i = 1; i <= a.length; i += 1) {

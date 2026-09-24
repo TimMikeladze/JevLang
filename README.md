@@ -11,7 +11,7 @@ bun add jevlang
 ```
 
 No runtime dependencies. Node 22+. Pure decisions, validation and replay work
-fully offline — no Racket, no account, no network.
+fully offline — no account, no network.
 
 ## Why you need this
 
@@ -710,13 +710,8 @@ plain `node_modules/jevlang`, each `$` command runs there, and its output must
 match the block. Editing an example without re-running it fails the suite, and
 so does the landing page build.
 
-The engine is pinned by differential tests against the Racket `jev`
-implementation — decisions, wire questions, built state, reports, signatures
-and verdicts match byte-for-byte — and the Python port
-(`jevlang-sh` on PyPI) runs the same product on a pure-Python engine with the
-same oracles. Those differential tests read the Racket monorepo, so they skip
-unless it is checked out beside this package; everything else runs offline with
-no Racket anywhere.
+The Python port (`jevlang-sh` on PyPI) runs the same product on a pure-Python
+engine. The whole suite runs offline.
 
 The suite in this checkout (the version banner and timings are trimmed):
 
@@ -724,10 +719,10 @@ The suite in this checkout (the version banner and timings are trimmed):
 $ bun install  # live: the suite that re-runs the examples above
 Checked 20 installs across 21 packages (no changes)
 $ bun test
- 101 pass
- 25 skip
+ 158 pass
+ 7 skip
  0 fail
-Ran 126 tests across 20 files.
+Ran 165 tests across 26 files.
 ```
 
 MIT licensed.

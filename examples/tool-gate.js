@@ -1,5 +1,4 @@
-// A gate in front of an agent's tools: allow, deny, or ask a person. The
-// portable mirror of jev-lang/examples/tool-gate.rkt.
+// A gate in front of an agent's tools: allow, deny, or ask a person.
 //
 // The hook and the MCP proxy hand it the same state:
 //   {"tool": "Bash", "arguments": {"command": "rm -rf build"},

@@ -1,4 +1,4 @@
-// The portable mirror of test/parity/names.rkt: option code names and wire keys,
+// A policy exercising option code names and wire keys,
 // named score levels, a raw question, and an extra request body.
 import { choice, score, rawQuestion, definePolicy, gate, escalate, rule, all, page, assign, hold, record, compute } from '../../src/index.js';
 

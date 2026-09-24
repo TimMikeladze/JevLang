@@ -1,5 +1,4 @@
-// ticket-router, written the 2.0 way: the portable mirror of
-// jev-lang/examples/ticket-router-v2.rkt. The questions are identical to
+// ticket-router, written the 2.0 way. The questions are identical to
 // ticket-router.js's, so every fixture recorded for one replays against the
 // other; the gates are the difference. They are on-read, so an uncertain
 // frustration answer only escalates a ticket whose route actually reads it.
