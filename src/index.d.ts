@@ -240,7 +240,8 @@ export interface ProvenancedDecision extends Decision { provider: string | null;
 export interface AnswerCache { get(key: string): unknown; set(key: string, value: unknown): unknown; delete?(key: string): unknown }
 export function questionsAnswerSchema(questions: Record<string, QuestionSchema>): JSONValue;
 export function policyPrompt(state: JSONValue, questions: Record<string, QuestionSchema>): string;
-export function evaluateWithProvider(policy: CompiledPolicy, input: JSONValue, options?: { provider?: string | null; model?: string | null; effort?: string | null; profile?: string | null; config?: Record<string, JSONValue>; registry?: unknown; role?: string; cache?: AnswerCache | null }): Promise<ProvenancedDecision>;
+/** `cacheOnly`: decide from `cache` or throw a JevError with code 'uncached'; no provider is asked. */
+export function evaluateWithProvider(policy: CompiledPolicy, input: JSONValue, options?: { provider?: string | null; model?: string | null; effort?: string | null; profile?: string | null; config?: Record<string, JSONValue>; registry?: unknown; role?: string; cache?: AnswerCache | null; cacheOnly?: boolean }): Promise<ProvenancedDecision>;
 export function evaluateConfiguredPolicy(policy: CompiledPolicy, input: JSONValue, options?: { start?: string; package?: JSONValue; provider?: string | null; model?: string | null; effort?: string | null; registry?: unknown }): Promise<ProvenancedDecision | null>;
 export function normalizeAnswers(questions: Record<string, QuestionSchema>, answers: Record<string, JSONValue>): Record<string, JSONValue>;
 export function runPolicyProvider(state: JSONValue, questions: Record<string, QuestionSchema>, options?: { provider?: string | null; model?: string | null; effort?: string | null; config?: Record<string, JSONValue>; registry?: unknown; role?: string }): Promise<unknown>;
@@ -249,6 +250,9 @@ export function typesafeProvider(options?: { maxParallel?: number }): unknown;
 export function makePolicyRegistry(config?: Record<string, JSONValue>): unknown;
 export function sharedPolicyRegistry(config: Record<string, JSONValue>): unknown;
 export function answerCacheKey(state: JSONValue, questions: Record<string, QuestionSchema>, selection: { provider: string | null; model: string | null; effort: string | null }): string;
+/** What evaluateWithProvider reads back from a cached provider result, as plain JSON. */
+export interface AnswerRecord { output: JSONValue; model: string | null; requestId: string | null; target: { provider: { id: string }; model: string | null; requestedEffort: string | null; effectiveEffort: string | null } }
+export function answerRecord(result: unknown): AnswerRecord;
 export function policyProviderRequest(state: JSONValue, questions: Record<string, QuestionSchema>, options?: { provider?: string | null; model?: string | null; effort?: string | null; role?: string }): unknown;
 export function explicitPolicySelection(config: Record<string, JSONValue>, request: unknown, selection?: { provider?: string | null; model?: string | null; effort?: string | null }): boolean;
 export const policyConfigDefaults: Record<string, JSONValue>;

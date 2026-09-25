@@ -20,6 +20,7 @@
 // recorded. Recording never changes the decision itself.
 import { appendFileSync, readFileSync } from 'node:fs';
 import { fingerprint, requireAt } from './common.js';
+import { answerRecord } from './evaluate.js';
 
 // record: { id?, at?, policy?, input, answers?, decision, key? }
 export function recordOf(run, at = Date.now()) {
@@ -148,6 +149,53 @@ export async function sqliteStore(path, { prefix = 'jev_' } = {}) {
   };
   requireAt(typeof path === 'string' && path !== '', 'path', 'a SQLite store needs a file path');
   return dbStore(driver, { dialect: 'sqlite', prefix });
+}
+
+// A durable answer cache (docs/answer-cache.md): evaluateWithProvider's `cache`
+// over any SqlDriver, so a batch re-run asks only for inputs it has not seen.
+// Opening preloads the scope; flush() writes what the run added, and with prune
+// deletes what the run never touched (inputs that changed since).
+//
+//   const cache = await dbAnswerCache(driver, { scope: 'lead-kind' })
+//   await evaluateMany(row => evaluateWithProvider(policy, row, { cache }), rows)
+//   await cache.flush({ prune: true })
+export async function dbAnswerCache(driver, { dialect = 'postgres', prefix = 'jev_', scope = 'default' } = {}) {
+  const t = `${prefix}answers`;
+  const sql = text => dialect === 'sqlite' ? text.replace(/\$(\d+)/g, '?$1') : text;
+  const query = (text, params = []) => driver.query(sql(text), params);
+  await query(`CREATE TABLE IF NOT EXISTS ${t} (scope TEXT NOT NULL, key TEXT NOT NULL, result TEXT NOT NULL, at BIGINT NOT NULL, PRIMARY KEY (scope, key))`);
+  const rows = await query(`SELECT key, result FROM ${t} WHERE scope = $1`, [scope]);
+  const answers = new Map(rows.map(r => [r.key, Promise.resolve(JSON.parse(r.result))]));
+  const touched = new Set(), added = new Set();
+  return {
+    has: key => answers.has(key),
+    get(key) { touched.add(key); return answers.get(key); },
+    set(key, value) { touched.add(key); added.add(key); answers.set(key, value); },
+    delete(key) { added.delete(key); answers.delete(key); },
+    get size() { return answers.size; },
+    async flush({ prune = false } = {}) {
+      let saved = 0, pruned = 0;
+      for (const key of [...added]) {
+        added.delete(key);
+        let result;
+        try { result = await answers.get(key); } catch { continue; } // a failed call is not kept
+        if (result === undefined) continue;
+        await query(`INSERT INTO ${t} (scope, key, result, at) VALUES ($1, $2, $3, $4) ON CONFLICT (scope, key) DO NOTHING`,
+          [scope, key, JSON.stringify(answerRecord(result)), Date.now()]);
+        saved += 1;
+      }
+      if (prune) {
+        const stale = (await query(`SELECT key FROM ${t} WHERE scope = $1`, [scope])).map(r => r.key).filter(k => !touched.has(k));
+        for (let i = 0; i < stale.length; i += 500) {
+          const chunk = stale.slice(i, i + 500);
+          await query(`DELETE FROM ${t} WHERE scope = $1 AND key IN (${chunk.map((_, j) => `$${j + 2}`).join(', ')})`, [scope, ...chunk]);
+        }
+        for (const key of stale) answers.delete(key);
+        pruned = stale.length;
+      }
+      return { saved, pruned };
+    },
+  };
 }
 
 export const isStore = value => !!(value && typeof value.append === 'function' && typeof value.list === 'function');

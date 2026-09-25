@@ -2,7 +2,7 @@
 // questions, ask the selected provider for the answers, validate them, and
 // decide. The provider is chosen by the same layered routing every other call
 // uses, and the decision carries which provider, model and effort answered.
-import { object, own, requireAt, canonical, fingerprint, jsonCopy } from './common.js';
+import { object, own, requireAt, canonical, fingerprint, jsonCopy, fail } from './common.js';
 import { validateAnswers } from './engine.js';
 import { checkTokenBudget } from './state.js';
 import { jevCall, apiKeyConfigured, settings as clientSettings } from './client.js';
@@ -209,11 +209,28 @@ export function explicitPolicySelection(config, request, { provider: id = null, 
 export const answerCacheKey = (state, questions, selection) =>
   fingerprint({ state, questions, provider: selection.provider, model: selection.model, effort: selection.effort });
 
-// policy : a CompiledPolicy
-// cache  : a Map-like store with synchronous get/set (optional delete) holding
-//          each call's promise; an identical row waits on the same call, and a
-//          failed call is not kept
-export async function evaluateWithProvider(policy, input, { provider: id = null, model = null, effort = null, profile = null, config = null, registry = null, role = 'policy', cache = null } = {}) {
+// What evaluateWithProvider reads back from a cached provider result, as plain
+// JSON: a durable cache stores this, and the decision it produces carries the
+// same answers and provenance as the live one.
+export const answerRecord = result => ({
+  output: jsonCopy(result.output),
+  model: result.model ?? null,
+  requestId: result.requestId ?? null,
+  target: {
+    provider: { id: result.target.provider.id },
+    model: result.target.model ?? null,
+    requestedEffort: result.target.requestedEffort ?? null,
+    effectiveEffort: result.target.effectiveEffort ?? null,
+  },
+});
+
+// policy    : a CompiledPolicy
+// cache     : a Map-like store with synchronous get/set (optional delete) holding
+//             each call's promise; an identical row waits on the same call, and a
+//             failed call is not kept
+// cacheOnly : decide from the cache or throw code 'uncached'; no provider is asked
+export async function evaluateWithProvider(policy, input, { provider: id = null, model = null, effort = null, profile = null, config = null, registry = null, role = 'policy', cache = null, cacheOnly = false } = {}) {
+  requireAt(!cacheOnly || cache, 'cacheOnly', 'cacheOnly needs a cache to read answers from');
   const spec = policy.policy;
   const selection = { provider: id ?? spec.provider ?? null, model: model ?? spec.model ?? null, effort: effort ?? spec.effort ?? null };
   const { state, facts } = policy.buildState(input);
@@ -221,9 +238,12 @@ export async function evaluateWithProvider(policy, input, { provider: id = null,
   if (pre) return pre;
   const questions = policy.questions(state);
   checkTokenBudget(state, questions);
-  const resolvedConfig = config ?? loadProviderConfig({ defaults: policyConfigDefaults, role });
-  const resolvedRegistry = registry ?? sharedPolicyRegistry(resolvedConfig);
-  const ask = () => runPolicyProvider(state, questions, { ...selection, config: resolvedConfig, registry: resolvedRegistry, role });
+  // Configuration is read only when a provider is actually asked.
+  const ask = () => {
+    const resolvedConfig = config ?? loadProviderConfig({ defaults: policyConfigDefaults, role });
+    const resolvedRegistry = registry ?? sharedPolicyRegistry(resolvedConfig);
+    return runPolicyProvider(state, questions, { ...selection, config: resolvedConfig, registry: resolvedRegistry, role });
+  };
   let result, cached = false;
   if (cache) {
     // Looked up and claimed with no await between, so rows that start together
@@ -232,6 +252,8 @@ export async function evaluateWithProvider(policy, input, { provider: id = null,
     const hit = cache.get(key);
     if (hit !== undefined && hit !== null) {
       result = await hit; cached = true;
+    } else if (cacheOnly) {
+      fail('uncached', '$.cache', 'no cached answer for this input', 'Drop cacheOnly to ask the provider, or warm the cache first.');
     } else {
       const pending = ask();
       cache.set(key, pending);

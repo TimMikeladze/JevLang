@@ -466,7 +466,21 @@ const { results, failed, tokens } = await evaluateMany(
 
 The cache key is the built state, the questions and the provider, model and
 effort. It does not include the routes, so you can re-tune the routes over a
-warm cache. Calls share one provider registry per configuration, so a
+warm cache.
+
+A batch that re-runs on a schedule wants that cache to outlive the process.
+`dbAnswerCache` keeps it in any SQL database a journal takes, so the next run
+asks only for rows whose inputs changed, and still re-decides every row.
+`cacheOnly: true` decides from the cache alone and throws `uncached` for the
+rest, for a run with no key:
+
+```js
+import { dbAnswerCache } from 'jevlang/store';
+
+const cache = await dbAnswerCache(driver, { scope: policy.policy.name });
+await evaluateMany(row => evaluateWithProvider(policy, row, { cache }), rows);
+await cache.flush({ prune: true }); // save new answers, drop ones no row asked for
+``` Calls share one provider registry per configuration, so a
 provider's parallelism limit holds across all of them: `typesafe` takes 4 at
 once, and `openai`, `gateway` and `anthropic` take 8. Raise a limit in
 `.jev/providers.json`:
@@ -665,7 +679,8 @@ The core is small; the surface around it is what a production decision needs.
   an ndjson file, SQLite, or any SQL driver a journal takes. Appends are
   idempotent on a fingerprint of the run, and `withStore(evaluate, store)` or
   `makeLoop({ store })` records history as it happens — the same records feed
-  `summarize` and `replay`.
+  `summarize` and `replay`. `dbAnswerCache` makes the answer cache durable
+  ([docs/answer-cache.md](docs/answer-cache.md)).
 
 ```js
 import { sqliteStore } from 'jevlang/store';

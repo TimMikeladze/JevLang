@@ -96,6 +96,11 @@ from PATH.
    single-use hashed tokens; Stripe delivery (the customer mapping, a closed
    month reported once, the signed webhook back). 50 tests and 6 browser tests,
    no network.
+16. **A durable answer cache** (`docs/answer-cache.md`): `dbAnswerCache` over any
+   SQL driver (preload, flush, prune), `answerRecord`, and `cacheOnly` on
+   `evaluateWithProvider`. `examples/entity-alignment.js` is gated, since
+   `nearest()` rounds an unsure answer into a merge. JavaScript only;
+   `test/answer-cache.test.js`.
 
 ## Next, in order
 

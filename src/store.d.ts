@@ -1,4 +1,4 @@
-import type { Decision, JSONValue } from './index.js';
+import type { AnswerCache, Decision, JSONValue } from './index.js';
 import type { SqlDriver } from './journal.d.ts';
 
 export interface StoreRecord {
@@ -17,4 +17,12 @@ export function ndjsonStore(path: string): Store;
 export function dbStore(driver: SqlDriver, options?: { dialect?: 'sqlite' | 'postgres'; prefix?: string }): Store;
 export function sqliteStore(path: string, options?: { prefix?: string }): Promise<Store>;
 export function isStore(value: unknown): value is Store;
+/** A durable AnswerCache over any SqlDriver: preloaded, then flushed (docs/answer-cache.md). */
+export interface DbAnswerCache extends AnswerCache {
+  has(key: string): boolean;
+  readonly size: number;
+  /** Write answers added since the last flush; `prune` deletes this scope's answers nothing touched since opening. */
+  flush(options?: { prune?: boolean }): Promise<{ saved: number; pruned: number }>;
+}
+export function dbAnswerCache(driver: SqlDriver, options?: { dialect?: 'sqlite' | 'postgres'; prefix?: string; scope?: string }): Promise<DbAnswerCache>;
 export function withStore(evaluate: (input: JSONValue) => Promise<Decision> | Decision, store: Store, options?: { policy?: string | null; key?: string | null; clock?: () => number }): (input: JSONValue) => Promise<Decision>;

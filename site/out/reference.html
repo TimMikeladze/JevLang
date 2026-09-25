@@ -735,7 +735,14 @@ listening on http://127.0.0.1:8080</code></pre>
   rows,
   { workers: <span class="tk-num">16</span>, rpm: <span class="tk-num">3000</span> },
 );</code></pre>
-<p>The cache key is the built state, the questions and the provider, model and effort. It does not include the routes, so you can re-tune the routes over a warm cache. Calls share one provider registry per configuration, so a provider's parallelism limit holds across all of them: <code>typesafe</code> takes 4 at once, and <code>openai</code>, <code>gateway</code> and <code>anthropic</code> take 8. Raise a limit in <code>.jev/providers.json</code>:</p>
+<p>The cache key is the built state, the questions and the provider, model and effort. It does not include the routes, so you can re-tune the routes over a warm cache.</p>
+<p>A batch that re-runs on a schedule wants that cache to outlive the process. <code>dbAnswerCache</code> keeps it in any SQL database a journal takes, so the next run asks only for rows whose inputs changed, and still re-decides every row. <code>cacheOnly: true</code> decides from the cache alone and throws <code>uncached</code> for the rest, for a run with no key:</p>
+<pre><code><span class="tk-kw">import</span> { dbAnswerCache } <span class="tk-kw">from</span> <span class="tk-str">'jevlang/store'</span>;
+
+<span class="tk-kw">const</span> cache = <span class="tk-kw">await</span> <span class="tk-fn">dbAnswerCache</span>(driver, { scope: policy.policy.name });
+<span class="tk-kw">await</span> <span class="tk-fn">evaluateMany</span>(row =&gt; <span class="tk-fn">evaluateWithProvider</span>(policy, row, { cache }), rows);
+<span class="tk-kw">await</span> cache.<span class="tk-fn">flush</span>({ prune: <span class="tk-kw">true</span> }); <span class="tk-cmt">// save new answers, drop ones no row asked for</span></code></pre>
+<p>provider's parallelism limit holds across all of them: <code>typesafe</code> takes 4 at once, and <code>openai</code>, <code>gateway</code> and <code>anthropic</code> take 8. Raise a limit in <code>.jev/providers.json</code>:</p>
 <pre><code>{ <span class="tk-key">&quot;providers&quot;</span>: { <span class="tk-key">&quot;gateway&quot;</span>: { <span class="tk-key">&quot;max_parallel&quot;</span>: <span class="tk-num">16</span> } } }</code></pre>
 <h2 id="self-hosted-decisions-with-laya">Self-hosted decisions with Laya</h2>
 <p><a href="https://huggingface.co/convaiinnovations/laya">Laya</a> is an open-weights (Apache 2.0) model that answers exactly the three question kinds JevLang asks — <code>choice</code>, <code>score</code>, <code>noul</code> — with calibrated probabilities in one forward pass. It is a built-in provider: <code>pip install laya</code> once, then name it.</p>
@@ -826,7 +833,7 @@ jev open support</code></pre>
 <li><strong><code>jevlang/dispatch</code></strong> — handlers with confirmation, cooldowns, budgets and rate limits, guards, idempotency keys, step and schedule leases, plan rollback, and one audit record per outcome.</li>
 <li><strong><code>jevlang/redis</code></strong> — journal, store and session table on any Redis with <code>eval</code>; <code>upstash()</code> is a dependency-free REST client.</li>
 <li><strong><code>jevlang/journal</code>, <code>jevlang/journal-db</code></strong> — in-memory and SQLite journals; <code>dbJournal</code> takes any SQL driver.</li>
-<li><strong><code>jevlang/store</code></strong> — every decision recorded in a place you choose: memory, an ndjson file, SQLite, or any SQL driver a journal takes. Appends are idempotent on a fingerprint of the run, and <code>withStore(evaluate, store)</code> or <code>makeLoop({ store })</code> records history as it happens — the same records feed <code>summarize</code> and <code>replay</code>.</li>
+<li><strong><code>jevlang/store</code></strong> — every decision recorded in a place you choose: memory, an ndjson file, SQLite, or any SQL driver a journal takes. Appends are idempotent on a fingerprint of the run, and <code>withStore(evaluate, store)</code> or <code>makeLoop({ store })</code> records history as it happens — the same records feed <code>summarize</code> and <code>replay</code>. <code>dbAnswerCache</code> makes the answer cache durable (<a href="docs/answer-cache.md">docs/answer-cache.md</a>).</li>
 </ul>
 <pre><code><span class="tk-kw">import</span> { sqliteStore } <span class="tk-kw">from</span> <span class="tk-str">'jevlang/store'</span>;
 
