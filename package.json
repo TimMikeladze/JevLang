@@ -1,6 +1,6 @@
 {
   "name": "jevlang",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "A policy engine for LLM decisions: declare routes, gates and actions once in TypeScript or Python, and every decision comes validated, explainable, replayable and audited",
   "type": "module",
   "keywords": [
