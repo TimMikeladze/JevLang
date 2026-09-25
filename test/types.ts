@@ -1,4 +1,5 @@
 import { choice, score, noul, rawQuestion, definePolicy, rule, gate, hold, assign, all, compare, record } from 'jevlang';
+import { dbAnswerCache, dbStore } from 'jevlang/store';
 
 const q = choice('department', 'Which?', ['billing', 'technical']);
 q.is('billing');
@@ -62,3 +63,10 @@ makeDispatcherOf({}, { journal, stepLease: 300, scheduleLease: 60, budgets: [bud
 gatewayProvider({ model: 'anthropic/claude-haiku-4.5' });
 // @ts-expect-error a rate limit needs a window
 rateLimit(journal, 'api', { max: 10 });
+
+// A store driver needs only query: dbAnswerCache and dbStore never open a transaction.
+{
+  const queryOnly = { query: (sql: string, params?: unknown[]) => [] as Record<string, unknown>[] };
+  void dbAnswerCache(queryOnly, { scope: 'types' });
+  void dbStore(queryOnly);
+}

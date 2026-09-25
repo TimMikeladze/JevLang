@@ -11,7 +11,8 @@ Postgres, reading provider-result fields that aren't a public shape.
 ## Decided
 
 1. **`dbAnswerCache(driver, { dialect, prefix, scope })`** in `jevlang/store`.
-   Any `SqlDriver` (the one `dbJournal` and `dbStore` take). Table
+   Any `SqlDriver` (the one `dbJournal` and `dbStore` take); like `dbStore` it only
+   calls `query`, so its type asks for no `transaction`. Table
    `prefix + 'answers'`: `(scope, key)` primary key, the stored answer as JSON
    text, `at`. It is async because it preloads the scope's rows, and then it
    *is* an `AnswerCache`: synchronous `get` / `set` / `delete`, plus `has`.
