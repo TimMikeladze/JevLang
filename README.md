@@ -13,6 +13,26 @@ bun add jevlang
 No runtime dependencies. Node 22+. Pure decisions, validation and replay work
 fully offline — no account, no network.
 
+## Build your first JevLang policy
+
+Describe what your app should do. One command creates the policy, tests its
+decisions, and connects it to your app.
+
+```sh
+npx skills add TimMikeladze/JevLang -g
+```
+
+Open a new agent session. Type `/jevlang` in Claude Code or `$jevlang` in
+Codex, followed by your request:
+
+```text
+Build a support router with billing and technical queues. Send uncertain tickets for review, connect it to our ticket API, and test it.
+```
+
+Use the same command to check a decision, replay tests, or change an existing
+policy. Tests run with supplied answers; live evaluation uses your configured
+provider. See the [getting-started guide](docs/agent-skills.md).
+
 ## Why you need this
 
 If an LLM picks a branch in your product today, you probably have some version

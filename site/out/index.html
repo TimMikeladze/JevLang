@@ -34,6 +34,7 @@ mq.addEventListener('change',function(){if(r.dataset.pref==='system')set('system
 document.addEventListener('keydown',function(e){if(e.key==='Escape')document.querySelectorAll('.nav-drop[open]').forEach(function(d){d.open=false})});
 document.addEventListener('click',function(e){
 document.querySelectorAll('.nav-drop[open]').forEach(function(d){if(!d.contains(e.target))d.open=false});
+var a=e.target.closest('.menu-items a');if(a)a.closest('details').open=false;
 var t=e.target.closest('#theme-toggle');
 if(t){var n={system:'dark',dark:'light',light:'system'}[r.dataset.pref];try{n==='system'?localStorage.removeItem(K):localStorage.setItem(K,n)}catch(x){}set(n);return}
 var c=e.target.closest('[data-copy],[data-copy-code],[data-copy-markdown]');
@@ -116,6 +117,9 @@ html:not([data-flags~=cloud]) [data-flag=cloud]{display:none!important}
 :root[data-pref=dark] .theme-toggle .i-dark{display:inline-flex}
 :root[data-pref=light] .theme-toggle .i-light{display:inline-flex}
 :root[data-pref=system] .theme-toggle .i-system,:root:not([data-pref]) .theme-toggle .i-system{display:inline-flex}
+.guide-image{margin:0;max-width:100%}
+.guide-image img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:14px}
+
 /* hero */
 .hero{position:relative;padding-block:clamp(3.5rem,7vw,6rem) clamp(3rem,6vw,5rem);isolation:isolate}
 .mark-tile{fill:var(--raise);stroke:var(--line)}
@@ -184,6 +188,7 @@ details.control summary::-webkit-details-marker{display:none}
 .menu-items{display:grid;gap:.1rem}
 .menu-items a,.menu-items button{display:flex;width:100%;text-align:left;padding:.45rem .6rem;border-radius:.4rem;color:var(--body);text-decoration:none;font:.875rem/1.4 var(--sans);background:none;border:0;cursor:pointer}
 .menu-items a:hover,.menu-items button:hover{background:var(--band);color:var(--ink)}
+@media (max-width:720px){.actions{position:relative}.actions details{position:static}.actions .menu{left:0;right:0;min-width:0}}
 /* copy buttons only exist with script */
 .copy-btn{display:none;align-items:center;gap:.35rem;background:none;border:1px solid transparent;border-radius:.4rem;color:var(--soft);cursor:pointer;padding:.3rem .45rem;font:500 .72rem/1 var(--mono);transition:color .14s ease,border-color .14s ease}
 html[data-js] .copy-btn{display:inline-flex}
@@ -446,6 +451,7 @@ h1{font-size:2.6rem}
 <details class="control">
 <summary><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg> For agents</summary>
 <div class="menu"><div class="menu-items">
+<a href="/#agent-skills">Build your first policy</a>
 <a href="/llms.txt">llms.txt</a>
 <a href="/AGENTS.md">AGENTS.md</a>
 <a href="https://github.com/TimMikeladze/JevLang/tree/main/examples/nextjs">Example source</a>
@@ -563,7 +569,22 @@ console.<span class="tk-fn">log</span>(<span class="tk-fn">explainDecision</span
 </figure></div></li></ol></div>
 </div>
 </section>
-<section id="questions" class="section section--band" aria-labelledby="questions-h">
+<section id="agent-skills" class="section section--band" aria-labelledby="agent-skills-h">
+<div class="shell">
+<h2 id="agent-skills-h">Build your first JevLang policy</h2>
+<p class="expl">Create a policy, test its decisions, and connect it to your app. Install once, then type <code>/jevlang</code> in Claude Code or <code>$jevlang</code> in Codex followed by your request. <a href="https://github.com/TimMikeladze/JevLang/blob/main/docs/agent-skills.md">Getting-started guide</a>. <a href="/reference#build-your-first-jevlang-policy">Read the section.</a></p>
+<div class="demo"><figure class="frame">
+<div class="frame-bar"><span class="dots" aria-hidden="true"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span><span class="name">Install globally</span><button class="copy-btn" type="button" data-copy-code aria-label="Copy Install globally"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 9h-9a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2zM5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span class="lbl">Copy</span><span class="lbl-done">Copied</span></button></div>
+<pre class="frame-body"><code>npx skills add TimMikeladze/JevLang -g</code></pre>
+</figure></div>
+<div class="demo"><figure class="frame">
+<div class="frame-bar"><span class="dots" aria-hidden="true"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span><span class="name">Describe what you need</span><button class="copy-btn" type="button" data-copy-code aria-label="Copy Describe what you need"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 9h-9a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2zM5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span class="lbl">Copy</span><span class="lbl-done">Copied</span></button></div>
+<pre class="frame-body"><code>Build a support router with billing and technical queues. Send uncertain tickets for review, connect it to our ticket API, and test it.</code></pre>
+</figure></div>
+<div class="demo"><figure class="guide-image"><a href="/images/agent-skills.png"><img src="/images/agent-skills.png" alt="Build your first JevLang policy: install once, describe a support router, and connect it to your app" width="1536" height="1024" loading="lazy" decoding="async"></a></figure></div>
+</div>
+</section>
+<section id="questions" class="section" aria-labelledby="questions-h">
 <div class="shell">
 <h2 id="questions-h">Three text question types</h2>
 <p class="expl">Declare what you want to know with <code>noul</code> for a yes/no, <code>choice</code> for one of several options, or <code>score</code> for a place on a scale. The model answers each with numbers, and <code>policy.decide()</code> refuses an answer that does not fit its question. <a href="/reference#three-text-question-types">Read the section.</a></p>
@@ -591,7 +612,7 @@ console.<span class="tk-fn">log</span>(<span class="tk-fn">explainDecision</span
 <div class="demo"><div class="tablewrap"><table><thead><tr><th>Kind</th><th>Use it for</th><th>The model answers</th><th>Test it with</th></tr></thead><tbody><tr><td data-label="Kind"><code>noul</code></td><td data-label="Use it for">a yes/no question</td><td data-label="The model answers"><code>{ noul: 0.97 }</code></td><td data-label="Test it with"><code>refund.yes(0.8)</code></td></tr><tr><td data-label="Kind"><code>choice</code></td><td data-label="Use it for">one option out of several</td><td data-label="The model answers"><code>{ choice: 'billing', confidence: 0.94 }</code></td><td data-label="Test it with"><code>department.is('billing')</code></td></tr><tr><td data-label="Kind"><code>score</code></td><td data-label="Use it for">a position on an ordered scale</td><td data-label="The model answers"><code>{ score: 2, confidence: 0.95, probabilities: { 0: 0.01, 1: 0.04, 2: 0.95 } }</code></td><td data-label="Test it with"><code>frustration.mostLikely('Angry, threatening to leave')</code></td></tr></tbody></table></div></div>
 </div>
 </section>
-<section id="gates" class="section" aria-labelledby="gates-h">
+<section id="gates" class="section section--band" aria-labelledby="gates-h">
 <div class="shell">
 <h2 id="gates-h">Low confidence escalates</h2>
 <p class="expl">Add <code>gate(department, 0.8, escalate('human-triage'))</code> and any answer below 80% confidence goes to a person instead of becoming a guess. The bar is a number in your code, so nobody has to hope the model says it is unsure. <a href="/reference#a-real-one-support-routing">Read the section.</a></p>
@@ -695,7 +716,7 @@ console.<span class="tk-fn">log</span>(<span class="tk-fn">explainDecision</span
 </figure></div>
 </div>
 </section>
-<section id="rules" class="section section--band" aria-labelledby="rules-h">
+<section id="rules" class="section" aria-labelledby="rules-h">
 <div class="shell">
 <h2 id="rules-h">Rules run in order</h2>
 <p class="expl">Each <code>rule(when, action)</code> is checked from the top, and the first match decides — so clause order is policy you can review in a diff. A mistyped option, a clause with no gate or a route that can miss a case is refused when <code>definePolicy</code> runs, before any ticket arrives. <a href="/reference#mistakes-are-build-errors">Read the section.</a></p>
@@ -783,7 +804,7 @@ console.<span class="tk-fn">log</span>(<span class="tk-fn">explainDecision</span
 </figure></div>
 </div>
 </section>
-<section id="explain" class="section" aria-labelledby="explain-h">
+<section id="explain" class="section section--band" aria-labelledby="explain-h">
 <div class="shell">
 <h2 id="explain-h">Every decision says why</h2>
 <p class="expl"><code>explainDecision(decision)</code> prints the action, the rule that fired and every answer that rule read. Swap the hand-written answers for <code>evaluateWithProvider(policy, ticket)</code> and a real model fills them in — this run sent one ticket to the hosted model. <a href="/reference#a-real-one-support-routing">Read the section.</a></p>
@@ -811,7 +832,7 @@ console.<span class="tk-fn">log</span>(<span class="tk-str">`answered by ${decis
 </figure></div>
 </div>
 </section>
-<section id="tool-gate" class="section section--band" aria-labelledby="tool-gate-h">
+<section id="tool-gate" class="section" aria-labelledby="tool-gate-h">
 <div class="shell">
 <h2 id="tool-gate-h">Guard an agent's tools</h2>
 <p class="expl"><code>jev gate hook</code> decides whether an agent's tool call runs — <code>allow</code>, <code>ask</code> or <code>deny</code> — as a Claude Code or Codex <code>PreToolUse</code> hook. The <code>deny</code> and <code>allow</code> lists match tool names and run before any model is called, and a call that errors is never allowed. <a href="/reference#guard-an-agent-s-tools">Read the section.</a></p>
@@ -933,7 +954,7 @@ console.<span class="tk-fn">log</span>(<span class="tk-str">'wrote gate.json'</s
 </figure></div></li></ol></div>
 </div>
 </section>
-<section id="anywhere" class="section" aria-labelledby="anywhere-h">
+<section id="anywhere" class="section section--band" aria-labelledby="anywhere-h">
 <div class="shell">
 <h2 id="anywhere-h">Call it from anywhere</h2>
 <p class="expl">One policy has five doors: <code>policy.decide()</code> in code, <code>jev decide</code> in a shell, <code>startServer(policy)</code> over HTTP, <code>policyMcpServer(policy)</code> as MCP tools and <code>jev gate hook</code> in front of an agent. Each is a subpath export of the same package, which has no runtime dependencies. <a href="/reference#call-it-from-anywhere">Read the section.</a></p>
@@ -974,7 +995,7 @@ console.<span class="tk-fn">log</span>(<span class="tk-str">`listening on ${serv
 <div class="demo"><p class="table-title">Every export in the package</p><div class="tablewrap"><table><thead><tr><th>Export</th><th>What it carries</th></tr></thead><tbody><tr><td><code>jevlang</code></td><td>the language: <code>choice</code>, <code>score</code>, <code>noul</code>, <code>rule</code>, <code>all</code>, <code>any</code>, <code>not</code>, <code>gate</code>, <code>assign</code>, <code>escalate</code>, <code>page</code>, <code>hold</code>, plans, actions, JSON Schema for every action, and portable frozen artifacts.</td></tr><tr><td><code>jevlang/provider</code></td><td>layered provider config, deterministic resolution, and any executable that speaks <code>jev-provider/1</code> becomes a provider. Built-in CLI adapters for Claude, Codex and fx, HTTP providers for OpenAI-compatible APIs, Vercel AI Gateway and Anthropic, and a built-in <strong>Laya</strong> adapter for self-hosted, open-weights decisions. <code>evaluateWithProvider(policy, input)</code> is the one call that leaves the machine; a precheck that already decides makes no call at all.</td></tr><tr><td><code>jevlang/dispatch</code></td><td>handlers with confirmation, cooldowns, budgets and rate limits, guards, idempotency keys, step and schedule leases, plan rollback, and one audit record per outcome.</td></tr><tr><td><code>jevlang/redis</code></td><td>journal, store and session table on any Redis with <code>eval</code>; <code>upstash()</code> is a dependency-free REST client.</td></tr><tr><td><code>jevlang/journal, jevlang/journal-db</code></td><td>in-memory and SQLite journals; <code>dbJournal</code> takes any SQL driver.</td></tr><tr><td><code>jevlang/store</code></td><td>every decision recorded in a place you choose: memory, an ndjson file, SQLite, or any SQL driver a journal takes. Appends are idempotent on a fingerprint of the run, and <code>withStore(evaluate, store)</code> or <code>makeLoop({ store })</code> records history as it happens — the same records feed <code>summarize</code> and <code>replay</code>. <code>dbAnswerCache</code> makes the answer cache durable (<a href="docs/answer-cache.md">docs/answer-cache.md</a>).</td></tr><tr><td><code>jevlang/loop, jevlang/session</code></td><td>events in, decisions dispatched, at your concurrency and debounce; clarify-questions become conversations that know when to stop asking.</td></tr><tr><td><code>jevlang/mcp</code></td><td>serve a policy as MCP tools (<code>decide</code> offline and free, <code>evaluate</code> capped), dual-era protocol. <code>jevlang/mcp-client</code> turns any other server's tools into dispatcher handlers; <code>jevlang/mcp-import</code> makes a <code>tools/list</code> snapshot into validated action declarations.</td></tr><tr><td><code>jevlang/webhooks, jevlang/wiring, jevlang/harvest</code></td><td>signed webhooks in and out, a crash-safe spool with at-least-once delivery, and labeled fixtures grown from what people did with real cases.</td></tr><tr><td><code>jevlang/serve</code></td><td>an HTTP sidecar (<code>/decide</code>, <code>/evaluate</code>, <code>/dispatch</code> with <code>dry_run</code>, <code>/policy</code>, <code>/healthz</code>) so any language can use the policy; MCP and webhook routes mount alongside it.</td></tr></tbody></table></div></div>
 </div>
 </section>
-<div class="aside" data-flag="cloud"><div class="shell"><p>Want it deployed instead of embedded? <a href="https://cloud.jevlang.sh">Jev Cloud</a> is the hosted product, not something you <code>bun add</code>: organizations, keys, traces and a review queue around the same decisions.</p></div></div><section id="cloud" class="section section--band" data-flag="cloud" aria-labelledby="cloud-h">
+<div class="aside" data-flag="cloud"><div class="shell"><p>Want it deployed instead of embedded? <a href="https://cloud.jevlang.sh">Jev Cloud</a> is the hosted product, not something you <code>bun add</code>: organizations, keys, traces and a review queue around the same decisions.</p></div></div><section id="cloud" class="section" data-flag="cloud" aria-labelledby="cloud-h">
 <div class="shell">
 <h2 id="cloud-h">Same engine, hosted</h2>
 <p class="expl"><a href="https://cloud.jevlang.sh">Jev Cloud</a> runs this package for many tenants, and <code>jevlang/cloud</code> is its client: one <code>fetch</code>, no dependency, no engine logic. <code>jc.evaluate(project, input)</code> returns the decision <code>policy.decide()</code> would make, with the rate limit, spend cap and trace applied on the server. <a href="/reference#the-hosted-product-jevlang-cloud">Read the section.</a></p>
@@ -991,7 +1012,7 @@ console.<span class="tk-fn">log</span>(<span class="tk-str">`listening on ${serv
 </figure></div>
 </div>
 </section>
-<section id="promote" class="section" data-flag="cloud" aria-labelledby="promote-h">
+<section id="promote" class="section section--band" data-flag="cloud" aria-labelledby="promote-h">
 <div class="shell">
 <h2 id="promote-h">Promote behind a replay gate</h2>
 <p class="expl"><code>jev deploy</code> publishes a policy artifact that never changes, and <code>jev promote</code> is the only thing that moves production. <code>--expect</code> names the version you believe is live, so two promotions cannot both win; <code>--gate</code> replays real production traces against the candidate and refuses when too many decide differently. <a href="/reference#the-hosted-product-jevlang-cloud">Read the section.</a></p>
@@ -1027,7 +1048,7 @@ jev open support</code></pre>
 </figure></div>
 </div>
 </section>
-<section id="managed-state" class="section section--band" data-flag="cloud" aria-labelledby="managed-state-h">
+<section id="managed-state" class="section" data-flag="cloud" aria-labelledby="managed-state-h">
 <div class="shell">
 <h2 id="managed-state-h">Managed state, same interface</h2>
 <p class="expl"><code>jc.journal(project)</code> is a <code>Journal</code>, the interface <code>redisJournal</code> and <code>dbJournal</code> already satisfy. Hand it to <code>makeDispatcher</code> and idempotency, cooldowns, budgets and scheduled work are shared by every instance, with no Redis of your own to run. <a href="/reference#the-hosted-product-jevlang-cloud">Read the section.</a></p>
@@ -1040,7 +1061,7 @@ jev open support</code></pre>
 </figure></div>
 </div>
 </section>
-<section id="own-runner" class="section" data-flag="cloud" aria-labelledby="own-runner-h">
+<section id="own-runner" class="section section--band" data-flag="cloud" aria-labelledby="own-runner-h">
 <div class="shell">
 <h2 id="own-runner-h">Actions on your own machine</h2>
 <p class="expl">Make a target <code>{ &quot;type&quot;: &quot;runner&quot;, &quot;pool&quot;: &quot;prod-east&quot; }</code> and dispatch queues the step instead of calling out. <code>runner()</code> from <code>jevlang/cloud</code>, or <code>jev runner prod-east handlers.json</code>, pulls it with a <code>run</code>-scoped key and reports onto the trace, so a private database or a shell is in reach and nothing on your network accepts a connection. <a href="/reference#the-hosted-product-jevlang-cloud">Read the section.</a></p>
@@ -1058,28 +1079,28 @@ jev open support</code></pre>
 </figure></div>
 </div>
 </section>
-<section id="bring-your-own" class="section section--band" data-flag="cloud" aria-labelledby="bring-your-own-h">
+<section id="bring-your-own" class="section" data-flag="cloud" aria-labelledby="bring-your-own-h">
 <div class="shell">
 <h2 id="bring-your-own-h">Bring your own everything</h2>
 <p class="expl">Model keys, the model endpoint, state, traces and handlers each have a managed and a bring-your-own option, chosen per environment on the same code path: your own Anthropic key, any OpenAI-compatible URL, your Upstash or Postgres, your own runner beside <code>http</code> and <code>webhook</code>. Usage on your own key is never marked up, and the hard spend cap still applies to it.</p>
 <div class="demo"><div class="tablewrap"><table><thead><tr><th>Piece</th><th>Managed</th><th>Bring your own</th></tr></thead><tbody><tr><td data-label="Piece">Model keys</td><td data-label="Managed">AI Gateway on the deployment's OIDC token, so we hold no gateway key</td><td data-label="Bring your own">Your OpenAI, Anthropic or AI Gateway key, sealed as a secret. Never marked up</td></tr><tr><td data-label="Piece">Model endpoint</td><td data-label="Managed">AI Gateway</td><td data-label="Bring your own">Any OpenAI-compatible URL, including a self-hosted one</td></tr><tr><td data-label="Piece">State (journal, limits, budgets)</td><td data-label="Managed">Our Upstash, namespaced per tenant</td><td data-label="Bring your own">Your Upstash, or your Postgres</td></tr><tr><td data-label="Piece">Traces</td><td data-label="Managed">Our Postgres, retention by plan, redaction on write</td><td data-label="Bring your own">Your Postgres, or nothing at all</td></tr><tr><td data-label="Piece">Handlers</td><td data-label="Managed"><code>http</code> and <code>webhook</code> behind an egress allowlist, <code>code</code> in Vercel Sandbox</td><td data-label="Bring your own">Your own runner: <code>{ &quot;type&quot;: &quot;runner&quot; }</code> queues the step, and <code>jev runner</code> runs it on your machine</td></tr></tbody></table></div></div>
 </div>
 </section>
-<section id="isolation" class="section" data-flag="cloud" aria-labelledby="isolation-h">
+<section id="isolation" class="section section--band" data-flag="cloud" aria-labelledby="isolation-h">
 <div class="shell">
 <h2 id="isolation-h">Tenants isolated by construction</h2>
 <p class="expl">The organization comes from the <code>Authorization: Bearer jev_live_…</code> key, never from the path, so a wrong tenant gets the same 404 an unknown project does. Row-level security on <code>org_id</code> is the second wall, and the negatives are tested.</p>
 <div class="demo"><div class="tablewrap"><table><thead><tr><th>Guarantee</th><th>How it holds</th></tr></thead><tbody><tr><td>The tenant comes from the credential</td><td>Every store function takes the organization first; a wrong tenant is the 404 an unknown slug gets.</td></tr><tr><td>Every Redis key and every journal name is prefixed</td><td><code>t:{org}:p:{project}:e:{env}:</code> server-side, so a project's configuration cannot reach another namespace — and two tenants' identical <code>Idempotency-Key</code>s are not the same case.</td></tr><tr><td>Row-level security on <code>org_id</code> is the second wall</td><td>The app connects as the database's owner and drops to a role with no <code>BYPASSRLS</code> inside every transaction, naming the organization it is reading. A query that forgets reads nothing rather than everything.</td></tr><tr><td>The negatives are tested</td><td>org B's key reads, writes, limits, spends and promotes nothing of org A's.</td></tr></tbody></table></div></div>
 </div>
 </section>
-<section id="cloud-api" class="section section--band" data-flag="cloud" aria-labelledby="cloud-api-h">
+<section id="cloud-api" class="section" data-flag="cloud" aria-labelledby="cloud-api-h">
 <div class="shell">
 <h2 id="cloud-api-h">One HTTP API</h2>
 <p class="expl">Every route sits under <code>/api/v1</code>, and a key carries the scopes <code>evaluate</code>, <code>dispatch</code>, <code>deploy</code> or <code>read</code>. <code>Idempotency-Key</code> makes a retry return the first answer instead of paying or acting twice, and a <code>jev_pub_…</code> key is safe in a browser behind an origin allowlist.</p>
 <div class="demo"><p class="table-title">The API</p><div class="tablewrap"><table><thead><tr><th>Route</th><th>What it does</th></tr></thead><tbody><tr><td><code>POST /api/v1/projects</code></td><td>create a project, with its three environments</td></tr><tr><td><code>GET /api/v1/projects</code></td><td>this organization's projects</td></tr><tr><td><code>GET /api/v1/projects/:slug</code></td><td>one project, its environments and what each serves</td></tr><tr><td><code>PUT /api/v1/projects/:slug</code></td><td>replace one environment's configuration</td></tr><tr><td><code>POST /api/v1/projects/:slug/deployments</code></td><td>publish a policy artifact — the first becomes production, later ones move dev and preview</td></tr><tr><td><code>GET /api/v1/projects/:slug/deployments</code></td><td>newest first</td></tr><tr><td><code>POST /api/v1/projects/:slug/promote</code></td><td><code>{deployment, expect}</code> moves production; <code>{deployment, gate}</code> replays real traces first and refuses when too much changed</td></tr><tr><td><code>POST /api/v1/projects/:slug/replay-diff</code></td><td>production's recent traces decided again against another deployment; a trace whose inputs cannot be rebuilt is counted as refused, never skipped</td></tr><tr><td><code>POST /api/v1/projects/:slug/evaluate</code></td><td>ask the model the policy's questions, then decide</td></tr><tr><td><code>POST /api/v1/projects/:slug/decide</code></td><td>decide on answers you already have; no model is asked</td></tr><tr><td><code>POST /api/v1/projects/:slug/dispatch</code></td><td>decide, then run the project's handlers (<code>dry_run</code> rehearses)</td></tr><tr><td><code>POST /api/v1/projects/:slug/state</code></td><td>the project's managed journal: steps, cooldowns, budgets, scheduled work</td></tr><tr><td><code>GET /api/v1/projects/:slug/traces[/:id]</code></td><td>what happened, newest first</td></tr><tr><td><code>POST /api/v1/projects/:slug/traces/:id/replay</code></td><td>one trace decided again, against another deployment</td></tr><tr><td><code>GET/PUT/DELETE /api/v1/projects/:slug/secrets[/:name]</code></td><td>names, versions and a hint; values never come back</td></tr><tr><td><code>GET/PATCH /api/v1/projects/:slug/escalations[/:id]</code></td><td>the review queue; a resolution becomes a labeled fixture</td></tr><tr><td><code>GET/POST /api/v1/projects/:slug/fixtures</code></td><td>what the project keeps to replay</td></tr><tr><td><code>GET /api/v1/projects/:slug/docs/:file</code></td><td>generated per deployment: <code>openapi.json</code>, <code>llms.txt</code>, <code>AGENTS.md</code>, <code>mcp.json</code>, <code>snippets.md</code></td></tr><tr><td><code>GET /api/v1/usage</code></td><td>rows, and a total that separates money from estimates</td></tr><tr><td><code>GET /api/v1/audit</code></td><td>what changed, and who did it</td></tr><tr><td><code>POST /api/v1/runners/claim</code></td><td>a runner asks its pool for work, with a lease and a one-time claim token; long-polls up to 25 s</td></tr><tr><td><code>POST /api/v1/runners/jobs/:id/complete</code></td><td>the runner's result, onto the trace that queued it; <code>fail</code> re-queues until five attempts, <code>extend</code> is the heartbeat</td></tr><tr><td><code>GET /api/v1/runners</code></td><td>pools, their runners and when each last asked</td></tr><tr><td><code>GET /api/v1/projects/:slug/runner-jobs</code></td><td>a project's runner jobs, newest first</td></tr><tr><td><code>POST /api/v1/stripe/webhook</code></td><td>the only writer of subscription state: Stripe signs, the raw body is verified, and the projection is idempotent</td></tr><tr><td><code>POST /api/public/evaluate</code></td><td>the browser door: a publishable key, an origin allowlist, an end-user limit</td></tr></tbody></table></div></div>
 </div>
 </section>
-<section id="plans" class="section" data-flag="cloud" aria-labelledby="plans-h">
+<section id="plans" class="section section--band" data-flag="cloud" aria-labelledby="plans-h">
 <div class="shell">
 <h2 id="plans-h">Free to start</h2>
 <p class="expl">Signing in at <a href="https://cloud.jevlang.sh/sign-in">cloud.jevlang.sh</a> creates an organization you own; invite people with one of six roles. The plans are defined once, in a config the <a href="https://cloud.jevlang.sh/pricing"><code>/pricing</code></a> page, the limits and the tests all read.</p>

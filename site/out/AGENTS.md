@@ -4,6 +4,10 @@ Install: `bun add jevlang`. Node 22+, no runtime dependencies. Deciding, validat
 and replaying work offline; only `evaluateWithProvider` and `jev gate hook`
 (for calls on neither list) reach a model.
 
+Install: `npx skills add TimMikeladze/JevLang -g`. Use `/jevlang` in
+Claude Code or `$jevlang` in Codex to create, check, test, and connect policies
+to an app. Guide: https://github.com/TimMikeladze/JevLang/blob/main/docs/agent-skills.md.
+
 Minimal working policy — save it as `policy.js` and run `node policy.js`
 (this exact file is re-run by the test suite):
 

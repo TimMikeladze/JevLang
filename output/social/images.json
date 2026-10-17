@@ -1,0 +1,51 @@
+[
+  {
+    "file": "jev-1.14/00-agent-skills.png",
+    "title": "Build your first JevLang policy",
+    "width": 1536,
+    "height": 1024,
+    "sha256": "c5be5a11009aeb9878019af53c5af7825adfb24d32a7a09751c15adbd7efe01f"
+  },
+  {
+    "file": "jev-1.14/00-getting-started.png",
+    "title": "Run a policy locally",
+    "width": 1536,
+    "height": 1024,
+    "sha256": "59960854159c8891c3492b3b2f69e0ccfb64b484e2dda743c3288d4a3ba7081d"
+  },
+  {
+    "file": "jev-1.14/support-ticket-example.png",
+    "title": "Route support tickets",
+    "width": 1536,
+    "height": 1024,
+    "sha256": "fb4fbc831529bcde49d9843d0cd15b1ec478c71dd69cc3549ceb62e8c9455c95"
+  },
+  {
+    "file": "jev-1.14/01-package-policy.png",
+    "title": "Locate a package in a photo",
+    "width": 1536,
+    "height": 1024,
+    "sha256": "9f05244646352757a08287008995af641e6571e17a12c91bd7938fbaa755a28a"
+  },
+  {
+    "file": "jev-1.14/03-client-controls.png",
+    "title": "Control model requests",
+    "width": 1536,
+    "height": 1024,
+    "sha256": "43ce6f01799d19c932eff309662e210285d6e3a5080ece8243f8ac47e86cc652"
+  },
+  {
+    "file": "jev-1.14/04-record-replay.png",
+    "title": "Record and replay decisions",
+    "width": 1536,
+    "height": 1024,
+    "sha256": "eb32b2cc42e4efc3ad47046a62400418b6fd104db7320c16c717a02481be1d98"
+  },
+  {
+    "file": "archive/jev-1.14-native-python.png",
+    "title": "Run a policy in Python",
+    "width": 1536,
+    "height": 1024,
+    "sha256": "9a33d46fc5803e8cfd15152c4aea770b53f6fd0020c77eb0712a6fe37cad7af9"
+  }
+]

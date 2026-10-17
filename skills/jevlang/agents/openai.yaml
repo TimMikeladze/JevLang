@@ -1,0 +1,4 @@
+interface:
+  display_name: "JevLang"
+  short_description: "Build, test, and connect policies to your app"
+  default_prompt: "Use $jevlang to build a support router, test its decisions, and connect it to this app."

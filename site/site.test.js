@@ -120,6 +120,19 @@ test('committed output is current', () => {
   for (const [name, content] of Object.entries(fresh)) assert.equal(read(`./out/${name}`), content, `${name} is stale: run bun run site`);
 });
 
+test('getting started uses one command for the full workflow and includes the packaged image', () => {
+  const html = section('agent-skills');
+  assert.match(html, /npx skills add TimMikeladze\/JevLang -g/);
+  assert.ok(html.includes('/jevlang'));
+  assert.ok(html.includes('$jevlang'));
+  assert.match(html, /connect it to our ticket API/);
+  assert.doesNotMatch(html, /jevlang-(?:check|test|integrate)/);
+  assert.match(html, /src="\/images\/agent-skills.png" alt="[^"]+"/);
+  assert.deepEqual(readFileSync(new URL('./out/images/agent-skills.png', import.meta.url)),
+    readFileSync(new URL('../docs/images/agent-skills.png', import.meta.url)));
+  assert.match(index, /href="\/#agent-skills">Build your first policy/);
+});
+
 // 6. every source section reaches the reference page; anchors land.
 test('reference completeness and anchors', () => {
   const slug = (h) => h.toLowerCase().replace(/[^\w]+/g, '-').replace(/^-|-$/g, '');

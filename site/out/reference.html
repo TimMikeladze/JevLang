@@ -34,6 +34,7 @@ mq.addEventListener('change',function(){if(r.dataset.pref==='system')set('system
 document.addEventListener('keydown',function(e){if(e.key==='Escape')document.querySelectorAll('.nav-drop[open]').forEach(function(d){d.open=false})});
 document.addEventListener('click',function(e){
 document.querySelectorAll('.nav-drop[open]').forEach(function(d){if(!d.contains(e.target))d.open=false});
+var a=e.target.closest('.menu-items a');if(a)a.closest('details').open=false;
 var t=e.target.closest('#theme-toggle');
 if(t){var n={system:'dark',dark:'light',light:'system'}[r.dataset.pref];try{n==='system'?localStorage.removeItem(K):localStorage.setItem(K,n)}catch(x){}set(n);return}
 var c=e.target.closest('[data-copy],[data-copy-code],[data-copy-markdown]');
@@ -116,6 +117,9 @@ html:not([data-flags~=cloud]) [data-flag=cloud]{display:none!important}
 :root[data-pref=dark] .theme-toggle .i-dark{display:inline-flex}
 :root[data-pref=light] .theme-toggle .i-light{display:inline-flex}
 :root[data-pref=system] .theme-toggle .i-system,:root:not([data-pref]) .theme-toggle .i-system{display:inline-flex}
+.guide-image{margin:0;max-width:100%}
+.guide-image img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:14px}
+
 /* hero */
 .hero{position:relative;padding-block:clamp(3.5rem,7vw,6rem) clamp(3rem,6vw,5rem);isolation:isolate}
 .mark-tile{fill:var(--raise);stroke:var(--line)}
@@ -184,6 +188,7 @@ details.control summary::-webkit-details-marker{display:none}
 .menu-items{display:grid;gap:.1rem}
 .menu-items a,.menu-items button{display:flex;width:100%;text-align:left;padding:.45rem .6rem;border-radius:.4rem;color:var(--body);text-decoration:none;font:.875rem/1.4 var(--sans);background:none;border:0;cursor:pointer}
 .menu-items a:hover,.menu-items button:hover{background:var(--band);color:var(--ink)}
+@media (max-width:720px){.actions{position:relative}.actions details{position:static}.actions .menu{left:0;right:0;min-width:0}}
 /* copy buttons only exist with script */
 .copy-btn{display:none;align-items:center;gap:.35rem;background:none;border:1px solid transparent;border-radius:.4rem;color:var(--soft);cursor:pointer;padding:.3rem .45rem;font:500 .72rem/1 var(--mono);transition:color .14s ease,border-color .14s ease}
 html[data-js] .copy-btn{display:inline-flex}
@@ -437,12 +442,18 @@ h1{font-size:2.6rem}
 </div>
 </div></header>
 <main id="main"><div class="shell ref-layout">
-<nav class="ref-toc" aria-label="Contents"><p class="toc-title">Contents</p><a href="#why-you-need-this">Why you need this</a><a href="#hello-world">Hello, world</a><a href="#three-text-question-types">Three text question types</a><a href="#python">Python</a><a href="#images-and-box-questions">Images and Box questions</a><a href="#a-real-one-support-routing">A real one: support routing</a><a href="#mistakes-are-build-errors">Mistakes are build errors</a><a href="#guard-an-agent-s-tools">Guard an agent's tools</a><a href="#call-it-from-anywhere">Call it from anywhere</a><a href="#classify-a-whole-file">Classify a whole file</a><a href="#self-hosted-decisions-with-laya">Self-hosted decisions with Laya</a><a href="#run-it-on-serverless-vercel-upstash">Run it on serverless: Vercel + Upstash</a><a href="#the-hosted-product-jevlang-cloud">The hosted product: `jevlang/cloud`</a><a href="#everything-else-in-the-box">Everything else in the box</a><a href="#verify-it-yourself">Verify it yourself</a></nav>
+<nav class="ref-toc" aria-label="Contents"><p class="toc-title">Contents</p><a href="#build-your-first-jevlang-policy">Build your first JevLang policy</a><a href="#why-you-need-this">Why you need this</a><a href="#hello-world">Hello, world</a><a href="#three-text-question-types">Three text question types</a><a href="#python">Python</a><a href="#images-and-box-questions">Images and Box questions</a><a href="#a-real-one-support-routing">A real one: support routing</a><a href="#mistakes-are-build-errors">Mistakes are build errors</a><a href="#guard-an-agent-s-tools">Guard an agent's tools</a><a href="#call-it-from-anywhere">Call it from anywhere</a><a href="#classify-a-whole-file">Classify a whole file</a><a href="#self-hosted-decisions-with-laya">Self-hosted decisions with Laya</a><a href="#run-it-on-serverless-vercel-upstash">Run it on serverless: Vercel + Upstash</a><a href="#the-hosted-product-jevlang-cloud">The hosted product: `jevlang/cloud`</a><a href="#everything-else-in-the-box">Everything else in the box</a><a href="#verify-it-yourself">Verify it yourself</a></nav>
 <article class="ref-doc">
 <h1 id="jevlang">JevLang</h1>
 <p><strong>Decide once, trust everywhere.</strong> JevLang is a policy engine for decisions that used to live inside a prompt: routing, triage, approvals, escalation, guarding an agent's tools. You write the policy once in plain TypeScript (or Python); JevLang asks the model only the questions the policy needs, checks the answers, decides — and can prove, from a signed journal, exactly why it decided that.</p>
 <pre><code>bun add jevlang</code></pre>
 <p>No runtime dependencies. Node 22+. Pure decisions, validation and replay work fully offline — no account, no network.</p>
+<h2 id="build-your-first-jevlang-policy">Build your first JevLang policy</h2>
+<p>Describe what your app should do. One command creates the policy, tests its decisions, and connects it to your app.</p>
+<pre><code>npx skills add TimMikeladze/JevLang -g</code></pre>
+<p>Open a new agent session. Type <code>/jevlang</code> in Claude Code or <code>$jevlang</code> in Codex, followed by your request:</p>
+<pre><code>Build a support router with billing and technical queues. Send uncertain tickets for review, connect it to our ticket API, and test it.</code></pre>
+<p>Use the same command to check a decision, replay tests, or change an existing policy. Tests run with supplied answers; live evaluation uses your configured provider. See the <a href="https://github.com/TimMikeladze/JevLang/blob/main/docs/agent-skills.md">getting-started guide</a>.</p>
 <h2 id="why-you-need-this">Why you need this</h2>
 <p>If an LLM picks a branch in your product today, you probably have some version of these problems:</p>
 <ul>

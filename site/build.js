@@ -1,5 +1,5 @@
 // Build: reads the docs, resolves references, writes site/out deterministically.
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'node:fs';
 import { renderLanding, renderReference, llmsText, agentsMd, pageMarkdown, sitemap, robots } from './render.js';
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
@@ -8,6 +8,8 @@ const cloudReadme = read('../docs/cloud-api.md');
 
 const outDir = new URL('./out/', import.meta.url);
 mkdirSync(outDir, { recursive: true });
+mkdirSync(new URL('images/', outDir), { recursive: true });
+copyFileSync(new URL('../docs/images/agent-skills.png', import.meta.url), new URL('images/agent-skills.png', outDir));
 
 const files = {
   'index.html': renderLanding({ readme, cloudReadme }),

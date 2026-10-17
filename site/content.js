@@ -55,6 +55,17 @@ export const sections = [
     ],
   },
   {
+    id: 'agent-skills',
+    h2: 'Build your first JevLang policy',
+    p: 'Create a policy, test its decisions, and connect it to your app. Install once, then type `/jevlang` in Claude Code or `$jevlang` in Codex followed by your request. [Getting-started guide](REPO/blob/main/docs/agent-skills.md).',
+    doc: 'Build your first JevLang policy',
+    demos: [
+      { type: 'snippet', marker: 'npx skills add TimMikeladze/JevLang -g', name: 'Install globally' },
+      { type: 'snippet', marker: 'Build a support router with billing and technical queues.', name: 'Describe what you need' },
+      { type: 'image', src: '/images/agent-skills.png', alt: 'Build your first JevLang policy: install once, describe a support router, and connect it to your app', width: 1536, height: 1024 },
+    ],
+  },
+  {
     id: 'questions',
     h2: 'Three text question types',
     p: 'Declare what you want to know with `noul` for a yes/no, `choice` for one of several options, or `score` for a place on a scale. The model answers each with numbers, and `policy.decide()` refuses an answer that does not fit its question.',

@@ -135,6 +135,8 @@
   "scripts": {
     "test": "bun test",
     "test:types": "tsc -p test/tsconfig.json",
+    "test:skills": "bun test test/skills.test.js",
+    "test:skills:install": "node scripts/check-skills-install.mjs",
     "release": "bumpp --git-check --all --commit --push --tag --execute 'bun run release:prepare'",
     "release:prepare": "bun run site && bun run test:site",
     "site": "bun site/build.js",

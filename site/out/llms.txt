@@ -54,6 +54,27 @@ hold  // almost certainly spam
 ```
 
 
+## Build your first JevLang policy
+
+Create a policy, test its decisions, and connect it to your app. Install once, then type /jevlang in Claude Code or $jevlang in Codex followed by your request. Getting-started guide (https://github.com/TimMikeladze/JevLang/blob/main/docs/agent-skills.md).
+
+**Install globally**
+
+```sh
+npx skills add TimMikeladze/JevLang -g
+```
+
+
+**Describe what you need**
+
+```text
+Build a support router with billing and technical queues. Send uncertain tickets for review, connect it to our ticket API, and test it.
+```
+
+
+![Build your first JevLang policy: install once, describe a support router, and connect it to your app](https://jevlang.sh/images/agent-skills.png)
+
+
 ## Three text question types
 
 Declare what you want to know with noul for a yes/no, choice for one of several options, or score for a place on a scale. The model answers each with numbers, and policy.decide() refuses an answer that does not fit its question.

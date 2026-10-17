@@ -262,6 +262,7 @@ mq.addEventListener('change',function(){if(r.dataset.pref==='system')set('system
 document.addEventListener('keydown',function(e){if(e.key==='Escape')document.querySelectorAll('.nav-drop[open]').forEach(function(d){d.open=false})});
 document.addEventListener('click',function(e){
 document.querySelectorAll('.nav-drop[open]').forEach(function(d){if(!d.contains(e.target))d.open=false});
+var a=e.target.closest('.menu-items a');if(a)a.closest('details').open=false;
 var t=e.target.closest('#theme-toggle');
 if(t){var n={system:'dark',dark:'light',light:'system'}[r.dataset.pref];try{n==='system'?localStorage.removeItem(K):localStorage.setItem(K,n)}catch(x){}set(n);return}
 var c=e.target.closest('[data-copy],[data-copy-code],[data-copy-markdown]');
@@ -492,6 +493,7 @@ const table = (head, rows, cell = inlineMd, firstCode = head.length === 2) => `<
 export function renderDemo(d, ctx) {
   const { r, readme, cloudReadme } = ctx;
   switch (d.type) {
+    case 'image': return `<figure class="guide-image"><a href="${esc(d.src)}"><img src="${esc(d.src)}" alt="${esc(d.alt)}" width="${d.width}" height="${d.height}" loading="lazy" decoding="async"></a></figure>`;
     case 'source': { const b = r.file(d.file); return codeFrame({ name: d.file, code: b.body, lang: b.lang }); }
     case 'run': return runFrame(r.run(d.run));
     case 'annotated': return annotatedFrame(r.run(d.run));
@@ -559,6 +561,7 @@ ${demos}
 <details class="control">
 <summary>${icon('chevron')} For agents</summary>
 <div class="menu"><div class="menu-items">
+<a href="/#agent-skills">Build your first policy</a>
 <a href="/llms.txt">llms.txt</a>
 <a href="/AGENTS.md">AGENTS.md</a>
 <a href="${esc(examplesSource)}">Example source</a>
@@ -632,6 +635,7 @@ function demoMarkdown(d, ctx) {
   const source = (name) => { const b = r.file(name); return `**${name}**\n\n${fenceMd(b.lang, b.body)}`; };
   const run = (cmd) => { const c = r.run(cmd); return fenceMd('sh', `$ ${c.command}${c.output ? '\n' + c.output : ''}`); };
   switch (d.type) {
+    case 'image': return `![${d.alt}](${url(d.src)})\n`;
     case 'source': return source(d.file);
     case 'run': case 'annotated': return run(d.run);
     case 'steps': return d.steps.map((s) => [s.title.replace(/<[^>]+>/g, ''), s.cmd ? fenceMd('sh', `$ ${s.cmd}`) : '', s.file ? source(s.file) : '', s.run ? run(s.run) : '', ...(s.runs ?? []).map(run)].filter(Boolean).join('\n\n')).join('\n\n');
@@ -689,6 +693,10 @@ export function agentsMd({ readme }) {
 Install: \`${meta.install}\`. Node 22+, no runtime dependencies. Deciding, validating
 and replaying work offline; only \`evaluateWithProvider\` and \`jev gate hook\`
 (for calls on neither list) reach a model.
+
+Install: \`npx skills add TimMikeladze/JevLang -g\`. Use \`/jevlang\` in
+Claude Code or \`$jevlang\` in Codex to create, check, test, and connect policies
+to an app. Guide: ${repo}/blob/main/docs/agent-skills.md.
 
 Minimal working policy — save it as \`policy.js\` and run \`node policy.js\`
 (this exact file is re-run by the test suite):

@@ -76,6 +76,9 @@ html:not([data-flags~=cloud]) [data-flag=cloud]{display:none!important}
 :root[data-pref=dark] .theme-toggle .i-dark{display:inline-flex}
 :root[data-pref=light] .theme-toggle .i-light{display:inline-flex}
 :root[data-pref=system] .theme-toggle .i-system,:root:not([data-pref]) .theme-toggle .i-system{display:inline-flex}
+.guide-image{margin:0;max-width:100%}
+.guide-image img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:14px}
+
 /* hero */
 .hero{position:relative;padding-block:clamp(3.5rem,7vw,6rem) clamp(3rem,6vw,5rem);isolation:isolate}
 .mark-tile{fill:var(--raise);stroke:var(--line)}
@@ -144,6 +147,7 @@ details.control summary::-webkit-details-marker{display:none}
 .menu-items{display:grid;gap:.1rem}
 .menu-items a,.menu-items button{display:flex;width:100%;text-align:left;padding:.45rem .6rem;border-radius:.4rem;color:var(--body);text-decoration:none;font:.875rem/1.4 var(--sans);background:none;border:0;cursor:pointer}
 .menu-items a:hover,.menu-items button:hover{background:var(--band);color:var(--ink)}
+@media (max-width:720px){.actions{position:relative}.actions details{position:static}.actions .menu{left:0;right:0;min-width:0}}
 /* copy buttons only exist with script */
 .copy-btn{display:none;align-items:center;gap:.35rem;background:none;border:1px solid transparent;border-radius:.4rem;color:var(--soft);cursor:pointer;padding:.3rem .45rem;font:500 .72rem/1 var(--mono);transition:color .14s ease,border-color .14s ease}
 html[data-js] .copy-btn{display:inline-flex}
