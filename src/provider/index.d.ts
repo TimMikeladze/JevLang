@@ -55,7 +55,7 @@ export const environmentReader: { get(name: string): string | undefined };
 export const layerOrder: readonly string[];
 export function userConfigPath(): string;
 export const projectConfigName: string;
-export function resolveProvider(request: ProviderRequest, config: Record<string, JSONValue>, registry: ProviderRegistry, options?: { refresh?: boolean; exclude?: ResolvedTarget[] }): Promise<Resolution>;
+export function resolveProvider(request: ProviderRequest, config: Record<string, JSONValue>, registry: ProviderRegistry, options?: { refresh?: boolean; exclude?: ResolvedTarget[]; offline?: boolean }): Promise<Resolution>;
 export function discoverProviders(registry: ProviderRegistry, options?: { refresh?: boolean }): Promise<{ provider: Provider; availability: Availability }[]>;
 export function clearProviderDiscoveryCache(registry?: ProviderRegistry | null): void;
 export function capable(caps: Capabilities, request: ProviderRequest): boolean;

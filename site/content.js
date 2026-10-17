@@ -56,12 +56,12 @@ export const sections = [
   },
   {
     id: 'questions',
-    h2: 'Three kinds of question',
+    h2: 'Three text question types',
     p: 'Declare what you want to know with `noul` for a yes/no, `choice` for one of several options, or `score` for a place on a scale. The model answers each with numbers, and `policy.decide()` refuses an answer that does not fit its question.',
-    doc: 'Three kinds of question',
+    doc: 'Three text question types',
     demos: [
-      { type: 'diagram', name: 'answer-shapes', policy: 'support.js', decide: 'decide.js', case: 'an angry refund request', table: 'Three kinds of question' },
-      { type: 'table', name: 'kinds', table: 'Three kinds of question' },
+      { type: 'diagram', name: 'answer-shapes', policy: 'support.js', decide: 'decide.js', case: 'an angry refund request', table: 'Three text question types' },
+      { type: 'table', name: 'kinds', table: 'Three text question types' },
     ],
   },
   {

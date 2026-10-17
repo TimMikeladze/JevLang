@@ -18,10 +18,30 @@ const answers = {
   'refund-requested?': { type: 'noul', noul: 0.2 },
 };
 const restore = () => {
+  client.defaultModel = null;
   client.transport = null; client.apiKey = null; client.baseUrl = null; client.sleep = seconds => new Promise(r => setTimeout(r, Math.min(seconds, 0.01) * 1000));
   client.clock = () => Date.now(); client.random = () => 0; client.onRetryAfter = null; client.onUsage = null; client.extraBody = null;
   client.environment = name => ({ TYPESAFE_API_KEY: 'test-key' })[name];
 };
+
+test('TypeSafe defaults to Jev 1.14 and preserves explicit model overrides', async t => {
+  restore();
+  t.after(restore);
+  const sent = [];
+  client.transport = async payload => {
+    sent.push(payload.model);
+    return { answers, model: payload.model };
+  };
+  const ask = options => jevCall({}, ticket.questions(), options);
+  assert.equal((await ask()).requestedModel, 'jev-1.14.0');
+  client.environment = name => ({ TYPESAFE_DEFAULT_MODEL: 'jev-latest' })[name];
+  await ask();
+  client.defaultModel = 'jev-preview';
+  await ask();
+  const previous = await ask({ model: 'jev-1.13.0' });
+  assert.equal(previous.model, 'jev-1.13.0');
+  assert.deepEqual(sent, ['jev-1.14.0', 'jev-latest', 'jev-preview', 'jev-1.13.0']);
+});
 
 test('the TypeSafe call sends state, model and questions, and reports its provenance', async t => {
   restore();

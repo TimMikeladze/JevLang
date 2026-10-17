@@ -1,15 +1,19 @@
 import { requireAt, own, object, finite, probability, jsonCopy, fingerprint, equal } from './common.js';
 import { evaluateExpression, levelIndex, truth, optionWire, optionCode } from './expressions.js';
 import { validatePolicy, parameterOK, itemIdentity } from './validate.js';
+import { modelLimits } from './budgets.js';
+import { validateAssetReferences, inspectImage, assetIdentity, maxPortableBytes } from './assets.js';
 import { redact, capValue, checkTokenBudget } from './state.js';
 
 // A raw question is sent exactly as written; everything else sends its declared shape.
 const wireQuestion = q => q.type === 'raw' ? q.wire : Object.fromEntries(['type', 'instructions', 'criteria'].filter(k => own(q, k)).map(k => [k, q[k]]));
-export function buildState(policy, input) {
+export function buildState(policy, input, options = {}) {
   const raw = jsonCopy(input);
   const settings = policy.stateOptions ?? {};
-  const finish = state => checkTokenBudget(settings.maxChars ? capValue(state, settings.maxChars, 'state', false) : state, {}, own(settings, 'tokenLimit') ? settings.tokenLimit : 32768);
-  if (!Object.keys(policy.state).length) return { state: finish(redact(raw, settings.redact ?? [])), facts: object(raw) ? raw : {} };
+  const experimental = { ...policy.typesafe?.experimental, ...options.experimental };
+  const assetReferences = validateAssetReferences({ ...policy.typesafe?.assets, ...options.assets });
+  const finish = state => checkTokenBudget(settings.maxChars ? capValue(state, settings.maxChars, 'state', false, assetReferences) : state, {}, own(settings, 'tokenLimit') ? settings.tokenLimit : modelLimits(experimental).question);
+  if (!Object.keys(policy.state).length) return { state: finish(redact(raw, settings.redact ?? [], null, true, assetReferences)), facts: object(raw) ? raw : {} };
   const facts = {}, state = {};
   for (const [name, spec] of Object.entries(policy.state)) {
     let v = raw, missing = false;
@@ -21,8 +25,8 @@ export function buildState(policy, input) {
     // defineProperty preserves literal JSON keys, including __proto__.
     Object.defineProperty(facts, name, { value: v, enumerable: true });
     if (spec.local) continue;
-    if (!spec.unredacted) v = redact(v, [...(settings.redact ?? []), ...(spec.redact ?? [])], name);
-    if (spec.maxChars) v = capValue(v, spec.maxChars, `state.${name}`);
+    if (!spec.unredacted) v = redact(v, [...(settings.redact ?? []), ...(spec.redact ?? [])], name, true, assetReferences);
+    if (spec.maxChars) v = capValue(v, spec.maxChars, `state.${name}`, true, assetReferences);
     Object.defineProperty(state, name, { value: v, enumerable: true });
   }
   return { state: finish(state), facts };
@@ -71,6 +75,10 @@ export function validateAnswers(questions, answers) {
       requireAt(finite(a.score), `${path}.score`, 'score must be numeric', undefined, 'answers');
       if (object(a.probabilities)) requireAt(Object.keys(a.probabilities).length === q.criteria.length, `${path}.probabilities`, 'number of level probabilities differs from declared levels', undefined, 'answers');
     }
+    if (q.type === 'box') {
+      requireAt(object(a.box) && ['top','bottom','left','right'].every(k => probability(a.box[k])) && a.box.left < a.box.right && a.box.top < a.box.bottom, `${path}.box`, 'box edges must be finite, ordered fractions between 0 and 1', undefined, 'answers');
+      requireAt(a.confidence == null || probability(a.confidence), `${path}.confidence`, 'Box confidence must be null or between 0 and 1', undefined, 'answers');
+    }
     if (q.type === 'noul') requireAt(probability(a.noul), `${path}.noul`, 'noul must be between 0 and 1', undefined, 'answers');
   }
 }
@@ -93,10 +101,16 @@ export class CompiledPolicy {
     Object.freeze(this);
   }
   get policy() { return this.#policy; }
-  toJSON() { return jsonCopy(this.#policy); }
-  buildState(input) { return buildState(this.#policy, input); }
+  toJSON() { return jsonCopy(this.#policy, this.#policy.typesafe?.assets ? { maxBytes: maxPortableBytes } : {}); }
+  buildState(input, options = {}) { return buildState(this.#policy, input, options); }
   questions(state = {}) { return buildQuestions(this.#policy, state); }
-  fingerprint(state = {}) { return fingerprint(this.questions(state)); }
+  fingerprint(state = {}) { return fingerprint(this.#imageIdentity(this.questions(state))); }
+  #imageIdentity(questions) {
+    const assets = this.#policy.typesafe?.assets;
+    if (!assets || !Object.keys(assets).length) return questions;
+    const inspected = Object.fromEntries(Object.entries(assets).map(([ref,a]) => [ref,inspectImage(a,`typesafe.assets.${ref}`)]));
+    return assetIdentity(null, questions, inspected);
+  }
   // The questions that do not depend on runtime state. This is the policy's
   // recorded identity: what a fixture's questions_sha256 is compared against,
   // so a home with different rooms does not make every recorded answer stale.
@@ -114,7 +128,7 @@ export class CompiledPolicy {
       .filter(([, q]) => q.optionsFrom || q.over)
       .map(([id, q]) => ({ question: id, optionsFrom: q.optionsFrom ?? null, over: q.over ?? null, itemKey: q.itemKey ?? null, wire: wireQuestion(q) }));
     const questions = this.staticQuestions();
-    return fingerprint(templates.length ? { ...questions, '%templates': templates } : questions);
+    return fingerprint(this.#imageIdentity(templates.length ? { ...questions, '%templates': templates } : questions));
   }
 
   #context(answers, facts, options = {}) {
@@ -147,6 +161,7 @@ export class CompiledPolicy {
       return Object.entries(a.probabilities).sort(([ka, va], [kb, vb]) => vb - va || (ka < kb ? -1 : ka > kb ? 1 : 0));
     };
     const confidence = (a, id) => {
+      if (p.questions[id]?.type === 'box' && a.confidence == null) return null;
       requireAt(probability(a.confidence), `answers.${id}.confidence`, 'accessor requires confidence between 0 and 1', undefined, 'answers'); return a.confidence;
     };
     const logAnswer = (id, q, a) => {
@@ -158,7 +173,7 @@ export class CompiledPolicy {
         const idx = scoreArgmax(a, id);
         detail = `most likely: ${levelDescription(a, idx)} (p=${a.probabilities[idx].toFixed(2)})`;
       }
-      return record(id, { question: id, kind, value: a.choice ?? a.score ?? a.noul, confidence: kind === 'noul' ? null : confidence(a, id), detail });
+      return record(id, { question: id, kind, value: a.box ?? a.choice ?? a.score ?? a.noul, confidence: kind === 'noul' ? null : confidence(a, id), detail });
     };
     const record = (id, reading) => {
       ctx.lastReading = reading;
@@ -212,7 +227,12 @@ export class CompiledPolicy {
       }
       const a = answer(id); logAnswer(id, q, a);
       switch (op) {
-        case 'value': return q.type === 'choice' ? optionCode(q, a.choice) : a.score ?? a.noul;
+        case 'value': return q.type === 'choice' ? optionCode(q, a.choice) : a.box ?? a.score ?? a.noul;
+        case 'boxTop': return a.box.top;
+        case 'boxBottom': return a.box.bottom;
+        case 'boxLeft': return a.box.left;
+        case 'boxRight': return a.box.right;
+        case 'hasConfidence': return probability(a.confidence);
         case 'chosen': return a.choice;
         case 'rawAnswer': return jsonCopy(a);
         case 'confidence': return confidence(a, id);
@@ -248,7 +268,7 @@ export class CompiledPolicy {
       const band = own(g, 'low');
       const value = band ? a.noul : g.by === 'topProb' ? probabilities(a, g.question)[0][1] : g.by === 'margin' ? (() => { const ps = probabilities(a, g.question); return ps[0][1] - (ps[1]?.[1] ?? 0); })() : confidence(a, g.question);
       const trips = band ? value >= ctx.gateValue(`${g.question}/lo`, g.low) && value <= ctx.gateValue(`${g.question}/hi`, g.high)
-        : value < ctx.gateValue(`${g.question}${own(g, 'option') ? `/${g.option}` : ''}`, g.threshold);
+        : value === null || value < ctx.gateValue(`${g.question}${own(g, 'option') ? `/${g.option}` : ''}`, g.threshold);
       if (!trips) return null;
       const saved = ctx.readings, enabled = ctx.gatesEnabled;
       ctx.readings = new Map(); ctx.gatesEnabled = false;
@@ -266,7 +286,7 @@ export class CompiledPolicy {
   }
 
   precheck(input, options = {}) {
-    const { facts } = this.buildState(input);
+    const { facts } = this.buildState(input, options);
     const ctx = this.#context({}, facts, options); ctx.gatesEnabled = false;
     for (const [i, c] of this.#policy.prechecks.entries()) {
       ctx.readings = new Map();

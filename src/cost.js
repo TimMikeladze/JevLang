@@ -5,6 +5,8 @@
 // nothing more: on the recorded calls that default undercounted real charges by
 // about 2.2x. A fit against recorded usage replaces it with a straight line,
 // which is still an estimate, and only as good as the calls it came from.
+import { modelLimits } from './budgets.js';
+import { inspectAssets, mergeAssets } from './assets.js';
 import { own, object, requireAt, finite } from './common.js';
 import { stateSize } from './state.js';
 
@@ -50,7 +52,7 @@ const partTokens = (estimator, bodyChars, n) => bodyChars === 0 ? 0 : Math.ceil(
 export function samplesFromFixtures(policy, fixtures, model) {
   const identity = policy.identity();
   const questions = policy.staticQuestions();
-  return fixtures.filter(f => f.synthetic !== true
+  return fixtures.filter(f => f.synthetic !== true && !Object.keys(f.assets ?? {}).length
     && object(f.usage) && finite(f.usage.input_tokens) && f.usage.input_tokens > 0
     && (object(f.questions) || f.questions_sha256 == null || f.questions_sha256.toLowerCase() === identity))
     .map(f => [chars(requestBody(object(f.state) || typeof f.state === 'string' ? f.state : '', f.model ?? model, f.questions ?? questions)), f.usage.input_tokens]);
@@ -60,17 +62,17 @@ export function samplesFromFixtures(policy, fixtures, model) {
 export const inputPricePerMtok = 0.042;
 export const usageCost = (usage, price = inputPricePerMtok) => (finite(usage?.input_tokens) ? usage.input_tokens : 0) * (price / 1e6);
 
-// TODO(api): models.md gives 32k tokens for the state plus the longest question
-// and 64k for the whole request; primitives.md says "around 32,000" shared.
-export const stateAndQuestionBudget = 32000;
-export const requestBudget = 64000;
+// Conservative decimal default limits from the model reference.
+export const stateAndQuestionBudget = modelLimits().question;
+export const requestBudget = modelLimits().request;
 const longestQuestion = questions => Object.values(questions).reduce((m, q) => Math.max(m, chars(q)), 0);
-export function budgetWarnings(estimator, stateChars, questions, bodyChars) {
+export function budgetWarnings(estimator, stateChars, questions, bodyChars, experimental = {}) {
+  const limits = modelLimits(experimental);
   const both = partTokens(estimator, bodyChars, stateChars + longestQuestion(questions));
   const total = estimator.tokens(bodyChars);
   return [
-    ...(both > stateAndQuestionBudget ? [`the state plus the longest question is about ${both} tokens, over the ${stateAndQuestionBudget} models.md allows them (primitives.md says "around 32,000"). This is an estimate (${estimator.label}); shrink the state or add a maxChars cap.`] : []),
-    ...(total > requestBudget ? [`the whole request is about ${total} tokens, over the ${requestBudget} per request in models.md. This is an estimate (${estimator.label}).`] : []),
+    ...(both > limits.question ? [`the state plus the longest question is about ${both} tokens, over the ${limits.question} model reference allows them. This is an estimate (${estimator.label}); shrink the state or add a maxChars cap.`] : []),
+    ...(total > limits.request ? [`the whole request is about ${total} tokens, over the ${limits.request} per request in models.md. This is an estimate (${estimator.label}).`] : []),
   ];
 }
 
@@ -78,11 +80,15 @@ export function budgetWarnings(estimator, stateChars, questions, bodyChars) {
 // input    : optional raw input, so the state and runtime questions are real
 // fixtures : optional recorded fixtures to calibrate against
 // volume   : how many calls to price
-export function cost(policy, { input = null, fixtures = null, volume = 1, model = null, price = inputPricePerMtok } = {}) {
+export function cost(policy, { input = null, fixtures = null, volume = 1, model = null, price = inputPricePerMtok, assets = null, experimental = {} } = {}) {
   requireAt(Number.isInteger(volume) && volume > 0, 'volume', 'volume must be a positive integer');
-  const built = input === null ? null : policy.buildState(input);
+  const flags = { ...policy.policy.typesafe?.experimental, ...experimental };
+  const imageAssets = mergeAssets(policy.policy.typesafe?.assets, assets);
+  const built = input === null ? null : policy.buildState(input, { assets: imageAssets, experimental: flags });
   const state = built ? built.state : '';
   const questions = built ? policy.questions(state) : policy.staticQuestions();
+  const hasImages = Object.keys(imageAssets).length > 0;
+  if (hasImages && built) inspectAssets(imageAssets, { state, questions });
   const chosenModel = model ?? policy.policy.model ?? null;
   let estimator = roughEstimator, note = null;
   if (fixtures) {
@@ -106,9 +112,10 @@ export function cost(policy, { input = null, fixtures = null, volume = 1, model 
     questions_tokens: questionTokens,
     state_tokens: stateTokens,
     envelope_tokens: Math.max(0, perCall - questionTokens - stateTokens),
-    per_call: { tokens: perCall, usd: usageCost({ input_tokens: perCall }, price) },
-    volume: { calls: volume, tokens: perCall * volume, usd: usageCost({ input_tokens: perCall * volume }, price) },
+    ...(hasImages ? { image_tokens: null, text_tokens: perCall } : {}),
+    per_call: { tokens: hasImages ? null : perCall, usd: hasImages ? null : usageCost({ input_tokens: perCall }, price) },
+    volume: { calls: volume, tokens: hasImages ? null : perCall * volume, usd: hasImages ? null : usageCost({ input_tokens: perCall * volume }, price) },
     input_price_per_mtok: price,
-    warnings: budgetWarnings(estimator, chars(state), questions, bodyChars),
+    warnings: [...budgetWarnings(estimator, chars(state), questions, bodyChars, flags), ...(hasImages ? ['Image tokens are unknown; text tokens exclude image processing. Use recorded usage for billed totals.'] : [])],
   };
 }

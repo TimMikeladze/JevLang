@@ -26,7 +26,7 @@ const credit = noulEach('credit?', {
 }, 'amounts', { itemKey: 'amount' });
 
 export const policy = definePolicy({
-  name: 'receipt-extraction', version: '1', model: 'jev-1.13.0',
+  name: 'receipt-extraction', version: '1', model: 'jev-1.14.0',
   questions: [receiptTo, credit],
   state: {
     body: { path: ['body'], maxChars: 4000 },

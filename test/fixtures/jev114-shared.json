@@ -1,0 +1,367 @@
+{
+  "policy": {
+    "format": 1,
+    "name": "localize",
+    "questions": {
+      "present": {
+        "type": "noul",
+        "instructions": "Is a mug in `photo`?"
+      },
+      "mug": {
+        "type": "box",
+        "instructions": "The mug in `photo`"
+      }
+    },
+    "typesafe": {
+      "experimental": {
+        "images": true
+      }
+    },
+    "gates": [
+      {
+        "question": "mug",
+        "threshold": 0.8,
+        "decision": {
+          "action": "escalate",
+          "target": "review"
+        },
+        "onRead": true
+      }
+    ],
+    "route": {
+      "clauses": [
+        {
+          "when": {
+            "op": "and",
+            "args": [
+              {
+                "op": "yes",
+                "args": [
+                  "present",
+                  {
+                    "op": "literal",
+                    "args": [
+                      0.9
+                    ]
+                  }
+                ]
+              },
+              {
+                "op": "lt",
+                "args": [
+                  {
+                    "op": "boxLeft",
+                    "args": [
+                      "mug"
+                    ]
+                  },
+                  {
+                    "op": "literal",
+                    "args": [
+                      0.5
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "decision": {
+            "action": "assign",
+            "target": "found",
+            "data": {
+              "op": "value",
+              "args": [
+                "mug"
+              ]
+            }
+          }
+        }
+      ],
+      "otherwise": {
+        "action": "hold"
+      },
+      "mode": "first"
+    },
+    "state": {},
+    "thresholds": {},
+    "profiles": {},
+    "signals": {},
+    "actions": {},
+    "prechecks": [],
+    "flags": [],
+    "stateOptions": {}
+  },
+  "state": {
+    "photo": "photo",
+    "": 1,
+    "𐀀": 2
+  },
+  "assets": {
+    "photo": {
+      "type": "image",
+      "format": "png",
+      "data_base64": "iVBORw0KGgoAAAANSUhEUgAAARgAAAEYCAIAAAAI7H7bAAAA+0lEQVR4nO3BAQ0AAADCoPdPbQ43oAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD4NmAUAATtYWQQAAAAASUVORK5CYII="
+    }
+  },
+  "answers": [
+    {
+      "present": {
+        "type": "noul",
+        "noul": 0.99
+      },
+      "mug": {
+        "type": "box",
+        "box": {
+          "left": 0.1,
+          "right": 0.8,
+          "top": 0.2,
+          "bottom": 0.9
+        },
+        "confidence": 0.9
+      }
+    },
+    {
+      "present": {
+        "type": "noul",
+        "noul": 0.99
+      },
+      "mug": {
+        "type": "box",
+        "box": {
+          "left": 0.1,
+          "right": 0.8,
+          "top": 0.2,
+          "bottom": 0.9
+        },
+        "confidence": null
+      }
+    },
+    {
+      "present": {
+        "type": "noul",
+        "noul": 0.01
+      },
+      "mug": {
+        "type": "box",
+        "box": {
+          "left": 0.1,
+          "right": 0.8,
+          "top": 0.2,
+          "bottom": 0.9
+        },
+        "confidence": null
+      }
+    }
+  ],
+  "questions": {
+    "present": {
+      "type": "noul",
+      "instructions": "Is a mug in `photo`?"
+    },
+    "mug": {
+      "type": "box",
+      "instructions": "The mug in `photo`"
+    }
+  },
+  "manifest": {
+    "photo": {
+      "format": "png",
+      "width": 280,
+      "height": 280,
+      "sha256": "ab18c850cba3fb81f4ec465e173cbc2ba324e927f060647f1de1d4441298fc38",
+      "occurrences": 3
+    }
+  },
+  "identity": {
+    "state": [
+      "object",
+      [
+        [
+          "photo",
+          [
+            "content",
+            [
+              [
+                "image",
+                "ab18c850cba3fb81f4ec465e173cbc2ba324e927f060647f1de1d4441298fc38"
+              ]
+            ]
+          ]
+        ],
+        [
+          "𐀀",
+          [
+            "scalar",
+            2
+          ]
+        ],
+        [
+          "",
+          [
+            "scalar",
+            1
+          ]
+        ]
+      ]
+    ],
+    "questions": {
+      "present": {
+        "type": [
+          "string",
+          "noul"
+        ],
+        "instructions": [
+          "content",
+          [
+            [
+              "text",
+              "Is a mug in `"
+            ],
+            [
+              "image",
+              "ab18c850cba3fb81f4ec465e173cbc2ba324e927f060647f1de1d4441298fc38"
+            ],
+            [
+              "text",
+              "`?"
+            ]
+          ]
+        ]
+      },
+      "mug": {
+        "type": [
+          "string",
+          "box"
+        ],
+        "instructions": [
+          "content",
+          [
+            [
+              "text",
+              "The mug in `"
+            ],
+            [
+              "image",
+              "ab18c850cba3fb81f4ec465e173cbc2ba324e927f060647f1de1d4441298fc38"
+            ],
+            [
+              "text",
+              "`"
+            ]
+          ]
+        ]
+      }
+    },
+    "images": [
+      "ab18c850cba3fb81f4ec465e173cbc2ba324e927f060647f1de1d4441298fc38"
+    ]
+  },
+  "policyIdentity": "cd7495d1815f7de41bfa1d74ca56de4ba66b154d4514e66c1518d4b96d1f7693",
+  "cacheKey": "4c5bbebd794f38c25eca970228137e6229d5f8042e5f83c36e8d969703c688bf",
+  "decisions": [
+    {
+      "action": "assign",
+      "target": "found",
+      "reason": null,
+      "rule": "route",
+      "clause": 0,
+      "source": "$.route.clauses[0]",
+      "line": null,
+      "file": null,
+      "model": null,
+      "provider": null,
+      "requested_model": null,
+      "requested_effort": null,
+      "effective_effort": null,
+      "request_id": null,
+      "stage": null,
+      "data": {
+        "left": 0.1,
+        "right": 0.8,
+        "top": 0.2,
+        "bottom": 0.9
+      },
+      "proposed": null,
+      "evidence": [],
+      "steps": [],
+      "readings": [
+        {
+          "question": "present",
+          "kind": "noul",
+          "value": 0.99,
+          "confidence": null,
+          "detail": null
+        },
+        {
+          "question": "mug",
+          "kind": "box",
+          "value": {
+            "left": 0.1,
+            "right": 0.8,
+            "top": 0.2,
+            "bottom": 0.9
+          },
+          "confidence": 0.9,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "action": "escalate",
+      "target": "review",
+      "reason": null,
+      "rule": "gate",
+      "clause": 0,
+      "source": "$.gates[0]",
+      "line": null,
+      "file": null,
+      "model": null,
+      "provider": null,
+      "requested_model": null,
+      "requested_effort": null,
+      "effective_effort": null,
+      "request_id": null,
+      "stage": null,
+      "data": null,
+      "proposed": null,
+      "evidence": [],
+      "steps": [],
+      "readings": [
+        {
+          "question": "mug",
+          "kind": "box",
+          "value": {
+            "left": 0.1,
+            "right": 0.8,
+            "top": 0.2,
+            "bottom": 0.9
+          },
+          "confidence": null,
+          "detail": "needed confidence >= 0.80; otherwise: assign found"
+        }
+      ]
+    },
+    {
+      "action": "hold",
+      "target": null,
+      "reason": null,
+      "rule": "route",
+      "clause": 1,
+      "source": "$.route.otherwise",
+      "line": null,
+      "file": null,
+      "model": null,
+      "provider": null,
+      "requested_model": null,
+      "requested_effort": null,
+      "effective_effort": null,
+      "request_id": null,
+      "stage": null,
+      "data": null,
+      "proposed": null,
+      "evidence": [],
+      "steps": [],
+      "readings": []
+    }
+  ]
+}

@@ -35,12 +35,13 @@ export function makePacer({ rpm = 1200, tokensPerSecond = 250_000, sleep, clock 
       pausedUntil === null ? 0 : pausedUntil - now,
       cap && level < need ? 1000 * ((need - level) / cap) : 0);
   };
-  const acquire = () => {
+  const acquire = signal => {
     const mine = queue.then(async () => {
       for (;;) {
+        signal?.throwIfAborted();
         const now = clock();
         const wait = waitMs(now);
-        if (wait > 0) { await sleep(wait / 1000); continue; }
+        if (wait > 0) { await sleep(wait / 1000, signal); continue; }
         if (interval) nextStart = now + interval;
         if (cap) level -= estimate();
         return;
@@ -72,18 +73,18 @@ export async function evaluateMany(evaluate, rows, {
   requireAt(Array.isArray(rows), 'rows', 'evaluateMany takes an array of rows');
   requireAt(Number.isInteger(workers) && workers > 0, 'workers', 'workers must be a positive integer');
   const n = rows.length;
-  if (n === 0) return { results: [], failed: 0, tokens: 0, cost: 0 };
+  if (n === 0) return { results: [], failed: 0, tokens: 0, cost: 0, usage_complete: true, unreported_calls: 0 };
   const out = new Array(n);
-  let nextRow = 0, tokens = 0;
+  let nextRow = 0, tokens = 0, unreportedCalls = 0;
   const pacer = makePacer({ rpm, tokensPerSecond, sleep, clock });
   // Every call any row makes lands here, retries and multi-call rows included.
   const outerUsage = client.onUsage, outerPacer = client.pacer, outerPause = client.onRetryAfter;
   client.onUsage = usage => {
-    if (finite(usage?.input_tokens)) tokens += usage.input_tokens;
+    if (finite(usage?.input_tokens)) tokens += usage.input_tokens; else unreportedCalls += 1;
     pacer.observe(usage);
     outerUsage?.(usage);
   };
-  client.pacer = async () => { await pacer.acquire(); await outerPacer?.(); };
+  client.pacer = async signal => { await pacer.acquire(signal); await outerPacer?.(signal); };
   client.onRetryAfter = seconds => { pacer.pause(seconds); outerPause?.(seconds); };
   const work = async () => {
     for (;;) {
@@ -105,6 +106,7 @@ export async function evaluateMany(evaluate, rows, {
     results,
     failed: results.filter(r => !(object(r) && typeof r.action === 'string')).length,
     tokens,
-    cost: usageCostOf({ input_tokens: tokens }),
+    cost: unreportedCalls ? null : usageCostOf({ input_tokens: tokens }),
+    usage_complete: unreportedCalls === 0, unreported_calls: unreportedCalls,
   };
 }

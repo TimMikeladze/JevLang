@@ -37,6 +37,7 @@ export async function runPipeline(stages, input, { start, maxRequests = 4 } = {}
   const checkStage = (name, from) => requireAt(Object.hasOwn(stages, name), 'stages',
     `${from} names stage '${name}', which the pipeline does not have`, `Stages: ${known.join(' -> ')}.`);
   checkStage(start, 'start');
+  let unreportedCalls = 0;
   let stage = start, current = input, steps = [], usage = { input_tokens: 0, output_tokens: 0 };
   for (;;) {
     const path = steps.map(([name]) => name);
@@ -48,14 +49,14 @@ export async function runPipeline(stages, input, { start, maxRequests = 4 } = {}
     // so a batch counting tokens still sees them.
     const outer = client.onUsage;
     let spent = usage;
-    client.onUsage = u => { spent = addUsage(spent, u); outer?.(u); };
+    client.onUsage = u => { if (!finite(u?.input_tokens) || !finite(u?.output_tokens)) unreportedCalls += 1; spent = addUsage(spent, u); outer?.(u); };
     let decision;
     try { decision = await evaluate(current); } finally { client.onUsage = outer; }
     requireAt(object(decision) && typeof decision.action === 'string', 'pipeline', `stage '${stage}' did not return a decision`);
     const staged = { ...decision, stage };
     steps = [...steps, [stage, staged]];
     usage = spent;
-    if (staged.action !== 'next') return { decision: staged, steps, usage };
+    if (staged.action !== 'next') return { decision: staged, steps, usage, usage_complete: unreportedCalls === 0, unreported_calls: unreportedCalls };
     const to = staged.target;
     checkStage(to, `stage '${stage}'`);
     requireAt(to !== stage && !path.includes(to), 'pipeline',
@@ -70,6 +71,7 @@ export const pipelineToJson = result => ({
   decision: result.decision,
   steps: result.steps.map(([stage, decision]) => ({ stage, decision })),
   usage: result.usage,
+  usage_complete: result.usage_complete, unreported_calls: result.unreported_calls,
 });
 
 // The k most probable options of a choice answer, most probable first, as the

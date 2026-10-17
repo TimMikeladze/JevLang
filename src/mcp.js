@@ -1,3 +1,5 @@
+import { inspectImage } from './assets.js';
+import { surfaceOptions, assetInputSchema } from './surface-options.js';
 // MCP, the server side: a policy (or any set of tools) as an MCP server.
 //
 // MCP 2026-07-28 is stateless. There is no initialize: every request carries its
@@ -387,7 +389,7 @@ export async function serveStdio(server, { input = process.stdin, output = proce
 // The policy as a server: decide from answers you already have, and, when it is
 // allowed, evaluate a case with the model. The resources describe the policy and
 // its actions.
-export function policyMcpServer(policy, { allowEvaluate = false, maxCalls = 100, name = null, evaluate = null } = {}) {
+export function policyMcpServer(policy, { allowEvaluate = false, maxCalls = 100, name = null, evaluate = null, experimental = {} } = {}) {
   const spec = policy.policy;
   const label = name ?? spec.name ?? 'policy';
   const meta = { 'jev/questions_sha256': policy.identity() };
@@ -414,7 +416,7 @@ export function policyMcpServer(policy, { allowEvaluate = false, maxCalls = 100,
     description: `Send a case to the model and run the ${label} policy on its answers. Each call is billed, and this server allows ${maxCalls} per process.`,
     inputSchema: {
       type: 'object',
-      properties: { state: { description: fields.length ? `the input the policy reads; it sends these fields: ${fields.join(', ')}` : "the input the policy's evaluate takes" } },
+      properties: { assets: assetInputSchema, experimental: { type: 'object', properties: { images: { type: 'boolean' }, longContext: { type: 'boolean' } }, additionalProperties: false }, state: { description: fields.length ? `the input the policy reads; it sends these fields: ${fields.join(', ')}` : "the input the policy's evaluate takes" } },
       required: ['state'], additionalProperties: false,
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
@@ -424,7 +426,7 @@ export function policyMcpServer(policy, { allowEvaluate = false, maxCalls = 100,
       if (!evaluate) return mcpToolError('this server was built without an evaluate function');
       if (calls >= maxCalls) return mcpToolError(`evaluate has run ${maxCalls} times, this server's cap\n  restart it, or raise the cap`);
       calls += 1;
-      try { return decisionResult(policy, await evaluate(args.state)); }
+      try { return decisionResult(policy, await evaluate(args.state, surfaceOptions(policy, args, experimental))); }
       catch (error) { return mcpToolError(error.message); }
     },
   });
@@ -459,6 +461,7 @@ export const policyToJson = policy => {
   return {
     name: spec.name ?? null, version: spec.version ?? null, owner: spec.owner ?? null,
     file: null, model: spec.model ?? null,
+    ...(spec.typesafe ? { typesafe: { experimental: spec.typesafe.experimental ?? {}, assets: Object.fromEntries(Object.entries(spec.typesafe.assets ?? {}).map(([ref,a]) => { const { format, width, height, sha256 } = inspectImage(a); return [ref,{ format, width, height, sha256 }]; })) } } : {}),
     questions_sha256: policy.identity(),
     questions: policy.staticQuestions(),
     dynamic_questions: Object.values(spec.questions).some(q => q.optionsFrom || q.over),

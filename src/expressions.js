@@ -19,7 +19,8 @@ export const record = fields => expression('object', Object.fromEntries(Object.e
 export const list = (...values) => expression('array', ...values.map(asExpression));
 
 const accessors = {
-  value: ['choice', 'score', 'noul'], confidence: ['choice', 'score'],
+  value: ['choice', 'score', 'noul', 'box'], confidence: ['choice', 'score', 'box'],
+  hasConfidence: ['box'], boxTop: ['box'], boxBottom: ['box'], boxLeft: ['box'], boxRight: ['box'],
   chosen: ['choice'], rawAnswer: ['raw'],
   is: ['choice'], yes: ['noul'], no: ['noul'], mostLikely: ['score'], atLeast: ['score'],
   prob: ['choice', 'score'], topProb: ['choice', 'score'], runnerUp: ['choice'],
@@ -57,7 +58,7 @@ export function checkExpression(x, policy, path, options = {}) {
         : `Use ${accessors[op].join(' or ')}.`);
     requireAt(!options.noAnswers, path, 'prechecks cannot read model answers', 'Use facts in prechecks.');
     reads.add(args[0]);
-    if (op === 'confidence') confidences.add(args[0]);
+    if (op === 'confidence' || op === 'hasConfidence') confidences.add(args[0]);
     if (op === 'is' || (op === 'prob' && q.type === 'choice')) {
       // Options are named by their code name or by the wire key they send.
       requireAt(optionWire(q, args[1]) !== undefined, path, `'${args[1]}' is not an option of '${args[0]}'`,

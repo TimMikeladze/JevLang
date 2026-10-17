@@ -70,3 +70,17 @@ rateLimit(journal, 'api', { max: 10 });
   void dbAnswerCache(queryOnly, { scope: 'types' });
   void dbStore(queryOnly);
 }
+
+// Jev 1.14 image requests and nullable Box confidence are part of the public API.
+import { box as boundingBox, imageAsset, listModels, checkRequestBudget, evaluateWithProvider } from '../src/index.js';
+const located = boundingBox('mug', 'the mug in `photo`');
+const bounds: import('../src/index.js').Expr<import('../src/index.js').BoxCoordinates> = located.value();
+const image = imageAsset(new Uint8Array(), { format: 'png' });
+evaluateWithProvider(p, { photo: 'reference' }, { assets: { reference: image }, experimental: { images: true }, compression: false, signal: new AbortController().signal });
+void listModels({ retry: { maxRetries: 0 } });
+void checkRequestBudget('state', {}, { experimental: { longContext: true } });
+// @ts-expect-error Box is not a score and has no mostLikely accessor
+located.mostLikely(0);
+// @ts-expect-error Box confidence may be unreported
+const knownConfidence: import('../src/index.js').Expr<number> = located.confidence();
+void bounds;

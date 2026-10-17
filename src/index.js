@@ -20,6 +20,11 @@ import { CompiledPolicy } from './engine.js';
 
 export class Question {
   constructor(id, schema) { this.id = id; this.schema = schema; }
+  top() { return expression('boxTop', this.id); }
+  bottom() { return expression('boxBottom', this.id); }
+  left() { return expression('boxLeft', this.id); }
+  right() { return expression('boxRight', this.id); }
+  hasConfidence() { return expression('hasConfidence', this.id); }
   value() { return expression('value', this.id); }
   confidence() { return expression('confidence', this.id); }
   is(option) { return expression('is', this.id, option); }
@@ -74,6 +79,7 @@ function levels(list) {
 export const score = (id, instructions, lv, settings = {}) => new Question(id, { type: 'score', instructions, ...levels(lv), ...settings });
 // A raw question is sent exactly as written; only rawAnswer can read its answer.
 export const rawQuestion = (id, wire) => new Question(id, { type: 'raw', wire });
+export const box = (id, instructions = null, settings = {}) => new Question(id, { type: 'box', instructions, ...settings });
 export const noul = (id, instructions, settings = {}) => new Question(id, { type: 'noul', instructions, ...settings });
 export const noulEach = (id, instructions, over, settings = {}) => new Question(id, { type: 'noul-each', instructions, over, ...settings });
 export const scoreEach = (id, instructions, lv, over, settings = {}) => new Question(id, { type: 'score-each', instructions, ...levels(lv), over, ...settings });
@@ -111,3 +117,7 @@ export function definePolicy({ questions, ...options }) {
   }));
   return new CompiledPolicy({ format: 1, ...options, questions: mapped });
 }
+
+export { imageAsset } from './assets.js';
+export { listModels } from './client.js';
+export { checkRequestBudget, modelLimits } from './budgets.js';

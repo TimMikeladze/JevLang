@@ -17,7 +17,7 @@ const refund = noul('refund-requested?', 'Is the customer asking for money back?
 });
 
 export const policy = definePolicy({
-  name: 'ticket-router', version: '2', owner: 'support', model: 'jev-1.13.0',
+  name: 'ticket-router', version: '2', owner: 'support', model: 'jev-1.14.0',
   questions: [department, frustration, refund],
   state: { ticket: { path: [] } },
   thresholds: { 'refund-min': 0.8 },

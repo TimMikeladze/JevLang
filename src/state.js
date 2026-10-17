@@ -1,3 +1,4 @@
+import { modelLimits } from './budgets.js';
 // Redaction and bounded state assembly.
 // Redaction is heuristic, with documented false positives/negatives.
 import { object, requireAt, own } from './common.js';
@@ -97,18 +98,30 @@ function renameKeys(obj, specs) {
   });
   return renames;
 }
-export function redact(value, specs = redactorNames, context = null, byName = true) {
+function redactAssetText(value, references, transform) {
+  references = references.filter(ref => typeof ref === 'string' && ref.length > 0);
+  if (!references.length) return transform(value);
+  let out = '', at = 0;
+  while (at < value.length) {
+    let found = null, next = value.length;
+    for (const ref of references) { const i = value.indexOf(ref, at); if (i >= 0 && (i < next || (i === next && ref.length > (found?.length ?? 0)))) { next = i; found = ref; } }
+    if (found === null) { out += transform(value.slice(at)); break; }
+    out += transform(value.slice(at, next)) + found; at = next + found.length;
+  }
+  return out;
+}
+export function redact(value, specs = redactorNames, context = null, byName = true, assetReferences = []) {
   if (!specs.length) return value;
   if (byName && context && specs.includes('keys') && secretKey.test(context) && (typeof value === 'number' || (typeof value === 'string' && value.length))) return '<key>';
-  if (typeof value === 'string') return redactString(value, specs, context);
+  if (typeof value === 'string') return redactAssetText(value, assetReferences, s => redactString(s, specs, context));
   if (typeof value === 'number' && Number.isInteger(value) && Math.abs(value) < 1e25) {
     const digits = BigInt(value).toString(), redacted = redactString(digits, specs, context);
     return redacted === digits || (redacted === '<phone>' && !phoneKey.test(context ?? '')) ? value : redacted;
   }
-  if (Array.isArray(value)) return value.map(x => redact(x, specs, context, byName));
+  if (Array.isArray(value)) return value.map(x => redact(x, specs, context, byName, assetReferences));
   if (object(value)) {
     const renamed = renameKeys(value, specs);
-    return Object.fromEntries(Object.entries(value).map(([k, v]) => [renamed.get(k) ?? k, redact(v, specs, k, byName)]));
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [renamed.get(k) ?? k, redact(v, specs, k, byName, assetReferences)]));
   }
   return value;
 }
@@ -135,15 +148,16 @@ const truncation = ' ...[truncated]';
 const markers = ['<email>', '<phone>', '<card>', '<ssn>', '<key>', '<url>', '<ip>'];
 const length = s => [...s].length;
 export const stateSize = v => length(JSON.stringify(v));
-export function capString(s, n) {
+export function capString(s, n, assetReferences = []) {
   const chars = [...s]; if (chars.length <= n) return s;
-  const kept = n <= truncation.length ? n : n - truncation.length;
+  let kept = n <= truncation.length ? n : n - truncation.length;
+  for (const ref of assetReferences) { if (!ref) continue; let at = s.indexOf(ref); while (at >= 0) { const start = [...s.slice(0, at)].length, end = start + [...ref].length; if (start < kept && end > kept) kept = start; at = s.indexOf(ref, at + ref.length); } }
   const suffix = n <= truncation.length ? '' : truncation;
   for (let i = Math.max(0, kept - 6); i < kept; i++) if (markers.some(m => chars.slice(i, i + m.length).join('') === m)) return chars.slice(0, i).join('') + suffix;
   return chars.slice(0, kept).join('') + suffix;
 }
 const mapStrings = (v, fn) => typeof v === 'string' ? fn(v) : Array.isArray(v) ? v.map(x => mapStrings(x, fn)) : object(v) ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, mapStrings(x, fn)])) : v;
-function cutStrings(v, over, floor) {
+function cutStrings(v, over, floor, assetReferences = []) {
   if (over <= 0) return v;
   const lens = []; mapStrings(v, s => { if (length(s) > floor) lens.push(length(s)); return s; }); lens.sort((a, b) => b - a);
   let sum = 0, cut = floor;
@@ -151,7 +165,7 @@ function cutStrings(v, over, floor) {
     sum += lens[i]; const n = Math.floor((sum - over) / (i + 1));
     if (n >= (lens[i + 1] ?? floor)) { cut = n; break; }
   }
-  return mapStrings(v, s => capString(s, cut));
+  return mapStrings(v, s => capString(s, cut, assetReferences));
 }
 function splitMore(xs) {
   const m = typeof xs.at(-1) === 'string' ? /^\.\.\.\[([0-9]+) more\]$/.exec(xs.at(-1)) : null;
@@ -179,14 +193,14 @@ function dropTails(v, limit) {
   }
   return v;
 }
-export function capValue(value, limit, path = 'state', stringField = true) {
-  if (typeof value === 'string' && stringField) return capString(value, limit);
+export function capValue(value, limit, path = 'state', stringField = true, assetReferences = []) {
+  if (typeof value === 'string' && stringField) return capString(value, limit, assetReferences);
   let out = value;
-  for (const floor of [256, 24]) out = dropTails(cutStrings(out, stateSize(out) - limit, floor), limit);
+  for (const floor of [256, 24]) out = dropTails(cutStrings(out, stateSize(out) - limit, floor, assetReferences), limit);
   requireAt(stateSize(out) <= limit, path, `state remains ${stateSize(out)} characters after shrinking, above ${limit}`, 'Raise maxChars, give large fields a per-field cap, or send fewer fields.', 'state');
   return out;
 }
-export function checkTokenBudget(state, questions = {}, limit = 32768) {
+export function checkTokenBudget(state, questions = {}, limit = modelLimits().question) {
   const chars = stateSize(state) + Math.max(0, ...Object.values(questions).map(stateSize));
   const estimated = Math.ceil(chars / 4);
   requireAt(limit === null || estimated <= limit, 'state', `state plus longest question is about ${estimated} tokens, above ${limit} (~4 chars/token, rough estimate)`, 'Cap the state or send fewer fields; there is no public tokenizer.', 'state');

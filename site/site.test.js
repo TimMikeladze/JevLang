@@ -241,7 +241,7 @@ test('link table honoured', () => {
 test('tables read from docs', () => {
   assert.ok(modulesTable(readme).length >= 8);
   assert.ok(cloudApiTable(cloudReadme).length >= 8);
-  const kinds = readmeTable(readme, 'Three kinds of question');
+  const kinds = readmeTable(readme, 'Three text question types');
   assert.deepEqual(kinds.rows.map((row) => row[0]), ['`noul`', '`choice`', '`score`']);
   // The answers the table promises are the answers decide.js hands the policy.
   const decide = r.file('decide.js').body;

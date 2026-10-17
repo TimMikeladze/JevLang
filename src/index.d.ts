@@ -2,7 +2,7 @@ export type JSONValue = null | boolean | number | string | JSONValue[] | { [key:
 export interface Expr<T = JSONValue> { readonly op: string; readonly args: readonly unknown[]; readonly __type?: T }
 export type Value<T> = T | Expr<T>;
 export interface QuestionSchema {
-  type: 'choice' | 'score' | 'noul' | 'noul-each' | 'score-each' | 'raw';
+  type: 'choice' | 'score' | 'noul' | 'noul-each' | 'score-each' | 'box' | 'raw';
   instructions?: JSONValue;
   criteria?: Record<string, JSONValue> | JSONValue[];
   ungated?: string;
@@ -30,6 +30,35 @@ export interface ScoreQuestion<L extends JSONValue = JSONValue, R = L> extends Q
   atLeast(level: R | number): Expr<boolean>; prob(level: R | number): Expr<number>;
   topProb(): Expr<number>; margin(): Expr<number>; nearest(): Expr<L>; normalized(): Expr<number>; spread(): Expr<number>;
 }
+export type BoxCoordinates = { top: number; bottom: number; left: number; right: number };
+export interface BoxQuestion extends QuestionRef {
+  value(): Expr<BoxCoordinates>; top(): Expr<number>; bottom(): Expr<number>; left(): Expr<number>; right(): Expr<number>;
+  confidence(): Expr<number | null>; hasConfidence(): Expr<boolean>;
+}
+export interface ImageAsset { type?: 'image'; format: 'png' | 'jpg' | 'jpeg'; data_base64: string }
+export interface JevOptions {
+  assets?: Record<string, ImageAsset>;
+  experimental?: { images?: boolean; longContext?: boolean };
+  compression?: 'auto' | 'zstd' | 'gzip' | false;
+  assetTransport?: 'json' | 'multipart';
+}
+export function imageAsset(bytes: Uint8Array, options: { format: 'png' | 'jpg' | 'jpeg' }): ImageAsset;
+export function box(id: string, instructions?: JSONValue, settings?: { ungated?: string }): BoxQuestion;
+export interface JevCallOptions extends JevOptions {
+  model?: string | null; headers?: Record<string, string>; signal?: AbortSignal; timeoutSeconds?: number; retry?: Partial<typeof defaultRetryPolicy>;
+}
+export interface EvaluationOptions extends JevCallOptions {
+  provider?: string | null; effort?: string | null; profile?: string | null; config?: Record<string, JSONValue>; registry?: unknown; role?: string;
+  cache?: AnswerCache | null; cacheOnly?: boolean; cacheMaxAgeSeconds?: number;
+}
+export type AssetManifest = Record<string, { format: 'png' | 'jpg'; width: number; height: number; sha256: string; occurrences: number }>;
+export interface JevResponse {
+  answers: Record<string, JSONValue>; model: string | null; usage: Record<string, JSONValue> | null;
+  requestId: string | null; requestedModel: string; assets: AssetManifest; experimental: { images: boolean; longContext: boolean };
+}
+export function listModels(options?: Pick<JevCallOptions, 'headers' | 'signal' | 'timeoutSeconds' | 'retry'>): Promise<{ models: { name: string; description: string; release_date: string }[] }>;
+export function checkRequestBudget(state: JSONValue, questions?: Record<string, QuestionSchema>, options?: { experimental?: JevOptions['experimental']; tokenLimit?: number | null; requestTokenLimit?: number | null }): { perQuestion: number; perRequest: number; limits: { question: number; request: number } };
+export function modelLimits(experimental?: JevOptions['experimental']): { question: number; request: number };
 export interface NoulQuestion extends QuestionRef {
   value(): Expr<number>; yes(threshold?: Value<number>): Expr<boolean>; no(threshold?: Value<number>): Expr<boolean>;
 }
@@ -61,7 +90,7 @@ export function all(...conditions: Value<boolean>[]): Expr<boolean>;
 export function any(...conditions: Value<boolean>[]): Expr<boolean>;
 export function not(condition: Value<boolean>): Expr<boolean>;
 export function eq(a: Value<JSONValue>, b: Value<JSONValue>): Expr<boolean>;
-export function compare(op: 'gt' | 'gte' | 'lt' | 'lte', a: Value<number>, b: Value<number>): Expr<boolean>;
+export function compare(op: 'gt' | 'gte' | 'lt' | 'lte', a: Value<number | null>, b: Value<number | null>): Expr<boolean>;
 export function compute(op: string, ...args: Value<JSONValue>[]): Expr;
 export function choose<T extends JSONValue>(condition: Value<boolean>, yes: Value<T>, no: Value<T>): Expr<T>;
 export function record(fields: Record<string, Value<JSONValue>>): Expr<Record<string, JSONValue>>;
@@ -91,12 +120,12 @@ export interface ActionSchema { params: Record<string, ParameterType>; doc?: str
 export interface PolicySpec {
   format: 1; name: string; version?: string; owner?: string;
   questions: Record<string, QuestionSchema>; state?: Record<string, Field>;
-  stateOptions?: { redact?: string[]; maxChars?: number | null; tokenLimit?: number | null };
+  stateOptions?: { redact?: string[]; maxChars?: number | null; tokenLimit?: number | null; requestTokenLimit?: number | null };
   thresholds?: Record<string, number>; profiles?: Record<string, Record<string, number>>;
   signals?: Record<string, Expr>; gates?: Gate[];
   route: { mode?: 'first' | 'all' | 'collect'; clauses: Clause[]; otherwise?: DecisionSpec; precedence?: string[] };
   prechecks?: Clause[]; flags?: { when: Expr; flag: string }[]; actions?: Record<string, ActionSchema>;
-  provider?: string; model?: string; effort?: string;
+  provider?: string; model?: string; effort?: string; typesafe?: JevOptions;
   /** Request fields the API docs do not describe; validation warns about them. */
   extraBody?: Record<string, JSONValue>;
 }
@@ -107,11 +136,11 @@ export interface Decision {
   requested_model: string | null; requested_effort: string | null; effective_effort: string | null; request_id: string | null; stage: string | null;
 }
 export interface Reading { question: string; kind: string; value: JSONValue; confidence: number | null; detail: string | null }
-export interface DecideOptions { facts?: Record<string, JSONValue>; state?: JSONValue; profile?: string; overrides?: Record<string, number> }
+export interface DecideOptions extends JevOptions { facts?: Record<string, JSONValue>; state?: JSONValue; profile?: string; overrides?: Record<string, number> }
 export class CompiledPolicy {
   constructor(policy: PolicySpec);
   readonly policy: Readonly<PolicySpec>; readonly warnings: readonly { path: string; message: string }[];
-  toJSON(): PolicySpec; buildState(input: JSONValue): { state: JSONValue; facts: Record<string, JSONValue> };
+  toJSON(): PolicySpec; buildState(input: JSONValue, options?: JevOptions): { state: JSONValue; facts: Record<string, JSONValue> };
   questions(state?: JSONValue): Record<string, QuestionSchema>; fingerprint(state?: JSONValue): string;
   /** The questions that do not depend on runtime state, and their fingerprint: the policy's recorded identity. */
   staticQuestions(): Record<string, QuestionSchema>; identity(): string;
@@ -222,17 +251,18 @@ export interface TokenFit { n: number; intercept: number; slope: number; spread:
 export interface CostReport {
   mode: string; note: string | null; model: string | null; chars: number;
   questions_tokens: number; state_tokens: number; envelope_tokens: number;
-  per_call: { tokens: number; usd: number }; volume: { calls: number; tokens: number; usd: number };
+  per_call: { tokens: number | null; usd: number | null }; volume: { calls: number; tokens: number | null; usd: number | null };
+  image_tokens?: null; text_tokens?: number;
   input_price_per_mtok: number; warnings: string[];
 }
-export function cost(policy: CompiledPolicy, options?: { input?: JSONValue; fixtures?: JSONValue[]; volume?: number; model?: string; price?: number }): CostReport;
+export function cost(policy: CompiledPolicy, options?: { input?: JSONValue; fixtures?: JSONValue[]; volume?: number; model?: string; price?: number; assets?: JevOptions['assets']; experimental?: JevOptions['experimental'] }): CostReport;
 export function chars(value: JSONValue): number;
 export function requestBody(state: JSONValue, model: string | null, questions: JSONValue): JSONValue;
 export function estimateTokens(chars: number): number;
 export function fitTokenModel(samples: [number, number][], options?: { minN?: number }): TokenFit | null;
 export function fitTokens(fit: TokenFit, chars: number): number;
 export function samplesFromFixtures(policy: CompiledPolicy, fixtures: JSONValue[], model: string | null): [number, number][];
-export function usageCost(usage: { input_tokens?: number }, price?: number): number;
+export function usageCost(usage: { input_tokens?: number | null }, price?: number): number;
 export const inputPricePerMtok: number;
 export function budgetWarnings(estimator: { tokens(chars: number): number; label: string }, stateChars: number, questions: Record<string, JSONValue>, bodyChars: number): string[];
 export interface ProvenancedDecision extends Decision { provider: string | null; request_id: string | null; cached?: true }
@@ -241,32 +271,32 @@ export interface AnswerCache { get(key: string): unknown; set(key: string, value
 export function questionsAnswerSchema(questions: Record<string, QuestionSchema>): JSONValue;
 export function policyPrompt(state: JSONValue, questions: Record<string, QuestionSchema>): string;
 /** `cacheOnly`: decide from `cache` or throw a JevError with code 'uncached'; no provider is asked. */
-export function evaluateWithProvider(policy: CompiledPolicy, input: JSONValue, options?: { provider?: string | null; model?: string | null; effort?: string | null; profile?: string | null; config?: Record<string, JSONValue>; registry?: unknown; role?: string; cache?: AnswerCache | null; cacheOnly?: boolean }): Promise<ProvenancedDecision>;
-export function evaluateConfiguredPolicy(policy: CompiledPolicy, input: JSONValue, options?: { start?: string; package?: JSONValue; provider?: string | null; model?: string | null; effort?: string | null; registry?: unknown }): Promise<ProvenancedDecision | null>;
+export function evaluateWithProvider(policy: CompiledPolicy, input: JSONValue, options?: EvaluationOptions): Promise<ProvenancedDecision>;
+export function evaluateConfiguredPolicy(policy: CompiledPolicy, input: JSONValue, options?: EvaluationOptions & { start?: string; package?: JSONValue }): Promise<ProvenancedDecision | null>;
 export function normalizeAnswers(questions: Record<string, QuestionSchema>, answers: Record<string, JSONValue>): Record<string, JSONValue>;
-export function runPolicyProvider(state: JSONValue, questions: Record<string, QuestionSchema>, options?: { provider?: string | null; model?: string | null; effort?: string | null; config?: Record<string, JSONValue>; registry?: unknown; role?: string }): Promise<unknown>;
-export function fixtureFromRun(options: { name: string; policy: CompiledPolicy; state: JSONValue; questions: Record<string, QuestionSchema>; decision?: Decision | null; result: { output: JSONValue; model: string | null; usage: JSONValue; requestId: string | null; target: { provider: { id: string }; model: string | null; requestedEffort: string | null; effectiveEffort: string | null } }; synthetic?: boolean; expect?: JSONValue }): JSONValue;
+export function runPolicyProvider(state: JSONValue, questions: Record<string, QuestionSchema>, options?: EvaluationOptions): Promise<unknown>;
+export function fixtureFromRun(options: { name: string; policy: CompiledPolicy; state: JSONValue; questions: Record<string, QuestionSchema>; decision?: Decision | null; result: { output: JSONValue; model: string | null; usage: JSONValue; requestId: string | null; assets?: AssetManifest; experimental?: JevOptions['experimental']; target: { provider: { id: string }; model: string | null; requestedEffort: string | null; effectiveEffort: string | null } }; synthetic?: boolean; expect?: JSONValue; assets?: JevOptions['assets']; embedAssets?: boolean }): JSONValue;
 export function typesafeProvider(options?: { maxParallel?: number }): unknown;
 export function makePolicyRegistry(config?: Record<string, JSONValue>): unknown;
 export function sharedPolicyRegistry(config: Record<string, JSONValue>): unknown;
-export function answerCacheKey(state: JSONValue, questions: Record<string, QuestionSchema>, selection: { provider: string | null; model: string | null; effort: string | null }): string;
+export function answerCacheKey(state: JSONValue, questions: Record<string, QuestionSchema>, selection: { provider: string | null; model: string | null; effort: string | null }, options?: JevOptions): string;
 /** What evaluateWithProvider reads back from a cached provider result, as plain JSON. */
-export interface AnswerRecord { output: JSONValue; model: string | null; requestId: string | null; target: { provider: { id: string }; model: string | null; requestedEffort: string | null; effectiveEffort: string | null } }
+export interface AnswerRecord { assets?: AssetManifest; experimental?: JevOptions['experimental']; cacheTime?: number; output: JSONValue; model: string | null; requestId: string | null; target: { provider: { id: string }; model: string | null; requestedEffort: string | null; effectiveEffort: string | null } }
 export function answerRecord(result: unknown): AnswerRecord;
-export function policyProviderRequest(state: JSONValue, questions: Record<string, QuestionSchema>, options?: { provider?: string | null; model?: string | null; effort?: string | null; role?: string }): unknown;
+export function policyProviderRequest(state: JSONValue, questions: Record<string, QuestionSchema>, options?: EvaluationOptions): unknown;
 export function explicitPolicySelection(config: Record<string, JSONValue>, request: unknown, selection?: { provider?: string | null; model?: string | null; effort?: string | null }): boolean;
 export const policyConfigDefaults: Record<string, JSONValue>;
-export function jevCall(state: JSONValue, questions: Record<string, QuestionSchema>, options?: { model?: string | null; timeoutSeconds?: number; retry?: typeof defaultRetryPolicy }): Promise<{ answers: Record<string, JSONValue>; model: string | null; usage: Record<string, JSONValue> | null; requestId: string | null; requestedModel: string }>;
+export function jevCall(state: JSONValue, questions: Record<string, QuestionSchema>, options?: JevCallOptions): Promise<JevResponse>;
 export const clientSettings: Record<string, unknown>;
 export const defaultRetryPolicy: { maxRetries: number; backoffInitial: number; backoffMax: number; jitter: number; statuses: number[]; respectRetryAfter: boolean; retryConnection: boolean; totalBudget: number };
 export function defaultModel(): string;
 export function apiKeyConfigured(): boolean;
 export class JevApiError extends Error { kind: string; status: number | null; requestId: string | null; retryAfterMs: number | null; body: unknown; retryable: boolean }
-export interface BatchReport { results: unknown[]; failed: number; tokens: number; cost: number }
+export interface BatchReport { results: unknown[]; failed: number; tokens: number; cost: number | null; usage_complete: boolean; unreported_calls: number }
 export function evaluateMany<Row>(evaluate: (row: Row) => Promise<Decision> | Decision, rows: Row[], options?: { workers?: number; rpm?: number | null; tokensPerSecond?: number | null; sleep?: (seconds: number) => Promise<void>; clock?: () => number; onResult?: ((index: number, result: unknown) => void | Promise<void>) | null }): Promise<BatchReport>;
-export function makePacer(options?: { rpm?: number | null; tokensPerSecond?: number | null; sleep: (seconds: number) => Promise<void>; clock: () => number }): { acquire(): Promise<void>; observe(usage: { input_tokens?: number }): void; pause(seconds: number): void };
+export function makePacer(options?: { rpm?: number | null; tokensPerSecond?: number | null; sleep: (seconds: number, signal?: AbortSignal) => Promise<void>; clock: () => number }): { acquire(signal?: AbortSignal): Promise<void>; observe(usage: { input_tokens?: number | null }): void; pause(seconds: number): void };
 export type PipelineStage<I = JSONValue> = ((input: I) => Promise<Decision> | Decision) | [(input: I) => Promise<Decision> | Decision, (previous: I, decision: Decision) => I];
-export interface PipelineResult { decision: Decision & { stage?: string }; steps: [string, Decision][]; usage: { input_tokens: number; output_tokens: number } }
+export interface PipelineResult { decision: Decision & { stage?: string }; steps: [string, Decision][]; usage: { input_tokens: number; output_tokens: number }; usage_complete: boolean; unreported_calls: number }
 export function runPipeline(stages: Record<string, PipelineStage>, input: JSONValue, options: { start: string; maxRequests?: number }): Promise<PipelineResult>;
 export function pipelineToJson(result: PipelineResult): JSONValue;
 export function topOptions(answer: { probabilities?: Record<string, number> }, k: number): string[];

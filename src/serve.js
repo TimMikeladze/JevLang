@@ -25,6 +25,7 @@
 // /webhook/<name>. A route's auth is 'token' (the bearer token applies, as for
 // /evaluate) or 'open' (the route authenticates the request itself, as a webhook
 // does with its signature).
+import { surfaceOptions } from './surface-options.js';
 import { createServer } from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
 import { object, own, requireAt } from './common.js';
@@ -64,7 +65,7 @@ const outcomeResponse = o => ({ ...outcomeToJson(o), explain: explainDecision(o.
 // /evaluate gets them from a provider, so a bad answer is upstream's (502).
 const errorKind = error => {
   const code = error.code ?? error.kind;
-  if (['answers', 'response', 'state', 'timeout'].includes(code)) return code;
+  if (['answers', 'response', 'state', 'timeout', 'validation'].includes(code)) return code;
   if (['rate-limit', 'overload', 'authentication', 'auth'].includes(code)) return 'upstream';
   if (code === 'connection') return 'connection';
   if (typeof code === 'string' && code !== 'internal') return 'jev';
@@ -75,13 +76,13 @@ const errorStatus = (error, route) => {
   if (kind === 'timeout') return 504;
   if (['upstream', 'connection'].includes(kind)) return 502;
   if (kind === 'response') return route === '/evaluate' ? 502 : 422;
-  if (['answers', 'state'].includes(kind)) return 422;
+  if (['answers', 'state', 'validation'].includes(kind)) return 422;
   return 500;
 };
 
 // -> { status, body, headers }
 export async function handleRequest(policy, method, path, body, {
-  dispatchers = null, dispatchAllowed = true, headers = {}, routes = [], evaluate = null,
+  dispatchers = null, dispatchAllowed = true, headers = {}, routes = [], evaluate = null, experimental = {},
 } = {}) {
   const route = routeOf(path);
   const matching = routes.filter(r => routeMatches(r, route));
@@ -104,7 +105,7 @@ export async function handleRequest(policy, method, path, body, {
   if (!allowed.includes(method)) return { status: 405, body: errorBody(`${route} takes ${allowed.join(', ')}`, 'method') };
   if (route === '/healthz') return { status: 200, body: { ok: true, policy: policy.policy.name ?? null } };
   if (route === '/policy') return { status: 200, body: policyToJson(policy) };
-  if (route === '/dispatch') return dispatchRequest(policy, body, dispatchers, dispatchAllowed, evaluate);
+  if (route === '/dispatch') return dispatchRequest(policy, body, dispatchers, dispatchAllowed, evaluate, experimental);
   let request;
   try { request = JSON.parse(typeof body === 'string' ? body : Buffer.from(body ?? '').toString('utf8')); } catch { request = undefined; }
   const key = route === '/decide' ? 'answers' : 'state';
@@ -123,14 +124,14 @@ export async function handleRequest(policy, method, path, body, {
   try {
     const decision = route === '/decide'
       ? policy.decide(request.answers, { facts: object(request.facts) ? request.facts : null })
-      : await evaluate(request.state);
+      : await evaluate(request.state, surfaceOptions(policy, request, experimental));
     return { status: 200, body: decisionResponse(policy, decision) };
   } catch (error) {
     return { status: errorStatus(error, route), body: errorBody(error.message, errorKind(error)) };
   }
 }
 
-async function dispatchRequest(policy, body, dispatchers, allowed, evaluate) {
+async function dispatchRequest(policy, body, dispatchers, allowed, evaluate, experimental) {
   let request;
   try { request = JSON.parse(typeof body === 'string' ? body : Buffer.from(body ?? '').toString('utf8')); } catch { request = undefined; }
   const field = key => {
@@ -158,7 +159,7 @@ async function dispatchRequest(policy, body, dispatchers, allowed, evaluate) {
     const facts = policy.buildState(input).facts;
     const decide = field('answers')
       ? () => policy.decide(request.answers, { facts })
-      : () => evaluate(input);
+      : () => evaluate(input, surfaceOptions(policy, request, experimental));
     const outcome = await dispatchForInput(dry ? dispatchers.dry : dispatchers.run, input, await decide(), {
       principal: field('principal'), key: field('key') === null ? null : String(field('key')),
     });
@@ -172,7 +173,7 @@ async function dispatchRequest(policy, body, dispatchers, allowed, evaluate) {
 // holds the one it wanted.
 export async function startServer(policy, {
   host = '127.0.0.1', port = 8080, tries = 20, token = null, dispatchers = null,
-  routes = [], evaluate = null, log = null, maxBody = 1024 * 1024, requestTimeout = 60,
+  routes = [], evaluate = null, experimental = {}, log = null, maxBody = 1024 * 1024, requestTimeout = 60,
 } = {}) {
   requireAt(Number.isInteger(port) && port >= 0, 'port', 'a port is a non-negative integer');
   requireAt(Number.isInteger(maxBody) && maxBody > 0, 'maxBody', 'maxBody is a positive number of bytes');
@@ -210,7 +211,7 @@ export async function startServer(policy, {
       } else {
         try {
           answer = await handleRequest(policy, request.method, request.url, body, {
-            dispatchers, dispatchAllowed, headers: request.headers, routes, evaluate,
+            dispatchers, dispatchAllowed, headers: request.headers, routes, evaluate, experimental,
           });
         } catch (error) {
           // The message may carry paths or provider output: it goes to the log, not the client.
