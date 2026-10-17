@@ -309,12 +309,19 @@ class LoopTest(unittest.TestCase):
             d = make_dispatcher({'queue': queue})
             seen = []
             bad = []
+            completed = asyncio.Event()
+            expected = {'from a line', 'bare input', 'from an iterable', 'from a timer'}
+
+            def observed(event, _result):
+                seen.append(event['input'])
+                if expected.issubset(seen):
+                    completed.set()
             lines_path = os.path.join(tempfile.mkdtemp(prefix='jev-lines-'), 'events.jsonl')
             with open(lines_path, 'w', encoding='utf-8') as handle:
                 handle.write('{"input": "from a line", "id": "delivery-1"}\nnot json\n"bare input"\n')
             l = make_loop(evaluate=lambda input: decision('assign', 'queue', {'input': input}),
                           dispatcher=d,
-                          on_outcome=lambda event, _result: seen.append(event['input']),
+                          on_outcome=observed,
                           sources=[])
             loop_start(l)
             lines_file = open(lines_path, 'r', encoding='utf-8')
@@ -326,11 +333,13 @@ class LoopTest(unittest.TestCase):
             stop_timer = timer_source(0.01, lambda: 'from a timer', key='timer')(
                 lambda event: loop_post(l, event))
             stop_lines = file_source(lambda event: loop_post(l, event))
-            await asyncio.sleep(0.06)
-            for stop in (stop_lines, stop_iterable, stop_timer):
-                stop()
-            lines_file.close()
-            await loop_stop(l)
+            try:
+                await asyncio.wait_for(completed.wait(), 5)
+            finally:
+                for stop in (stop_lines, stop_iterable, stop_timer):
+                    stop()
+                lines_file.close()
+                await loop_stop(l)
             self.assertIn('from a line', seen)
             self.assertIn('bare input', seen)
             self.assertIn('from an iterable', seen)
