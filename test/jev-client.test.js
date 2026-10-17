@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
+import { setTimeout as waitFor } from 'node:timers/promises';
 import { gunzipSync } from 'node:zlib';
 import { jevCall, listModels, settings } from '../src/client.js';
 import { imageAsset } from '../src/assets.js';
@@ -9,7 +10,7 @@ import { png } from './helpers/png.js';
 async function server(t, handler) {
   const old = {...settings};
   t.after(() => Object.assign(settings,old));
-  Object.assign(settings,{transport:null,apiKey:'test',environment:()=>undefined,extraBody:null,defaultModel:null});
+  Object.assign(settings,{sleep:(seconds,signal)=>waitFor(seconds*1000,undefined,{signal}),transport:null,apiKey:'test',environment:()=>undefined,extraBody:null,defaultModel:null});
   const s=createServer(handler); await new Promise(r=>s.listen(0,'127.0.0.1',r)); t.after(()=>s.close());
   settings.baseUrl=`http://127.0.0.1:${s.address().port}`;
 }
@@ -57,8 +58,10 @@ test('caller cancellation prevents an HTTP attempt and cancels a pending retry',
   const before=AbortSignal.abort();
   await assert.rejects(jevCall('hello',questions,{signal:before}),e=>e.kind==='cancelled');
   assert.equal(calls,0);
+  let waiting; const retrying=new Promise(resolve=>{waiting=resolve;});
+  const sleep=settings.sleep; settings.sleep=(seconds,signal)=>{waiting();return sleep(seconds,signal);};
   const ac=new AbortController(); const pending=jevCall('hello',questions,{signal:ac.signal});
-  setTimeout(()=>ac.abort(),30);
+  await retrying; ac.abort();
   await assert.rejects(pending,e=>e.kind==='cancelled');
   assert.equal(calls,1);
 });

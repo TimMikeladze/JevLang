@@ -165,5 +165,21 @@ def _get(url, path):
     return urllib.request.urlopen(url + path, timeout=10)
 
 
+
+
+class PortabilityTests(unittest.IsolatedAsyncioTestCase):
+    async def test_port_collision_uses_platform_errno(self):
+        import errno
+        from types import SimpleNamespace
+        from unittest.mock import AsyncMock, patch
+        from jevlang._serve import start_server
+        fake = SimpleNamespace(sockets=[SimpleNamespace(getsockname=lambda: ('127.0.0.1', 8001))])
+        bind = AsyncMock(side_effect=[OSError(98, 'address already in use'), fake])
+        with patch.object(errno, 'EADDRINUSE', 98), patch('jevlang._serve.asyncio.start_server', bind):
+            result = await start_server(compiled(), port=8000)
+        self.assertEqual(result.port, 8001)
+        self.assertEqual([c.args[2] for c in bind.call_args_list], [8000, 8001])
+
+
 if __name__ == '__main__':
     unittest.main()

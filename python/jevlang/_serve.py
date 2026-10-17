@@ -11,6 +11,7 @@ POST /mcp, and the webhook receivers' POST /webhook/<name>."""
 from __future__ import annotations
 
 import asyncio
+import errno
 import hmac
 import json
 import re
@@ -353,7 +354,7 @@ async def start_server(policy: Any, *, host: str = '127.0.0.1', port: int = 8080
             bound = server.sockets[0].getsockname()[1]
             break
         except OSError as error:
-            if error.errno != 48:  # EADDRINUSE
+            if error.errno != errno.EADDRINUSE:
                 raise
     require_at(bound is not None, 'port',
                f'every port from {wanted} to {wanted + tries - 1} is taken')
