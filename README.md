@@ -773,6 +773,12 @@ plain `node_modules/jevlang`, each `$` command runs there, and its output must
 match the block. Editing an example without re-running it fails the suite, and
 so does the landing page build.
 
+The root install also installs the Next.js example's dependencies. Both
+`bun test` and `bun run test` include the core, site and Next.js example tests.
+After editing the docs, run `bun run site` to refresh the committed site.
+`bun run release` requires a clean working tree, rebuilds and checks the site
+after bumping the version, and includes the generated files in the release commit.
+
 The Python port (`jevlang-sh` on PyPI) runs the same product on a pure-Python
 engine. The whole suite runs offline.
 

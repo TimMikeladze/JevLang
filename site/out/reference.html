@@ -21,7 +21,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://jevlang.sh/og-reference.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2048%2048%22%3E%3Crect%20width%3D%2248%22%20height%3D%2248%22%20rx%3D%2211%22%20fill%3D%22%231c1c1c%22%2F%3E%3Cpath%20d%3D%22M30%2012v16.5c0%204.5-3%207.5-7.5%207.5S15%2033%2015%2029.5%22%20fill%3D%22none%22%20stroke%3D%22%23f7f7f7%22%20stroke-width%3D%223.4%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"JevLang","description":"jevlang is a typesafe policy engine for LLM decisions: the model answers small questions, your policy decides, and every decision explains itself.","url":"https://jevlang.sh/","applicationCategory":"DeveloperApplication","softwareVersion":"1.4.0","offers":{"@type":"Offer","price":"0"},"license":"https://opensource.org/licenses/MIT"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"JevLang","description":"jevlang is a typesafe policy engine for LLM decisions: the model answers small questions, your policy decides, and every decision explains itself.","url":"https://jevlang.sh/","applicationCategory":"DeveloperApplication","softwareVersion":"1.4.1","offers":{"@type":"Offer","price":"0"},"license":"https://opensource.org/licenses/MIT"}</script>
 <script>
 (function(){
 var K='jevlang-theme',r=document.documentElement,mq=matchMedia('(prefers-color-scheme: dark)');
@@ -872,6 +872,7 @@ bun install
 bun test
 bun run test:types</code></pre>
 <p>Every example above that is not marked live is re-run by <code>bun test</code>: the <code>file=</code> blocks are written to a scratch project with <code>jevlang</code> installed as a plain <code>node_modules/jevlang</code>, each <code>$</code> command runs there, and its output must match the block. Editing an example without re-running it fails the suite, and so does the landing page build.</p>
+<p>The root install also installs the Next.js example's dependencies. Both <code>bun test</code> and <code>bun run test</code> include the core, site and Next.js example tests. After editing the docs, run <code>bun run site</code> to refresh the committed site. <code>bun run release</code> requires a clean working tree, rebuilds and checks the site after bumping the version, and includes the generated files in the release commit.</p>
 <p>The Python port (<code>jevlang-sh</code> on PyPI) runs the same product on a pure-Python engine. The whole suite runs offline.</p>
 <p>The suite in this checkout (the version banner and timings are trimmed):</p>
 <pre><code><span class="cmd">$ bun install  # live: the suite that re-runs the examples above</span>

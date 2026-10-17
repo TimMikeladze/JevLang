@@ -2,9 +2,8 @@
 // it next to the UI, and maps decision sources ($.gates[0], $.route.clauses[3],
 // $.route.otherwise) to the lines that declare them. Runs at build time.
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 
-const file = () => readFileSync(join(process.cwd(), 'lib/policies.js'), 'utf8').split('\n');
+const file = () => readFileSync(new URL('./policies.js', import.meta.url), 'utf8').split('\n');
 
 export function policySource(route) {
   const all = file();

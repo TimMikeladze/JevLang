@@ -3,6 +3,9 @@
   "version": "1.4.1",
   "description": "A policy engine for LLM decisions: declare routes, gates and actions once in TypeScript or Python, and every decision comes validated, explainable, replayable and audited",
   "type": "module",
+  "workspaces": [
+    "examples/nextjs"
+  ],
   "keywords": [
     "jev",
     "jevlang",
@@ -130,9 +133,10 @@
     "README.md"
   ],
   "scripts": {
-    "test": "bun test test/*.test.js",
+    "test": "bun test",
     "test:types": "tsc -p test/tsconfig.json",
-    "release": "bumpp --commit --push --tag",
+    "release": "bumpp --git-check --all --commit --push --tag --execute 'bun run release:prepare'",
+    "release:prepare": "bun run site && bun run test:site",
     "site": "bun site/build.js",
     "site:card": "bun site/shoot-card.js",
     "test:site": "bun test site/site.test.js"
