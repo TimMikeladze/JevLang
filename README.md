@@ -99,12 +99,20 @@ is an error.
 | `choice` | one option out of several | `{ choice: 'billing', confidence: 0.94 }` | `department.is('billing')` |
 | `score` | a position on an ordered scale | `{ score: 2, confidence: 0.95, probabilities: { 0: 0.01, 1: 0.04, 2: 0.95 } }` | `frustration.mostLikely('Angry, threatening to leave')` |
 
+## Python
+
+```sh
+python3 -m pip install ./python
+```
+
+The native Python engine runs without Node or Racket. See the [Python guide](python/README.md) and [Jev 1.14 support](python/JEV114.md).
+
 ## Images and Box questions
 
 Jev 1.14 adds image localization through `box`. Images also work in the
 state, instructions and criteria of Choice, Score and Noul questions.
 Enable these experimental features explicitly; the model upgrade alone
-keeps image access off. This extension is currently JavaScript-only.
+keeps image access off. The native [Python package](python/JEV114.md) supports the same portable extension.
 
 ```js
 import { readFile } from 'node:fs/promises';

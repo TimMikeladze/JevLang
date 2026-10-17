@@ -348,3 +348,10 @@ test('hero console matches node decide.js', () => {
   assert.equal([...hero.matchAll(/data-rung="/g)].length, policy.gates.length + policy.clauses.length);
   for (const p of presets) assert.ok(hero.includes(`>${esc(p.name)}</button>`), p.name);
 });
+
+
+test('reference links to Python and guides resolve to repository files', () => {
+  assert.ok(reference.includes(`${repo}/blob/main/python/JEV114.md`));
+  assert.ok(reference.includes(`${repo}/blob/main/docs/jev-images.md`));
+  assert.doesNotMatch(reference, /href="(?:python|docs)\//);
+});

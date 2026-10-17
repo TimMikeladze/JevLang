@@ -1,0 +1,6 @@
+{"jsonrpc":"2.0","id":1,"method":"server/discover","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientCapabilities":{}}}}
+{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}
+{"jsonrpc":"2.0","id":3,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"hand","version":"0"}}}
+{"jsonrpc":"2.0","method":"notifications/initialized"}
+{"jsonrpc":"2.0","id":4,"method":"tools/list","params":{}}
+{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"decide","arguments":{"answers":{"department":{"type":"choice","choice":"billing","confidence":0.93,"probabilities":{"billing":0.93}},"frustration":{"type":"score","score":0.2,"confidence":0.9,"probabilities":{"0":0.8,"1":0.2,"2":0.0}},"refund-requested?":{"type":"noul","noul":0.1}}}}}

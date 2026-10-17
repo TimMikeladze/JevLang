@@ -5,3 +5,11 @@ site/shots/
 .vercel
 .env*
 .DS_Store
+
+# Python builds and local environments
+__pycache__/
+*.py[cod]
+*.egg-info/
+python/build/
+python/dist/
+.venv/

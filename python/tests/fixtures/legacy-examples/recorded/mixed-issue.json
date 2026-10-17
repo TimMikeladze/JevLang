@@ -1,0 +1,54 @@
+{
+  "fixture_version": 3,
+  "provider": "typesafe",
+  "requested_model": "jev-1.13.0",
+  "requested_effort": null,
+  "effective_effort": null,
+  "name": "mixed-issue",
+  "state": "The dashboard keeps logging me out, and I also think I was billed for a seat I removed.",
+  "answers": {
+    "department": {
+      "choice": "technical",
+      "confidence": 0.71,
+      "probabilities": {
+        "billing": 0.19,
+        "sales": 0.0,
+        "technical": 0.81
+      },
+      "type": "choice"
+    },
+    "frustration": {
+      "confidence": 0.73,
+      "legend": {
+        "0": "Calm and matter-of-fact",
+        "1": "Annoyed but polite",
+        "2": "Angry, threatening to leave"
+      },
+      "probabilities": {
+        "0": 0.18,
+        "1": 0.82,
+        "2": 0.0
+      },
+      "score": 0.82,
+      "type": "score"
+    },
+    "refund-requested?": {
+      "noul": 0.19,
+      "type": "noul"
+    }
+  },
+  "usage": {
+    "input_tokens": 470,
+    "output_tokens": 75
+  },
+  "model": "jev-1.13.0",
+  "request_id": "req_01a0b660036f7512bb59a3c326d9f82b",
+  "questions_sha256": "7a4ff4216996b26daca91769df361540d75902b63aef3e5c915abe38062f0cab",
+  "policy": "ticket-router.rkt",
+  "recorded_at": "2026-09-18T21:15:40Z",
+  "synthetic": false,
+  "expect": {
+    "action": "escalate",
+    "target": "human-triage"
+  }
+}

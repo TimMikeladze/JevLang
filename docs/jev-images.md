@@ -1,6 +1,6 @@
 # Jev images and client controls
 
-JevLang supports Jev 1.14 Box localization, images in every question type, opt-in long context, multipart uploads, compression and cancellation. The default model is pinned to `jev-1.14.0`. The companion native Python port in `../jev-lang/packages/jevlang-python` now implements these portable features; its `JEV114.md` documents usage and runtime boundaries. Shared golden fixtures verify both engines. These changes are local and have not been published. TypeSafe labels images, Box and long context experimental. [Official images documentation](https://docs.typesafe.ai/images), [models](https://docs.typesafe.ai/models)
+JevLang supports Jev 1.14 Box localization, images in every question type, opt-in long context, multipart uploads, compression and cancellation. The default model is pinned to `jev-1.14.0`. The native [Python package](../python/JEV114.md) implements these portable features and documents usage and runtime boundaries. Shared golden fixtures verify both engines. Package releases remain separate from committing the source. TypeSafe labels images, Box and long context experimental. [Official images documentation](https://docs.typesafe.ai/images), [models](https://docs.typesafe.ai/models)
 
 ## Run the localization example
 

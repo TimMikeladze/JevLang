@@ -1,0 +1,52 @@
+{
+  "fixture_version": 3,
+  "provider": "typesafe",
+  "requested_model": null,
+  "model": null,
+  "requested_effort": null,
+  "effective_effort": null,
+  "name": "case-07",
+  "state": "synthetic ticket 7",
+  "answers": {
+    "department": {
+      "type": "choice",
+      "choice": "sales",
+      "probabilities": {
+        "billing": 0.06,
+        "technical": 0.06,
+        "sales": 0.88
+      },
+      "confidence": 0.88
+    },
+    "frustration": {
+      "type": "score",
+      "score": 0.63,
+      "legend": {
+        "0": "Calm and matter-of-fact",
+        "1": "Annoyed but polite",
+        "2": "Angry, threatening to leave"
+      },
+      "probabilities": {
+        "0": 0.58,
+        "1": 0.21,
+        "2": 0.21
+      },
+      "confidence": 0.58
+    },
+    "refund-requested?": {
+      "type": "noul",
+      "noul": 0.79
+    }
+  },
+  "usage": {
+    "input_tokens": 351,
+    "output_tokens": 48
+  },
+  "questions_sha256": "7a4ff4216996b26daca91769df361540d75902b63aef3e5c915abe38062f0cab",
+  "policy": "ticket-router.rkt",
+  "synthetic": true,
+  "label": {
+    "action": "assign",
+    "target": "sales-inbox"
+  }
+}
