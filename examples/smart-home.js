@@ -47,7 +47,7 @@ const whenAsked = d => branch(delay.is('now'), d,
 const openDoor = compute('contains', fact('open-doors'), door.chosen());
 
 export const policy = definePolicy({
-  name: 'smart-home', version: '2', owner: 'home', model: 'jev-1.13.0',
+  name: 'smart-home', version: '2', owner: 'home', model: 'jev-1.14.0',
   questions: [category, lights, doorAsked, temperature, lightsOnIn, lightsOffIn, door, lockAction, tempDirection, delay],
   state: {
     request: { path: ['request'], default: '' },

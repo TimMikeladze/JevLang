@@ -47,6 +47,7 @@ export const capable = (caps, request) =>
   caps.modes.includes(request.mode)
   && request.modalities.every(m => caps.modalities.includes(m))
   && request.permissions.every(p => caps.permissions.includes(p))
+  && (request.metadata?.requiredControls ?? []).every(control => caps.controls.includes(control))
   && (!request.schema || caps.controls.includes('structured-output'))
   && (!requiresToolPolicy(request) || caps.controls.includes('tool-policy'));
 
@@ -174,7 +175,7 @@ const resolutionError = (kind, target, detail, message) => new ProviderError(mes
 
 // Returns { target, rejections, matchedRoute }. Every provider passed over is
 // reported with why, so a failure names what was tried.
-export async function resolveProvider(request, config, registry, { refresh = false, exclude = [] } = {}) {
+export async function resolveProvider(request, config, registry, { refresh = false, exclude = [], offline = false } = {}) {
   const route = selectRoute(config, request);
   const order = candidateOrder(request, config, route, registry);
   const providerField = layerField(config, route, ['provider']);
@@ -193,7 +194,7 @@ export async function resolveProvider(request, config, registry, { refresh = fal
     if (settings.enabled === false) { reject(id, 'disabled', 'disabled by configuration'); continue; }
     const value = registry.get(id);
     if (!value) { reject(id, 'missing', 'provider is not registered'); continue; }
-    const available = await discoverOne(value, refresh);
+    const available = offline ? availability('ready', { detail: 'offline cache resolution; availability not checked' }) : await discoverOne(value, refresh);
     if (available.status !== 'ready') { reject(id, available.status, available.detail); continue; }
     const model = resolveModel(candidateReq, config, route, id, settings);
     const modelSettings = { ...modelCapabilitySettings(value, model), ...(model ? keyRef(settings.model_capabilities ?? {}, model, {}) : {}) };

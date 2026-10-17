@@ -15,7 +15,7 @@ const sameName = noul('same-name?', 'Do `left` and `right` give the same product
 const sameBrewery = noul('same-brewery?', 'Do `left` and `right` name the same brewery?');
 
 export const policy = definePolicy({
-  name: 'entity-alignment', version: '2', model: 'jev-1.13.0',
+  name: 'entity-alignment', version: '2', model: 'jev-1.14.0',
   questions: [link, sameName, sameBrewery],
   state: { left: { path: ['left'] }, right: { path: ['right'] } },
   gates: [gate(link, 0.7, escalate('curator', { reason: 'not sure these are the same product', show: [sameName, sameBrewery] }))],

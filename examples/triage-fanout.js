@@ -31,7 +31,7 @@ const resolution = choice('resolution', 'What does the customer want to happen?'
 });
 
 export const policy = definePolicy({
-  name: 'triage-fanout', version: '1', owner: 'support', model: 'jev-1.13.0',
+  name: 'triage-fanout', version: '1', owner: 'support', model: 'jev-1.14.0',
   questions: [department, returnReason, shippingIssue, resolution],
   thresholds: { 'second-team': 0.25 },
   gates: [

@@ -49,12 +49,12 @@ const countsObject = h => Object.fromEntries([...h].map(([k, v]) => [k, v]));
 function observations(d, answers) {
   if (answers) {
     return Object.entries(answers)
-      .filter(([, x]) => object(x) && ['choice', 'score'].includes(x.type) && finite(x.confidence))
+      .filter(([, x]) => object(x) && ['choice', 'score', 'box'].includes(x.type) && finite(x.confidence))
       .map(([id, x]) => [questionGroup(id), x.type, x.confidence]);
   }
   const seen = new Set();
   return [...(d.readings ?? []), ...(d.evidence ?? [])]
-    .filter(r => ['choice', 'score'].includes(r.kind) && finite(r.confidence))
+    .filter(r => ['choice', 'score', 'box'].includes(r.kind) && finite(r.confidence))
     .map(r => [questionGroup(r.question), r.kind, r.confidence])
     .filter(([q]) => !seen.has(q) && seen.add(q));
 }
@@ -270,7 +270,7 @@ export function formatSummary(s) {
     `  ${fit('clause', width)}  count   share  source`,
     ...s.clauses.map(c => `  ${fit(clauseName(c), width)}  ${fit(c.count, 5, 'right')}  ${fit(pct(c.count, n), 6, 'right')}  ${c.source ?? ''}`),
     '',
-    `confidence, ${s.confidence.source === 'answers' ? 'every choice and score answer' : 'from trace readings: only questions the firing clause read'} (bucket lower edges)`,
+    `confidence, ${s.confidence.source === 'answers' ? (s.confidence.questions.some(q => q.kind === 'box') ? 'every choice, score and box answer' : 'every choice and score answer') : 'from trace readings: only questions the firing clause read'} (bucket lower edges)`,
     `  ${fit('', 24)}${confidenceEdges.slice(0, -1).map(e => fit(edgeString(e), 5, 'right')).join(' ')}`,
     ...s.confidence.questions.map(h => `  ${fit(`${h.question} (${h.kind})`, 24, 'left', 24)}${h.counts.map(c => fit(c, 5, 'right')).join(' ')}`),
     ...(s.confidence.questions.length === 0 ? ['  (no choice or score confidences)'] : []),
@@ -474,7 +474,7 @@ export function questionStabilities(allAnswers, { gates = [], thresholds = [], o
       max: values.length ? Math.max(...values) : null,
       modal: modal === null || modal === false ? null : modal,
       flip_rate: flip,
-      confidence_stdev: ['choice', 'score'].includes(kind) ? stdev(confidences) : null,
+      confidence_stdev: ['choice', 'score', 'box'].includes(kind) ? stdev(confidences) : null,
       crossings: crossingsFor(id, as, measures, gates, thresholds, thresholdValue),
     });
   }

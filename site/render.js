@@ -595,7 +595,8 @@ ${heroScript}
 // ---------- reference page ----------
 
 export function renderReference({ readme }) {
-  const html = markdownHtml(readme);
+  const html = markdownHtml(readme).replace(/href="((?:python|docs)\/[^"#]+)(#[^"]*)?"/g,
+    (_, path, anchor = '') => `href="${repo}/blob/main/${path}${anchor}"`);
   const toc = [...readme.matchAll(/^## (.+)$/gm)].map((m) => `<a href="#${slug(m[1])}">${esc(m[1])}</a>`).join('');
   return `<!doctype html>
 <html lang="en">

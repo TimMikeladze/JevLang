@@ -1,0 +1,52 @@
+{
+  "fixture_version": 3,
+  "provider": "typesafe",
+  "requested_model": null,
+  "model": null,
+  "requested_effort": null,
+  "effective_effort": null,
+  "name": "case-40",
+  "state": "synthetic ticket 40",
+  "answers": {
+    "department": {
+      "type": "choice",
+      "choice": "billing",
+      "probabilities": {
+        "billing": 0.9,
+        "technical": 0.05,
+        "sales": 0.05
+      },
+      "confidence": 0.9
+    },
+    "frustration": {
+      "type": "score",
+      "score": 1.61,
+      "legend": {
+        "0": "Calm and matter-of-fact",
+        "1": "Annoyed but polite",
+        "2": "Angry, threatening to leave"
+      },
+      "probabilities": {
+        "0": 0.13,
+        "1": 0.13,
+        "2": 0.74
+      },
+      "confidence": 0.74
+    },
+    "refund-requested?": {
+      "type": "noul",
+      "noul": 0.05
+    }
+  },
+  "usage": {
+    "input_tokens": 342,
+    "output_tokens": 48
+  },
+  "questions_sha256": "7a4ff4216996b26daca91769df361540d75902b63aef3e5c915abe38062f0cab",
+  "policy": "ticket-router.rkt",
+  "synthetic": true,
+  "label": {
+    "action": "assign",
+    "target": "billing-queue"
+  }
+}

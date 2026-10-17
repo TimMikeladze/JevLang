@@ -1,5 +1,7 @@
 import { jsonCopy, freeze, requireAt, own, object, text, probability, finite, keysOnly } from './common.js';
 import { checkExpression, literal, optionWire } from './expressions.js';
+import { validateJevOptions } from './typesafe-request.js';
+import { maxPortableBytes } from './assets.js';
 import { redactorNames } from './state.js';
 
 const mapAt = (x, path) => requireAt(object(x), path, 'expected a map');
@@ -8,8 +10,8 @@ const nonempty = (x, path) => requireAt(text(x), path, 'expected a non-empty str
 const reserved = new Set(['hold', 'confirm', 'computed']);
 
 export function validatePolicy(input) {
-  const p = jsonCopy(input);
-  keysOnly(p, ['format', 'name', 'version', 'owner', 'questions', 'state', 'stateOptions', 'thresholds', 'profiles', 'signals', 'gates', 'route', 'prechecks', 'flags', 'actions', 'provider', 'model', 'effort', 'extraBody'], '$');
+  const p = jsonCopy(input, input?.typesafe?.assets ? { maxBytes: maxPortableBytes } : {});
+  keysOnly(p, ['format', 'name', 'version', 'owner', 'questions', 'state', 'stateOptions', 'thresholds', 'profiles', 'signals', 'gates', 'route', 'prechecks', 'flags', 'actions', 'provider', 'model', 'effort', 'extraBody', 'typesafe'], '$');
   requireAt(p.format === 1, '$.format', `unsupported policy format '${p.format}'`, 'Migrate to portable policy format 1.');
   nonempty(p.name, '$.name');
   for (const key of ['questions', 'state', 'thresholds', 'profiles', 'signals', 'actions']) {
@@ -17,11 +19,12 @@ export function validatePolicy(input) {
   }
   for (const key of ['gates', 'prechecks', 'flags']) { p[key] ??= []; listAt(p[key], `$.${key}`); }
   for (const key of ['version', 'owner', 'provider', 'model', 'effort']) if (own(p, key)) nonempty(p[key], `$.${key}`);
+  if (own(p, 'typesafe')) validateJevOptions(p.typesafe);
   const warnings = [];
   p.stateOptions ??= {};
-  keysOnly(p.stateOptions, ['redact', 'maxChars', 'tokenLimit'], '$.stateOptions');
+  keysOnly(p.stateOptions, ['redact', 'maxChars', 'tokenLimit', 'requestTokenLimit'], '$.stateOptions');
   if (own(p.stateOptions, 'redact')) requireAt(Array.isArray(p.stateOptions.redact) && p.stateOptions.redact.every(x => redactorNames.includes(x)), '$.stateOptions.redact', 'unknown redactor');
-  for (const k of ['maxChars', 'tokenLimit']) if (own(p.stateOptions, k)) requireAt(p.stateOptions[k] === null || Number.isInteger(p.stateOptions[k]) && p.stateOptions[k] > 0, `$.stateOptions.${k}`, 'limit must be a positive integer or null');
+  for (const k of ['maxChars', 'tokenLimit', 'requestTokenLimit']) if (own(p.stateOptions, k)) requireAt(p.stateOptions[k] === null || Number.isInteger(p.stateOptions[k]) && p.stateOptions[k] > 0, `$.stateOptions.${k}`, 'limit must be a positive integer or null');
   for (const [id, s] of Object.entries(p.state)) {
     nonempty(id, '$.state');
     keysOnly(s, ['path', 'default', 'local', 'maxChars', 'redact', 'unredacted'], `$.state.${id}`);
@@ -41,7 +44,7 @@ export function validatePolicy(input) {
   }
   for (const [id, q] of Object.entries(p.questions)) {
     nonempty(id, '$.questions');
-    requireAt(['choice', 'score', 'noul', 'noul-each', 'score-each', 'raw'].includes(q.type), `$.questions.${id}.type`, 'unknown question type');
+    requireAt(['choice', 'score', 'noul', 'box', 'noul-each', 'score-each', 'raw'].includes(q.type), `$.questions.${id}.type`, 'unknown question type');
     if (q.type === 'raw') {
       // A raw question is sent exactly as written and nothing about it is checked.
       keysOnly(q, ['type', 'wire'], `$.questions.${id}`);
@@ -52,6 +55,7 @@ export function validatePolicy(input) {
     keysOnly(q, ['type', 'instructions', 'criteria', 'ungated', 'optionsFrom', 'over', 'itemKey', 'names', 'levelNames'], `$.questions.${id}`);
     requireAt(own(q, 'instructions') && (q.instructions === null || object(q.instructions) || Array.isArray(q.instructions) || text(q.instructions)), `$.questions.${id}.instructions`, 'instructions must be non-empty text, JSON object, array or null');
     if (own(q, 'ungated')) nonempty(q.ungated, `$.questions.${id}.ungated`);
+    if (q.type === 'box') requireAt(!own(q, 'criteria'), `$.questions.${id}.criteria`, 'Box takes no criteria');
     if (q.type === 'choice') {
       mapAt(q.criteria, `$.questions.${id}.criteria`);
       const n = Object.keys(q.criteria).length;
@@ -111,9 +115,10 @@ export function validatePolicy(input) {
       requireAt(q.type === 'noul' && probability(gate.low) && probability(gate.high) && gate.low < gate.high, path, 'review band needs a noul and 0 <= low < high <= 1');
       requireAt(!own(gate, 'threshold') && !own(gate, 'option') && !own(gate, 'by'), path, 'band cannot also have a threshold, option or metric');
     } else {
-      requireAt(['choice', 'score'].includes(q.type), path, 'confidence gates require choice or score', 'Use a review band for noul.');
+      requireAt(['choice', 'score', 'box'].includes(q.type), path, 'confidence gates require choice, score or box', 'Use a review band for noul.');
       requireAt(probability(gate.threshold), `${path}.threshold`, 'gate threshold must be between 0 and 1');
       requireAt(!own(gate, 'by') || ['confidence', 'topProb', 'margin'].includes(gate.by), `${path}.by`, 'unknown gate metric');
+      if (q.type === 'box') requireAt(!own(gate, 'by') || gate.by === 'confidence', `${path}.by`, 'Box gates only support the confidence metric');
       if (own(gate, 'option')) requireAt(q.type === 'choice' && own(q.criteria, gate.option), `${path}.option`, 'gate option must be a declared static choice option');
       else baseGates.add(gate.question);
     }
@@ -135,7 +140,7 @@ export function validatePolicy(input) {
   function gated(reads, path) {
     for (const id of reads.reads) {
       const q = p.questions[id];
-      requireAt(!['choice', 'score'].includes(q.type) || q.ungated || baseGates.has(id) || reads.confidences.has(id), path,
+      requireAt(!['choice', 'score', 'box'].includes(q.type) || q.ungated || baseGates.has(id) || reads.confidences.has(id), path,
         `'${id}' decides a clause without a confidence gate`, 'Add a base gate, read confidence in this clause, or declare an ungated audit reason.');
     }
   }

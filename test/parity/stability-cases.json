@@ -1,0 +1,63 @@
+{
+  "policy": "ticket-router.rkt",
+  "gates": [
+    { "question": "department", "kind": "gate", "threshold": 0.8 },
+    { "question": "department", "kind": "option-gate", "option": "billing", "threshold": 0.85 },
+    { "question": "frustration", "kind": "gate", "threshold": 0.7, "by": "top-prob" },
+    { "question": "risk", "kind": "band", "lo": 0.3, "hi": 0.6 }
+  ],
+  "thresholds": [
+    { "name": "hot", "kind": "probability", "default": 0.5 },
+    { "name": "warm", "kind": "confidence", "default": 0.75 },
+    { "name": "level", "kind": "score", "default": 1.5 },
+    { "name": "risk/lo", "kind": "probability", "default": 0.3 }
+  ],
+  "usage": { "input_tokens": 4213, "output_tokens": 615 },
+  "runs": [
+    {
+      "answers": {
+        "department": { "type": "choice", "choice": "billing", "confidence": 0.82, "probabilities": { "billing": 0.82, "technical": 0.12, "sales": 0.06 } },
+        "frustration": { "type": "score", "score": 1.2, "confidence": 0.68, "probabilities": { "0": 0.2, "1": 0.6, "2": 0.2 } },
+        "refund-requested?": { "type": "noul", "noul": 0.55 },
+        "risk": { "type": "noul", "noul": 0.28 }
+      },
+      "decision": { "action": "assign", "target": "billing-queue" }
+    },
+    {
+      "answers": {
+        "department": { "type": "choice", "choice": "billing", "confidence": 0.78, "probabilities": { "billing": 0.78, "technical": 0.15, "sales": 0.07 } },
+        "frustration": { "type": "score", "score": 1.05, "confidence": 0.74, "probabilities": { "0": 0.25, "1": 0.55, "2": 0.2 } },
+        "refund-requested?": { "type": "noul", "noul": 0.61 },
+        "risk": { "type": "noul", "noul": 0.44 }
+      },
+      "decision": { "action": "escalate", "target": "human-triage" }
+    },
+    {
+      "answers": {
+        "department": { "type": "choice", "choice": "technical", "confidence": 0.71, "probabilities": { "billing": 0.2, "technical": 0.71, "sales": 0.09 } },
+        "frustration": { "type": "score", "score": 1.9, "confidence": 0.81, "probabilities": { "0": 0.05, "1": 0.25, "2": 0.7 } },
+        "refund-requested?": { "type": "noul", "noul": 0.49 },
+        "risk": { "type": "noul", "noul": 0.66 }
+      },
+      "decision": { "action": "assign", "target": "engineering-oncall" }
+    },
+    {
+      "answers": {
+        "department": { "type": "choice", "choice": "billing", "confidence": 0.88, "probabilities": { "billing": 0.88, "technical": 0.08, "sales": 0.04 } },
+        "frustration": { "type": "score", "score": 1.35, "confidence": 0.59, "probabilities": { "0": 0.15, "1": 0.5, "2": 0.35 } },
+        "refund-requested?": { "type": "noul", "noul": 0.72 },
+        "risk": { "type": "noul", "noul": 0.52 }
+      },
+      "decision": { "action": "assign", "target": "billing-queue" }
+    },
+    {
+      "answers": {
+        "department": { "type": "choice", "choice": "billing", "confidence": 0.9, "probabilities": { "billing": 0.9, "technical": 0.06, "sales": 0.04 } },
+        "frustration": { "type": "score", "score": 0.8, "confidence": 0.77, "probabilities": { "0": 0.4, "1": 0.45, "2": 0.15 } },
+        "refund-requested?": { "type": "noul", "noul": 0.58 },
+        "risk": { "type": "noul", "noul": 0.35 }
+      },
+      "decision": "no clause matched, and there is no otherwise"
+    }
+  ]
+}

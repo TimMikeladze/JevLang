@@ -1,4 +1,4 @@
-import type { CompiledPolicy, Decision, JSONValue } from './index.js';
+import type { CompiledPolicy, Decision, JSONValue, JevOptions } from './index.js';
 
 export interface McpCall {
   era: 'modern' | 'legacy'; version: string | null; capabilities: Record<string, JSONValue>;
@@ -49,5 +49,5 @@ export function originAllowed(origin: string | null, allowed?: string[]): boolea
 export function envOrigins(value?: string): string[];
 export function encodeHeaderValue(value: string): string;
 export function decodeHeaderValue(value: string): string | null;
-export function policyMcpServer(policy: CompiledPolicy, options?: { allowEvaluate?: boolean; maxCalls?: number; name?: string | null; evaluate?: ((state: JSONValue) => Promise<Decision> | Decision) | null }): McpServer;
+export function policyMcpServer(policy: CompiledPolicy, options?: { experimental?: JevOptions['experimental']; allowEvaluate?: boolean; maxCalls?: number; name?: string | null; evaluate?: ((state: JSONValue, options?: JevOptions) => Promise<Decision> | Decision) | null }): McpServer;
 export function policyToJson(policy: CompiledPolicy): JSONValue;

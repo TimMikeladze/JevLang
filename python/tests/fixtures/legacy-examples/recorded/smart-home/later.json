@@ -1,0 +1,227 @@
+{
+  "fixture_version": 3,
+  "provider": "typesafe",
+  "requested_model": "jev-1.13.0",
+  "requested_effort": null,
+  "effective_effort": null,
+  "name": "later",
+  "state": {
+    "doors": ["front", "back", "garage"],
+    "request": "switch off the living room lights in ten minutes",
+    "rooms": ["kitchen", "living_room", "bedroom"]
+  },
+  "answers": {
+    "category": {
+      "choice": "command",
+      "confidence": 1.0,
+      "probabilities": {
+        "command": 1.0,
+        "conversation": 0.0,
+        "other": 0.0
+      },
+      "type": "choice"
+    },
+    "delay": {
+      "choice": "ten_min",
+      "confidence": 1.0,
+      "probabilities": {
+        "now": 0.0,
+        "one_hour": 0.0,
+        "other": 0.0,
+        "ten_min": 1.0,
+        "thirty_min": 0.0
+      },
+      "type": "choice"
+    },
+    "door": {
+      "choice": "none",
+      "confidence": 1.0,
+      "probabilities": {
+        "back": 0.0,
+        "front": 0.0,
+        "garage": 0.0,
+        "none": 1.0
+      },
+      "type": "choice"
+    },
+    "door?": {
+      "noul": 0.01,
+      "type": "noul"
+    },
+    "lights-off-in--0": {
+      "noul": 0.02,
+      "type": "noul"
+    },
+    "lights-off-in--1": {
+      "noul": 0.97,
+      "type": "noul"
+    },
+    "lights-off-in--2": {
+      "noul": 0.02,
+      "type": "noul"
+    },
+    "lights-on-in--0": {
+      "noul": 0.01,
+      "type": "noul"
+    },
+    "lights-on-in--1": {
+      "noul": 0.01,
+      "type": "noul"
+    },
+    "lights-on-in--2": {
+      "noul": 0.01,
+      "type": "noul"
+    },
+    "lights?": {
+      "noul": 0.99,
+      "type": "noul"
+    },
+    "lock-action": {
+      "choice": "other",
+      "confidence": 1.0,
+      "probabilities": {
+        "lock": 0.0,
+        "other": 1.0,
+        "unlock": 0.0
+      },
+      "type": "choice"
+    },
+    "temp-direction": {
+      "choice": "other",
+      "confidence": 0.98,
+      "probabilities": {
+        "cooler": 0.01,
+        "other": 0.99,
+        "warmer": 0.0
+      },
+      "type": "choice"
+    },
+    "temperature?": {
+      "noul": 0.02,
+      "type": "noul"
+    }
+  },
+  "usage": {
+    "input_tokens": 1048,
+    "output_tokens": 385
+  },
+  "model": "jev-1.13.0",
+  "request_id": "req_01a0b6a248a47a9f87cab85c31e747d9",
+  "questions_sha256": "0ec70f44e4ffa2eec356b92d5e8ecd543f798c9fdc5109a98c2f803d112cee38",
+  "policy": "smart-home.rkt",
+  "recorded_at": "2026-09-18T22:28:03Z",
+  "synthetic": false,
+  "questions": {
+    "category": {
+      "criteria": {
+        "command": "An instruction to change something in the home: lights, doors, temperature",
+        "conversation": "Small talk, or a question that needs a spoken answer rather than a device change",
+        "other": "Something that fits neither"
+      },
+      "instructions": "What kind of request is `request`?",
+      "type": "choice"
+    },
+    "delay": {
+      "criteria": {
+        "now": "Now, or no time is given",
+        "one_hour": "In about an hour",
+        "other": "Some other time than these",
+        "ten_min": "In about ten minutes",
+        "thirty_min": "In about half an hour"
+      },
+      "instructions": "When does `request` want it to happen?",
+      "type": "choice"
+    },
+    "door": {
+      "criteria": {
+        "back": null,
+        "front": null,
+        "garage": null,
+        "none": "Another door, or no door is named"
+      },
+      "instructions": "If `request` is about a door, which door?",
+      "type": "choice"
+    },
+    "door?": {
+      "instructions": "Does `request` ask to lock or unlock a door?",
+      "type": "noul"
+    },
+    "lights-off-in--0": {
+      "instructions": {
+        "question": "Does `request` ask to turn off the lights in this room (or in every room)?",
+        "room": "kitchen"
+      },
+      "type": "noul"
+    },
+    "lights-off-in--1": {
+      "instructions": {
+        "question": "Does `request` ask to turn off the lights in this room (or in every room)?",
+        "room": "living_room"
+      },
+      "type": "noul"
+    },
+    "lights-off-in--2": {
+      "instructions": {
+        "question": "Does `request` ask to turn off the lights in this room (or in every room)?",
+        "room": "bedroom"
+      },
+      "type": "noul"
+    },
+    "lights-on-in--0": {
+      "instructions": {
+        "question": "Does `request` ask to turn on the lights in this room (or in every room)?",
+        "room": "kitchen"
+      },
+      "type": "noul"
+    },
+    "lights-on-in--1": {
+      "instructions": {
+        "question": "Does `request` ask to turn on the lights in this room (or in every room)?",
+        "room": "living_room"
+      },
+      "type": "noul"
+    },
+    "lights-on-in--2": {
+      "instructions": {
+        "question": "Does `request` ask to turn on the lights in this room (or in every room)?",
+        "room": "bedroom"
+      },
+      "type": "noul"
+    },
+    "lights?": {
+      "instructions": "Does `request` ask to change any lights?",
+      "type": "noul"
+    },
+    "lock-action": {
+      "criteria": {
+        "lock": "Lock it",
+        "other": "Neither, or the request does not say",
+        "unlock": "Unlock it"
+      },
+      "instructions": "If `request` is about a door, should it be locked or unlocked?",
+      "type": "choice"
+    },
+    "temp-direction": {
+      "criteria": {
+        "cooler": "Cooler",
+        "other": "Neither, or the request does not say",
+        "warmer": "Warmer"
+      },
+      "instructions": "If `request` is about temperature, which way should it go?",
+      "type": "choice"
+    },
+    "temperature?": {
+      "instructions": "Does `request` ask to make the home warmer or cooler?",
+      "type": "noul"
+    }
+  },
+  "expect": {
+    "action": "schedule"
+  },
+  "facts": {
+    "doors": ["front", "back", "garage"],
+    "open-doors": [],
+    "request": "switch off the living room lights in ten minutes",
+    "rooms": ["kitchen", "living_room", "bedroom"]
+  }
+}

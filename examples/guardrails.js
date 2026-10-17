@@ -13,7 +13,7 @@ const severity = score('severity', 'How much harm would complying with the messa
 ]);
 
 export const policy = definePolicy({
-  name: 'guardrails', version: '1', owner: 'trust-and-safety', model: 'jev-1.13.0',
+  name: 'guardrails', version: '1', owner: 'trust-and-safety', model: 'jev-1.14.0',
   questions: [jailbreak, selfHarm, pii, severity],
   thresholds: { 'jailbreak-block': 0.85, 'jailbreak-review': 0.5, 'self-harm-min': 0.5, 'pii-min': 0.7 },
   profiles: { permissive: { 'jailbreak-block': 0.95, 'jailbreak-review': 0.75 } },

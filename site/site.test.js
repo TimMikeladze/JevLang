@@ -241,7 +241,7 @@ test('link table honoured', () => {
 test('tables read from docs', () => {
   assert.ok(modulesTable(readme).length >= 8);
   assert.ok(cloudApiTable(cloudReadme).length >= 8);
-  const kinds = readmeTable(readme, 'Three kinds of question');
+  const kinds = readmeTable(readme, 'Three text question types');
   assert.deepEqual(kinds.rows.map((row) => row[0]), ['`noul`', '`choice`', '`score`']);
   // The answers the table promises are the answers decide.js hands the policy.
   const decide = r.file('decide.js').body;
@@ -347,4 +347,11 @@ test('hero console matches node decide.js', () => {
   assert.ok(hero.includes('<pre class="sim-explain" data-explain>' + esc(cases[0]) + '</pre>'), 'no-script state is the first ticket');
   assert.equal([...hero.matchAll(/data-rung="/g)].length, policy.gates.length + policy.clauses.length);
   for (const p of presets) assert.ok(hero.includes(`>${esc(p.name)}</button>`), p.name);
+});
+
+
+test('reference links to Python and guides resolve to repository files', () => {
+  assert.ok(reference.includes(`${repo}/blob/main/python/JEV114.md`));
+  assert.ok(reference.includes(`${repo}/blob/main/docs/jev-images.md`));
+  assert.doesNotMatch(reference, /href="(?:python|docs)\//);
 });

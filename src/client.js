@@ -6,18 +6,20 @@
 //
 // Nothing here invents an API detail: every field and status comes from the
 // documented API behaviour.
+import { setTimeout as waitFor } from 'node:timers/promises';
 import { object, own, requireAt } from './common.js';
+import { prepareJevRequest, encodeJevRequest, requestHeaders } from './typesafe-request.js';
 
 export const settings = {
   apiKey: null,            // null reads TYPESAFE_API_KEY at call time
   baseUrl: null,           // null reads TYPESAFE_BASE_URL
-  defaultModel: null,      // null reads TYPESAFE_DEFAULT_MODEL, else jev-latest
+  defaultModel: null,      // null reads TYPESAFE_DEFAULT_MODEL, else jev-1.14.0
   timeoutSeconds: 10,
   // A function (payload) -> response body, for tests and replay. A transport has
   // no headers, so a request_id key in its result stands in for the header.
   transport: null,
   extraBody: null,
-  sleep: seconds => new Promise(resolve => setTimeout(resolve, seconds * 1000)),
+  sleep: (seconds, signal) => waitFor(seconds * 1000, undefined, { signal }),
   clock: () => Date.now(),
   random: Math.random,
   pacer: null,             // called before every attempt; batching paces with it
@@ -39,11 +41,11 @@ export class JevApiError extends Error {
     Object.assign(this, { kind, status, requestId, retryAfterMs, body, retryable });
   }
 }
-const endpoint = () => {
+const endpoint = (path = '/v1/systemone') => {
   const base = (settings.baseUrl ?? settings.environment('TYPESAFE_BASE_URL') ?? 'https://api.typesafe.ai').trim().replace(/\/+$/, '');
-  return `${base}/v1/systemone`;
+  return `${base}${path}`;
 };
-export const defaultModel = () => settings.defaultModel ?? settings.environment('TYPESAFE_DEFAULT_MODEL') ?? 'jev-latest';
+export const defaultModel = () => settings.defaultModel ?? settings.environment('TYPESAFE_DEFAULT_MODEL') ?? 'jev-1.14.0';
 const apiKey = () => {
   const key = settings.apiKey ?? settings.environment('TYPESAFE_API_KEY');
   requireAt(typeof key === 'string' && key.trim() !== '', 'TYPESAFE_API_KEY', 'no TypeSafe API key', 'Set TYPESAFE_API_KEY, or inject a transport.', 'auth');
@@ -61,6 +63,8 @@ const statusError = (url, status, requestId, retryAfterMs, text) => {
   const [kind, hint] = status === 401 || status === 403 ? ['auth', 'check TYPESAFE_API_KEY: the key is missing, wrong, or not allowed this call']
     : status === 404 ? ['invalid', 'check TYPESAFE_BASE_URL: nothing is served at that URL']
     : status === 400 || status === 422 ? ['invalid', 'the request failed validation; the body names the offending field']
+    : status === 413 ? ['size', 'request exceeds an image or body size limit']
+    : status === 415 ? ['encoding', 'unsupported request encoding']
     : status === 429 ? ['rate-limit', 'rate limited: slow down or retry later']
     : status === 529 ? ['server', 'the API is overloaded; retry after a short delay']
     : status >= 500 && status <= 599 ? ['server', 'the server failed; this is usually transient']
@@ -108,14 +112,15 @@ const requestedWait = error => {
   return Number.isFinite(ms) && ms > 0 ? Math.min(retryAfterCap, ms / 1000) : null;
 };
 // attempt : (remainingSeconds | null) -> value
-async function withRetries(policy, what, attempt) {
+async function withRetries(policy, what, attempt, signal) {
+  cancelled(signal);
   const attempts = policy.maxRetries + 1;
   let deadline = policy.totalBudget ? settings.clock() + policy.totalBudget * 1000 : null;
   let last = null;
   for (let n = 0; ; n += 1) {
     if (settings.pacer) {
       const before = settings.clock();
-      await settings.pacer();
+      await cancellable(() => settings.pacer(signal), signal);
       // Pacing waits do not count against the total budget.
       if (deadline !== null) deadline += settings.clock() - before;
     }
@@ -125,7 +130,8 @@ async function withRetries(policy, what, attempt) {
         { kind: last?.kind ?? 'timeout', status: last?.status ?? null, requestId: last?.requestId ?? null, body: last?.body ?? null });
     }
     try {
-      return await attempt(remaining);
+      cancelled(signal);
+      return await cancellable(() => attempt(remaining), signal);
     } catch (error) {
       if (!retryable(policy, error)) throw error;
       last = error;
@@ -140,53 +146,80 @@ async function withRetries(policy, what, attempt) {
         error.message = `${error.message}\n  gave up after ${n + 1} of ${attempts} attempts: the next retry would pass the ${policy.totalBudget} s total budget`;
         throw error;
       }
-      if (delay > 0) await settings.sleep(delay);
+      if (delay > 0) await cancellable(() => settings.sleep(delay, signal), signal);
     }
   }
 }
 
-export async function jevCall(state, questions, { model = null, timeoutSeconds = settings.timeoutSeconds, retry = defaultRetryPolicy } = {}) {
-  const requestedModel = model ?? defaultModel();
-  let payload = { state, model: requestedModel, questions };
-  if (settings.extraBody) {
-    for (const key of Object.keys(settings.extraBody)) {
-      requireAt(!['state', 'model', 'questions'].includes(key), `extraBody.${key}`, `extraBody cannot set '${key}'`);
-    }
-    payload = { ...payload, ...settings.extraBody };
-  }
-  const transport = settings.transport;
-  const response = await withRetries(retry, transport ? 'transport' : endpoint(), async remaining => {
-    if (transport) {
-      const body = await transport(payload);
-      // A transport has no headers, so a request_id key stands in for one.
-      return responseFrom('transport', typeof body?.request_id === 'string' ? body.request_id : null, body);
-    }
-    const url = endpoint();
-    const seconds = [timeoutSeconds, remaining].filter(x => typeof x === 'number' && x > 0);
-    const signal = seconds.length ? AbortSignal.timeout(Math.min(...seconds) * 1000) : undefined;
-    let raw;
-    try {
-      raw = await fetch(url, {
-        method: 'POST', signal,
-        headers: { Authorization: `Bearer ${apiKey()}`, Accept: 'application/json', 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-    } catch (error) {
-      const timedOut = error.name === 'TimeoutError' || error.name === 'AbortError';
-      throw new JevApiError(`jev: ${timedOut ? 'the request timed out' : 'could not reach'} ${url}: ${error.message}`,
-        { kind: timedOut ? 'timeout' : 'connection' });
-    }
-    const requestId = raw.headers.get('x-typesafe-request-id');
+const cancelled = signal => {
+  if (signal?.aborted) throw new JevApiError('jev: request cancelled', { kind: 'cancelled' });
+};
+// Remove the listener after either branch settles; no unhandled rejection from a late attempt.
+async function cancellable(thunk, signal) {
+  cancelled(signal);
+  if (!signal) return thunk();
+  let stop;
+  const aborted = new Promise((_, reject) => {
+    stop = () => reject(new JevApiError('jev: request cancelled', { kind: 'cancelled' }));
+    signal.addEventListener('abort', stop, { once: true });
+  });
+  try { return await Promise.race([aborted, Promise.resolve().then(() => { cancelled(signal); return thunk(); })]); }
+  finally { signal.removeEventListener('abort', stop); }
+}
+function retryPolicy(overrides) {
+  const policy = { ...defaultRetryPolicy, ...(overrides ?? {}) };
+  requireAt(Number.isInteger(policy.maxRetries) && policy.maxRetries >= 0, 'retry.maxRetries', 'expected nonnegative integer');
+  for (const key of ['backoffInitial', 'backoffMax', 'jitter', 'totalBudget']) requireAt(typeof policy[key] === 'number' && Number.isFinite(policy[key]) && policy[key] >= 0, `retry.${key}`, 'expected nonnegative finite number');
+  requireAt(policy.jitter <= 1 && Array.isArray(policy.statuses), 'retry', 'invalid retry jitter or statuses');
+  return policy;
+}
+async function requestJson(url, method, prepared, options, remaining) {
+  const seconds = [options.timeoutSeconds ?? settings.timeoutSeconds, remaining].filter(x => typeof x === 'number' && x > 0);
+  const timeout = seconds.length ? AbortSignal.timeout(Math.max(1, Math.ceil(Math.min(...seconds) * 1000))) : null;
+  const signals = [options.signal, timeout].filter(Boolean);
+  const signal = signals.length ? AbortSignal.any(signals) : undefined;
+  let raw;
+  try {
+    const encoded = method === 'GET' ? { headers: requestHeaders(options) } : await encodeJevRequest(prepared, options);
+    cancelled(options.signal);
+    raw = await fetch(url, { method, signal, ...encoded, headers: { ...encoded.headers, Authorization: `Bearer ${apiKey()}` } });
     const text = await raw.text();
-    if (raw.status < 200 || raw.status > 299) throw statusError(url, raw.status, requestId, retryAfterMs(raw.headers), text);
+    const requestId = raw.headers.get('x-typesafe-request-id');
+    if (!raw.ok) throw statusError(url, raw.status, requestId, retryAfterMs(raw.headers), text);
     let body;
     try { body = JSON.parse(text); } catch {
       throw new JevApiError(`jev: the response from ${url} is not JSON\n  it starts: ${text.slice(0, 200)}`, { kind: 'response', status: raw.status, requestId });
     }
-    return responseFrom(url, requestId, body);
-  });
-  const result = { ...response, requestedModel };
-  // Recorded before anything validates it: the call was paid for either way.
-  if (result.usage) settings.onUsage?.(result.usage);
+    return { body, requestId };
+  } catch (error) {
+    cancelled(options.signal);
+    if (error instanceof JevApiError || error.code === 'validation' || error.code === 'state') throw error;
+    const timedOut = timeout?.aborted || error.name === 'TimeoutError' || error.name === 'AbortError';
+    throw new JevApiError(`jev: ${timedOut ? 'the request timed out' : 'could not reach'} ${url}: ${error.message}`, { kind: timedOut ? 'timeout' : 'connection' });
+  }
+}
+export async function jevCall(state, questions, options = {}) {
+  cancelled(options.signal);
+  const requestedModel = options.model ?? defaultModel();
+  const prepared = prepareJevRequest(state, questions, requestedModel, options, settings.extraBody);
+  const transport = settings.transport;
+  const response = await withRetries(retryPolicy(options.retry), transport ? 'transport' : endpoint(), async remaining => {
+    if (transport) {
+      const body = await transport(prepared.payload, { headers: prepared.headers, signal: options.signal, assets: prepared.manifest });
+      return responseFrom('transport', typeof body?.request_id === 'string' ? body.request_id : null, body);
+    }
+    const { body, requestId } = await requestJson(endpoint(), 'POST', prepared, options, remaining);
+    return responseFrom(endpoint(), requestId, body);
+  }, options.signal);
+  const result = { ...response, requestedModel, assets: prepared.manifest, experimental: prepared.experimental };
+  // Paid calls count even when usage is unavailable or answers later fail validation.
+  settings.onUsage?.(result.usage ?? {});
   return result;
+}
+export async function listModels(options = {}) {
+  cancelled(options.signal);
+  requestHeaders(options);
+  const { body } = await withRetries(retryPolicy(options.retry), endpoint('/v1/models'), remaining => requestJson(endpoint('/v1/models'), 'GET', null, options, remaining), options.signal);
+  requireAt(object(body) && Array.isArray(body.models) && body.models.every(m => object(m) && ['name', 'description', 'release_date'].every(k => typeof m[k] === 'string')), 'models', 'invalid models response', undefined, 'response');
+  return body;
 }

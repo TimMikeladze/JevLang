@@ -1,0 +1,54 @@
+{
+  "fixture_version": 3,
+  "provider": "typesafe",
+  "requested_model": "jev-1.13.0",
+  "requested_effort": null,
+  "effective_effort": null,
+  "name": "api-outage",
+  "state": "The API has returned 500 errors on every request since this morning and our checkout is down.",
+  "answers": {
+    "department": {
+      "choice": "technical",
+      "confidence": 1.0,
+      "probabilities": {
+        "billing": 0.0,
+        "sales": 0.0,
+        "technical": 1.0
+      },
+      "type": "choice"
+    },
+    "frustration": {
+      "confidence": 0.42,
+      "legend": {
+        "0": "Calm and matter-of-fact",
+        "1": "Annoyed but polite",
+        "2": "Angry, threatening to leave"
+      },
+      "probabilities": {
+        "0": 0.34,
+        "1": 0.61,
+        "2": 0.05
+      },
+      "score": 0.71,
+      "type": "score"
+    },
+    "refund-requested?": {
+      "noul": 0.02,
+      "type": "noul"
+    }
+  },
+  "usage": {
+    "input_tokens": 471,
+    "output_tokens": 75
+  },
+  "model": "jev-1.13.0",
+  "request_id": "req_01a0b66002ab7a33a9c0f863ca815b90",
+  "questions_sha256": "7a4ff4216996b26daca91769df361540d75902b63aef3e5c915abe38062f0cab",
+  "policy": "ticket-router.rkt",
+  "recorded_at": "2026-09-18T21:15:40Z",
+  "synthetic": false,
+  "expect": {
+    "action": "escalate",
+    "target": "human-triage"
+  }
+}

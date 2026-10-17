@@ -1,0 +1,52 @@
+{
+  "fixture_version": 3,
+  "provider": "typesafe",
+  "requested_model": null,
+  "model": null,
+  "requested_effort": null,
+  "effective_effort": null,
+  "name": "angry-refund",
+  "state": "Fourth time writing. Payouts failing three days, I want two months of fees back or I'm leaving.",
+  "answers": {
+    "department": {
+      "type": "choice",
+      "choice": "billing",
+      "probabilities": {
+        "billing": 0.79,
+        "technical": 0.18,
+        "sales": 0.03
+      },
+      "confidence": 0.84
+    },
+    "frustration": {
+      "type": "score",
+      "score": 1.72,
+      "legend": {
+        "0": "Calm and matter-of-fact",
+        "1": "Annoyed but polite",
+        "2": "Angry, threatening to leave"
+      },
+      "probabilities": {
+        "0": 0.04,
+        "1": 0.2,
+        "2": 0.76
+      },
+      "confidence": 0.81
+    },
+    "refund-requested?": {
+      "type": "noul",
+      "noul": 0.94
+    }
+  },
+  "usage": {
+    "input_tokens": 341,
+    "output_tokens": 48
+  },
+  "questions_sha256": "7a4ff4216996b26daca91769df361540d75902b63aef3e5c915abe38062f0cab",
+  "policy": "ticket-router.rkt",
+  "synthetic": true,
+  "expect": {
+    "action": "page",
+    "target": "retention-oncall"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "fixture_version": 3,
+  "provider": "typesafe",
+  "requested_model": "jev-1.13.0",
+  "requested_effort": null,
+  "effective_effort": null,
+  "name": "invoice-pdf",
+  "state": "Quick question: where do I download last month's invoice as a PDF?",
+  "answers": {
+    "department": {
+      "choice": "billing",
+      "confidence": 1.0,
+      "probabilities": {
+        "billing": 1.0,
+        "sales": 0.0,
+        "technical": 0.0
+      },
+      "type": "choice"
+    },
+    "frustration": {
+      "confidence": 1.0,
+      "legend": {
+        "0": "Calm and matter-of-fact",
+        "1": "Annoyed but polite",
+        "2": "Angry, threatening to leave"
+      },
+      "probabilities": {
+        "0": 1.0,
+        "1": 0.0,
+        "2": 0.0
+      },
+      "score": 0.0,
+      "type": "score"
+    },
+    "refund-requested?": {
+      "noul": 0.01,
+      "type": "noul"
+    }
+  },
+  "usage": {
+    "input_tokens": 465,
+    "output_tokens": 75
+  },
+  "model": "jev-1.13.0",
+  "request_id": "req_01a0b660032476c3957fe0633467dae6",
+  "questions_sha256": "7a4ff4216996b26daca91769df361540d75902b63aef3e5c915abe38062f0cab",
+  "policy": "ticket-router.rkt",
+  "recorded_at": "2026-09-18T21:15:40Z",
+  "synthetic": false,
+  "expect": {
+    "action": "assign",
+    "target": "billing-queue"
+  }
+}

@@ -21,7 +21,7 @@ export const probability = v => finite(v) && v >= 0 && v <= 1;
 export const text = v => typeof v === 'string' && v.trim().length > 0;
 
 // Accept only portable JSON, with deterministic resource bounds before walking it.
-export function jsonCopy(value) {
+export function jsonCopy(value, { maxBytes = 2 * 1024 * 1024 } = {}) {
   let nodes = 0;
   const ancestors = new Set();
   function visit(v, path, depth) {
@@ -37,7 +37,7 @@ export function jsonCopy(value) {
     return result;
   }
   const result = visit(value, '$', 0);
-  requireAt(Buffer.byteLength(JSON.stringify(result)) <= 2 * 1024 * 1024, '$', 'JSON exceeds 2 MiB limit');
+  requireAt(Buffer.byteLength(JSON.stringify(result)) <= maxBytes, '$', `JSON exceeds ${maxBytes / (1024 * 1024)} MiB limit`);
   return result;
 }
 export function freeze(v) {

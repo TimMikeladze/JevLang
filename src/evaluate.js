@@ -4,7 +4,10 @@
 // uses, and the decision carries which provider, model and effort answered.
 import { object, own, requireAt, canonical, fingerprint, jsonCopy, fail } from './common.js';
 import { validateAnswers } from './engine.js';
-import { checkTokenBudget } from './state.js';
+import { defaultModel } from './client.js';
+import { prepareJevRequest } from './typesafe-request.js';
+import { inspectAssets, assetIdentity, mergeAssets, maxPortableBytes } from './assets.js';
+import { checkRequestBudget } from './budgets.js';
 import { jevCall, apiKeyConfigured, settings as clientSettings } from './client.js';
 import {
   ProviderError, ProviderRegistry, availability, capabilities, provider, providerRequest, targetSpec,
@@ -40,6 +43,9 @@ function answerSchema(question) {
       required: ['type', 'score'],
       additionalProperties: true,
     };
+    case 'box': return {
+      type: 'object', properties: { ...common, box: { type: 'object', properties: Object.fromEntries(['top','bottom','left','right'].map(k => [k, { type: 'number', minimum: 0, maximum: 1 }])), required: ['top','bottom','left','right'], additionalProperties: false }, confidence: { type: ['number','null'], minimum: 0, maximum: 1 } }, required: ['type','box'], additionalProperties: true,
+    };
     case 'noul': return {
       type: 'object',
       properties: { ...common, noul: { type: 'number', minimum: 0, maximum: 1 } },
@@ -70,7 +76,7 @@ export const policyPrompt = (state, questions) =>
 export function typesafeProvider({ maxParallel = 4 } = {}) {
   return provider({
     id: 'typesafe',
-    caps: capabilities({ modes: ['structured'], modalities: ['text'], permissions: ['read'], controls: ['structured-output'], efforts: [], maxParallel }),
+    caps: capabilities({ modes: ['structured'], modalities: ['text', 'image'], permissions: ['read'], controls: ['structured-output', 'box', 'typesafe-options'], efforts: [], maxParallel }),
     discover: async () => apiKeyConfigured()
       ? availability('ready', { detail: 'configured TypeSafe System One API' })
       : availability('unauthenticated', { detail: 'set TYPESAFE_API_KEY' }),
@@ -82,9 +88,9 @@ export function typesafeProvider({ maxParallel = 4 } = {}) {
       }
       let response;
       try {
-        response = await jevCall(state, questions, { model: target.model });
+        response = await jevCall(state, questions, { ...request.metadata.typesafe, ...request.typesafeRequestOptions, model: target.model });
       } catch (error) {
-        const kind = { auth: 'authentication', timeout: 'timeout', 'rate-limit': 'rate-limit', server: 'overload', response: 'invalid-output', connection: 'connection' }[error.kind] ?? 'provider-failure';
+        const kind = { cancelled: 'cancelled', auth: 'authentication', timeout: 'timeout', 'rate-limit': 'rate-limit', server: 'overload', response: 'invalid-output', connection: 'connection' }[error.kind] ?? 'provider-failure';
         throw new ProviderError(error.message, {
           kind, target,
           retryable: ['timeout', 'connection', 'rate-limit', 'overload'].includes(kind),
@@ -92,6 +98,7 @@ export function typesafeProvider({ maxParallel = 4 } = {}) {
         });
       }
       return {
+        assets: response.assets, experimental: response.experimental,
         output: response.answers,
         target: target.model ? target : { ...target, model: response.requestedModel },
         model: response.model,
@@ -133,14 +140,28 @@ export function sharedPolicyRegistry(config) {
 export const policyConfigDefaults = { provider: 'typesafe', preferences: ['typesafe', 'claude', 'codex'] };
 
 const normalizeEffort = value => value == null ? null : (String(value).toLowerCase() === 'auto' ? 'auto' : value);
-export const policyProviderRequest = (state, questions, { provider: id = null, model = null, effort = null, role = 'policy' } = {}) =>
-  providerRequest('policy', 'structured', {
-    role, kind: 'policy', tier: 'policy', modalities: ['text'], permissions: ['read'],
-    prompt: policyPrompt(state, questions),
+export function policyProviderRequest(state, questions, options = {}) {
+  const { provider: id = null, model = null, effort = null, role = 'policy' } = options;
+  const typesafe = Object.fromEntries(['assets','experimental','compression','assetTransport'].filter(k => own(options,k)).map(k=>[k,options[k]]));
+  const hasImages = Object.keys(options.assets ?? {}).length > 0;
+  const hasBox = Object.values(questions).some(q=>q.type==='box');
+  const request = providerRequest('policy', 'structured', {
+    role, kind: 'policy', tier: 'policy', modalities: hasImages ? ['text','image'] : ['text'], permissions: ['read'],
+    prompt: hasImages ? '' : policyPrompt(state, questions),
     schema: questionsAnswerSchema(questions),
     target: targetSpec({ provider: id, model, effort: normalizeEffort(effort) }),
-    metadata: { state, questions },
+    metadata: { state, questions, ...(Object.keys(typesafe).length ? { typesafe } : {}), requiredControls: [...(hasBox ? ['box'] : []), ...(Object.keys(typesafe).length ? ['typesafe-options'] : [])] },
   });
+  request.typesafeRequestOptions = Object.fromEntries(['signal','headers','timeoutSeconds','retry'].filter(k=>own(options,k)).map(k=>[k,options[k]]));
+  return request;
+}
+export function policyJevOptions(spec, options = {}) {
+  const defaults = spec.typesafe ?? {};
+  const typesafe = { ...defaults, ...Object.fromEntries(['compression','assetTransport'].filter(k=>own(options,k)).map(k=>[k,options[k]])) };
+  if (defaults.assets || options.assets) typesafe.assets = mergeAssets(defaults.assets, options.assets);
+  if (defaults.experimental || options.experimental) typesafe.experimental = { ...defaults.experimental, ...options.experimental };
+  return typesafe;
+}
 
 /**
  * A model may name a score's level instead of numbering it: `{"score": "Angry,
@@ -153,6 +174,7 @@ export function normalizeAnswers(questions, answers) {
   if (!object(questions) || !object(answers)) return answers;
   for (const [id, question] of Object.entries(questions)) {
     const answer = answers[id];
+    if (object(answer) && question?.type === 'box' && answer.confidence == null) answer.confidence = null;
     if (!object(answer) || question?.type !== 'score') continue;
     const levels = Array.isArray(question.criteria) ? question.criteria : [];
     const names = levels.map(level => object(level) ? (level.name ?? null) : level);
@@ -181,8 +203,11 @@ export function normalizeAnswers(questions, answers) {
   return answers;
 }
 
-export async function runPolicyProvider(state, questions, { provider: id = null, model = null, effort = null, config = null, registry = null, role = 'policy' } = {}) {
-  const request = policyProviderRequest(state, questions, { provider: id, model, effort, role });
+export async function runPolicyProvider(state, questions, options = {}) {
+  const { provider: id = null, model = null, effort = null, config = null, registry = null, role = 'policy' } = options;
+  const request = policyProviderRequest(state, questions, options);
+  if (request.metadata.typesafe) prepareJevRequest(state, questions, model, options);
+  checkRequestBudget(state, questions, options);
   const resolvedConfig = config ?? loadProviderConfig({ defaults: policyConfigDefaults, role });
   const resolvedRegistry = registry ?? sharedPolicyRegistry(resolvedConfig);
   return runProviderRequest(request, resolvedConfig, resolvedRegistry, {
@@ -206,14 +231,19 @@ export function explicitPolicySelection(config, request, { provider: id = null, 
 // The answers a provider gave, keyed by what it was asked and who was asked:
 // the built state, the questions and the provider/model/effort selection. The
 // routes are not in the key, so editing them keeps the cache.
-export const answerCacheKey = (state, questions, selection) =>
-  fingerprint({ state, questions, provider: selection.provider, model: selection.model, effort: selection.effort });
+export const answerCacheKey = (state, questions, selection, options = {}) => {
+  const assets = inspectAssets(options.assets ?? {}, { state, questions });
+  return fingerprint({ cache_version: 2, ...assetIdentity(state, questions, assets), provider: selection.provider, model: selection.model, effort: selection.effort, experimental: { images: options.experimental?.images === true, longContext: options.experimental?.longContext === true } });
+};
 
 // What evaluateWithProvider reads back from a cached provider result, as plain
 // JSON: a durable cache stores this, and the decision it produces carries the
 // same answers and provenance as the live one.
 export const answerRecord = result => ({
   output: jsonCopy(result.output),
+  ...(typeof result.cacheTime === 'number' ? { cacheTime: result.cacheTime } : {}),
+  ...(result.assets ? { assets: result.assets } : {}),
+  ...(result.experimental ? { experimental: result.experimental } : {}),
   model: result.model ?? null,
   requestId: result.requestId ?? null,
   target: {
@@ -229,35 +259,46 @@ export const answerRecord = result => ({
 //             each call's promise; an identical row waits on the same call, and a
 //             failed call is not kept
 // cacheOnly : decide from the cache or throw code 'uncached'; no provider is asked
-export async function evaluateWithProvider(policy, input, { provider: id = null, model = null, effort = null, profile = null, config = null, registry = null, role = 'policy', cache = null, cacheOnly = false } = {}) {
+export async function evaluateWithProvider(policy, input, { provider: id = null, model = null, effort = null, profile = null, config = null, registry = null, role = 'policy', cache = null, cacheOnly = false, ...requestOptions } = {}) {
   requireAt(!cacheOnly || cache, 'cacheOnly', 'cacheOnly needs a cache to read answers from');
   const spec = policy.policy;
   const selection = { provider: id ?? spec.provider ?? null, model: model ?? spec.model ?? null, effort: effort ?? spec.effort ?? null };
-  const { state, facts } = policy.buildState(input);
-  const pre = policy.precheck(input, { profile });
+  const jevOptions = policyJevOptions(spec, requestOptions);
+  const { state, facts } = policy.buildState(input, { ...jevOptions, ...requestOptions });
+  const pre = policy.precheck(input, { ...jevOptions, profile });
   if (pre) return pre;
   const questions = policy.questions(state);
-  checkTokenBudget(state, questions);
-  // Configuration is read only when a provider is actually asked.
-  const ask = () => {
-    const resolvedConfig = config ?? loadProviderConfig({ defaults: policyConfigDefaults, role });
-    const resolvedRegistry = registry ?? sharedPolicyRegistry(resolvedConfig);
-    return runPolicyProvider(state, questions, { ...selection, config: resolvedConfig, registry: resolvedRegistry, role });
-  };
+  checkRequestBudget(state, questions, { ...spec.stateOptions, ...jevOptions });
+  if (Object.keys(jevOptions).length) prepareJevRequest(state, questions, selection.model, jevOptions);
+  const resolvedConfig = config ?? loadProviderConfig({ defaults: policyConfigDefaults, role });
+  const resolvedRegistry = registry ?? sharedPolicyRegistry(resolvedConfig);
+  const ask = () => runPolicyProvider(state, questions, { ...requestOptions, ...jevOptions, ...selection, config: resolvedConfig, registry: resolvedRegistry, role });
   let result, cached = false;
   if (cache) {
     // Looked up and claimed with no await between, so rows that start together
     // share one call.
-    const key = answerCacheKey(state, questions, selection);
-    const hit = cache.get(key);
+    const { target } = await resolveProvider(policyProviderRequest(state, questions, { ...selection, ...jevOptions }), resolvedConfig, resolvedRegistry, { offline: cacheOnly });
+    const effective = { provider: target.provider.id, model: target.model ?? (target.provider.id === 'typesafe' ? defaultModel() : null), effort: target.effectiveEffort };
+    const key = answerCacheKey(state, questions, effective, jevOptions);
+    let hit = cache.get(key);
+    const maxAge = requestOptions.cacheMaxAgeSeconds ?? (/^jev-(latest|preview)$/.test(effective.model ?? '') ? 300 : null);
+    requireAt(maxAge === null || typeof maxAge === 'number' && Number.isFinite(maxAge) && maxAge >= 0, 'cacheMaxAgeSeconds', 'expected nonnegative seconds');
+    if (hit && typeof hit.then !== 'function' && maxAge !== null && (!Number.isFinite(hit.cacheTime) || clientSettings.clock() - hit.cacheTime >= maxAge * 1000)) { cache.delete?.(key); hit = null; }
     if (hit !== undefined && hit !== null) {
       result = await hit; cached = true;
     } else if (cacheOnly) {
       fail('uncached', '$.cache', 'no cached answer for this input', 'Drop cacheOnly to ask the provider, or warm the cache first.');
     } else {
-      const pending = ask();
+      const pending = ask().then(value => ({ ...value, cacheTime: clientSettings.clock() }));
       cache.set(key, pending);
-      try { result = await pending; } catch (error) { cache.delete?.(key); throw error; }
+      try {
+        result = await pending;
+        if (cache.get(key) === pending) {
+          const actual = { provider: result.target.provider.id, model: result.target.model ?? (result.target.provider.id === 'typesafe' ? defaultModel() : null), effort: result.target.effectiveEffort };
+          if (canonical(actual) === canonical(effective)) cache.set(key, result);
+          else if (cache.delete) cache.delete(key); else cache.set(key, undefined);
+        }
+      } catch (error) { cache.delete?.(key); throw error; }
     }
   } else {
     result = await ask();
@@ -281,7 +322,7 @@ export async function evaluateWithProvider(policy, input, { provider: id = null,
 // A package-owned policy: the same routing, but an unresolvable implicit
 // TypeSafe credential means there is no configured decision, so a caller can
 // keep its documented facts-only behaviour.
-export async function evaluateConfiguredPolicy(policy, input, { start = process.cwd(), package: pkg = {}, provider: id = null, model = null, effort = null, registry = null } = {}) {
+export async function evaluateConfiguredPolicy(policy, input, { start = process.cwd(), package: pkg = {}, provider: id = null, model = null, effort = null, registry = null, ...requestOptions } = {}) {
   const config = loadProviderConfig({ start, defaults: policyConfigDefaults, package: pkg, role: 'policy' });
   const resolvedRegistry = registry ?? sharedPolicyRegistry(config);
   const request = policyProviderRequest('', policy.staticQuestions(), { provider: id, model, effort });
@@ -291,15 +332,16 @@ export async function evaluateConfiguredPolicy(policy, input, { start = process.
     if (error instanceof ProviderError && error.kind === 'unavailable' && !explicitPolicySelection(config, request, { provider: id, model, effort })) return null;
     throw error;
   }
-  return evaluateWithProvider(policy, input, { provider: id, model, effort, config, registry: resolvedRegistry });
+  return evaluateWithProvider(policy, input, { ...requestOptions, provider: id, model, effort, config, registry: resolvedRegistry });
 }
 
 // A fixture (version 3) recorded from a real call: the provenance is required,
 // so a replay can never claim an answer came from somewhere it did not.
-export function fixtureFromRun({ name, policy, state, questions, decision = null, result, synthetic = false, expect = null }) {
+export function fixtureFromRun({ name, policy, state, questions, decision = null, result, synthetic = false, expect = null, assets = null, embedAssets = false }) {
   const target = result.target;
   return {
-    fixture_version: 3,
+    fixture_version: Object.keys(result.assets ?? {}).length || result.experimental?.longContext || result.experimental?.images ? 4 : 3,
+    ...(Object.keys(result.assets ?? {}).length || result.experimental?.longContext || result.experimental?.images ? { assets: result.assets ?? {}, experimental: result.experimental ?? {}, ...(embedAssets && assets ? { asset_data: jsonCopy(assets, { maxBytes: maxPortableBytes }) } : {}) } : {}),
     name,
     policy: policy.policy.name ?? null,
     provider: target.provider.id,

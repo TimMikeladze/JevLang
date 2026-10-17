@@ -1,8 +1,16 @@
+import { validateAssetReferences, inspectImage, inspectAssets, assetManifest, maxPortableBytes } from './assets.js';
+import { validateJevOptions } from './typesafe-request.js';
 import { requireAt, object, own, text, equal, jsonCopy } from './common.js';
 
 export function validateFixture(raw) {
-  const f = jsonCopy(raw);
-  requireAt(object(f) && f.fixture_version === 3, 'fixture.fixture_version', 'unsupported fixture version', 'Migrate to fixture_version 3 with provider/model/effort provenance.');
+  const f = jsonCopy(raw, raw?.fixture_version === 4 ? { maxBytes: maxPortableBytes } : {});
+  requireAt(object(f) && [3,4].includes(f.fixture_version), 'fixture.fixture_version', 'unsupported fixture version', 'Migrate to fixture_version 3 with provider/model/effort provenance.');
+  if (f.fixture_version === 4) {
+    requireAt(object(f.assets) && object(f.experimental), 'fixture.assets', 'asset-aware fixture needs asset manifest and experimental settings');
+    validateJevOptions({ experimental: f.experimental });
+    validateAssetReferences(f.assets);
+    for (const [ref, a] of Object.entries(f.assets)) requireAt(object(a) && ['png','jpg','jpeg'].includes(a.format) && /^[a-f0-9]{64}$/.test(a.sha256 ?? '') && Number.isInteger(a.width) && a.width >= 280 && a.width <= 1568 && Number.isInteger(a.height) && a.height >= 280 && a.height <= 1568 && Number.isInteger(a.occurrences) && a.occurrences > 0, `fixture.assets.${ref}`, 'invalid image manifest');
+  }
   requireAt(text(f.provider), 'fixture.provider', 'fixture needs a non-empty provider');
   for (const key of ['requested_model', 'model', 'requested_effort', 'effective_effort']) requireAt(own(f, key) && (f[key] === null || typeof f[key] === 'string'), `fixture.${key}`, 'required provenance must be a string or null');
   requireAt(object(f.answers), 'fixture.answers', 'fixture needs an answers object');
@@ -26,13 +34,22 @@ export function replay(policy, fixtures, options = {}) {
       // exactly; otherwise its hash is checked against the policy's identity.
       const current = policy.identity();
       const recorded = object(f.questions) ? f.questions : null;
-      const stale = recorded !== null
+      const stale = (f.fixture_version === 4 && f.questions_sha256 != null && f.questions_sha256.toLowerCase() !== current) || (recorded !== null
         ? !equal(recorded, policy.questions(f.state ?? facts))
-        : f.questions_sha256 != null && f.questions_sha256.toLowerCase() !== current;
+        : f.questions_sha256 != null && f.questions_sha256.toLowerCase() !== current);
       if (stale && !options.allowStale) return { name, status: 'stale', message: 'Questions changed; re-record this fixture or explicitly allow stale answers.', fingerprint: current };
+      let assetsVerified = false;
+      if (f.fixture_version === 4 && (options.assets || f.asset_data)) {
+        const staticAssets = policy.policy.typesafe?.assets ?? {}, supplied = options.assets ?? f.asset_data;
+        for (const ref of Object.keys(supplied)) if (own(staticAssets, ref)) requireAt(inspectImage(staticAssets[ref]).sha256 === inspectImage(supplied[ref]).sha256, `fixture.assets.${ref}`, 'image contents differ from the static policy asset');
+        const assets = { ...staticAssets, ...supplied };
+        const actual = assetManifest(inspectAssets(assets, { state: f.state, questions: f.questions ?? policy.questions(f.state) }));
+        requireAt(equal(actual, f.assets), 'fixture.assets', 'image contents or reference placements differ from recorded assets');
+        assetsVerified = true;
+      }
       const decision = policy.decide(f.answers, { ...options, facts, state: f.state ?? facts });
       const status = f.expect ? matches(f.expect, decision) ? 'pass' : 'fail' : 'unasserted';
-      return { name, status, stale, fingerprintVerified: (recorded !== null || f.questions_sha256 != null) && !stale, verifiedBy: recorded !== null ? 'questions' : f.questions_sha256 != null ? 'identity' : null, synthetic: f.synthetic === true, decision };
+      return { name, status, stale, ...(f.fixture_version === 4 ? { decisionVerified: (recorded !== null || f.questions_sha256 != null) && !stale, assetsVerified } : {}), fingerprintVerified: (recorded !== null || f.questions_sha256 != null) && !stale, verifiedBy: recorded !== null ? 'questions' : f.questions_sha256 != null ? 'identity' : null, synthetic: f.synthetic === true, decision };
     } catch (error) { return { name, status: 'error', message: error.message }; }
   });
 }

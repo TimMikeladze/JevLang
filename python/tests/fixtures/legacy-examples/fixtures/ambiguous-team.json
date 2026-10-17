@@ -1,0 +1,52 @@
+{
+  "fixture_version": 3,
+  "provider": "typesafe",
+  "requested_model": null,
+  "model": null,
+  "requested_effort": null,
+  "effective_effort": null,
+  "name": "ambiguous-team",
+  "state": "My card was declined and then the dashboard stopped loading entirely.",
+  "answers": {
+    "department": {
+      "type": "choice",
+      "choice": "billing",
+      "probabilities": {
+        "billing": 0.44,
+        "technical": 0.41,
+        "sales": 0.15
+      },
+      "confidence": 0.58
+    },
+    "frustration": {
+      "type": "score",
+      "score": 0.61,
+      "legend": {
+        "0": "Calm and matter-of-fact",
+        "1": "Annoyed but polite",
+        "2": "Angry, threatening to leave"
+      },
+      "probabilities": {
+        "0": 0.55,
+        "1": 0.38,
+        "2": 0.07
+      },
+      "confidence": 0.86
+    },
+    "refund-requested?": {
+      "type": "noul",
+      "noul": 0.1
+    }
+  },
+  "usage": {
+    "input_tokens": 305,
+    "output_tokens": 48
+  },
+  "questions_sha256": "7a4ff4216996b26daca91769df361540d75902b63aef3e5c915abe38062f0cab",
+  "policy": "ticket-router.rkt",
+  "synthetic": true,
+  "expect": {
+    "action": "escalate",
+    "target": "human-triage"
+  }
+}

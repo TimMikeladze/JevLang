@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 import { readFile, readdir } from 'node:fs/promises';
 import { realpathSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { resolve, dirname, extname } from 'node:path';
+import { imageAsset, mergeAssets } from './assets.js';
+import { listModels } from './client.js';
 import { pathToFileURL } from 'node:url';
 import { createInterface } from 'node:readline';
 import { compile } from './engine.js';
@@ -10,7 +12,7 @@ import { policyActions } from './json-schema.js';
 import { summarize, calibrate } from './monitor.js';
 import { cost } from './cost.js';
 import { loadProviderConfig, makeDefaultRegistry, discoverProviders, resolveProvider, providerRequest, targetSpec } from './provider/index.js';
-import { evaluateWithProvider, runPolicyProvider, fixtureFromRun, policyConfigDefaults, makePolicyRegistry, sharedPolicyRegistry, policyProviderRequest } from './evaluate.js';
+import { policyJevOptions, evaluateWithProvider, runPolicyProvider, fixtureFromRun, policyConfigDefaults, makePolicyRegistry, sharedPolicyRegistry, policyProviderRequest } from './evaluate.js';
 import { evaluateMany } from './batch.js';
 import { makeGate, hookResponse, approveOnce, parseToolList } from './gate.js';
 import { cloud, runner } from './cloud.js';
@@ -36,6 +38,7 @@ async function providerReport(options = {}) {
 }
 
 export async function handle(request) {
+  if (request.method === 'models') return listModels(request.options ?? {});
   if (request.method === 'providers') return providerReport(request.options ?? {});
   // The gate's hook: a tool call in, a permission decision out. It reaches the
   // selected provider, like evaluate does.
@@ -54,7 +57,7 @@ export async function handle(request) {
   switch (request.method) {
     case 'validate': return { policy: p.toJSON(), warnings: p.warnings };
     case 'decide': return p.decide(request.answers, request.options);
-    case 'state': return p.buildState(request.input);
+    case 'state': return p.buildState(request.input, request.options ?? {});
     case 'questions': return p.questions(request.state);
     case 'precheck': return p.precheck(request.input, request.options);
     case 'replay': return replay(p, request.fixtures, request.options);
@@ -64,14 +67,15 @@ export async function handle(request) {
     // evaluate and record reach the selected provider; everything else is offline.
     case 'evaluate': return evaluateWithProvider(p, request.input, request.options ?? {});
     case 'record': {
-      const options = request.options ?? {};
+      const passed = request.options ?? {};
+      const options = { ...passed, ...policyJevOptions(p.policy, passed), provider: passed.provider ?? p.policy.provider, model: passed.model ?? p.policy.model, effort: passed.effort ?? p.policy.effort };
       const config = options.config ?? loadProviderConfig({ defaults: policyConfigDefaults, role: 'policy' });
       const registry = makePolicyRegistry(config);
-      const { state, facts } = p.buildState(request.input);
+      const { state, facts } = p.buildState(request.input, options);
       const questions = p.questions(state);
-      const result = await runPolicyProvider(state, questions, { ...options, config, registry });
+      const result = await runPolicyProvider(state, questions, { ...p.policy.stateOptions, ...options, config, registry });
       const decision = p.decide(result.output, { facts, state, profile: options.profile ?? null });
-      return { decision, fixture: fixtureFromRun({ name: options.name ?? 'recorded', policy: p, state, questions, decision, result }) };
+      return { decision, fixture: fixtureFromRun({ name: options.name ?? 'recorded', policy: p, state, questions, decision, result, assets: options.assets, embedAssets: options.embedAssets === true }) };
     }
     case 'stats': {
       const rows = replay(p, request.fixtures, { ...request.options, allowStale: true });
@@ -93,6 +97,40 @@ async function jsonFile(path) { return JSON.parse(await readFile(path, 'utf8'));
 async function fixtureFiles(dir) {
   const files = (await readdir(dir, { withFileTypes: true })).filter(f => f.isFile() && f.name.endsWith('.json')).map(f => f.name).sort();
   return Promise.all(files.map(f => jsonFile(resolve(dir, f))));
+}
+export async function loadAssetManifest(path) {
+  const data = await jsonFile(path);
+  const entries = [];
+  for (const [ref, spec] of Object.entries(data)) {
+    if (spec && typeof spec === 'object' && typeof spec.path === 'string') {
+      const file = resolve(dirname(resolve(path)), spec.path);
+      const format = spec.format ?? (extname(file).toLowerCase() === '.png' ? 'png' : 'jpg');
+      entries.push([ref, imageAsset(await readFile(file), { format })]);
+    } else entries.push([ref, spec]);
+  }
+  return Object.fromEntries(entries);
+}
+async function cliRequestOptions(options) {
+  const out = {};
+  if (typeof options.assets === 'string') out.assets = await loadAssetManifest(options.assets);
+  for (const key of ['provider','model','effort']) if (typeof options[key] === 'string') out[key] = options[key];
+  if (options['experimental-images'] !== undefined || options['experimental-long-context'] !== undefined) {
+    out.experimental = {};
+    if (options['experimental-images'] !== undefined) out.experimental.images = options['experimental-images'] !== 'false';
+    if (options['experimental-long-context'] !== undefined) out.experimental.longContext = options['experimental-long-context'] !== 'false';
+  }
+  if (options.compression !== undefined) out.compression = options.compression === 'false' ? false : options.compression;
+  if (options['asset-transport'] !== undefined) out.assetTransport = options['asset-transport'];
+  if (options['embed-assets'] !== undefined) out.embedAssets = options['embed-assets'] !== 'false';
+  return out;
+}
+async function evaluateCommand(command, args) {
+  const { rest, options } = flags(args);
+  if (!rest[0] || !rest[1]) throw new Error(`jev ${command} needs POLICY.json INPUT.json`);
+  const passed = rest[2] ? await jsonFile(rest[2]) : {};
+  const selected = await cliRequestOptions(options);
+  const combined = { ...passed, ...selected, ...(passed.assets && selected.assets ? { assets: mergeAssets(passed.assets, selected.assets) } : {}) };
+  return handle({ method: command, policy: await jsonFile(rest[0]), input: await jsonFile(rest[1]), options: combined });
 }
 // The cloud commands. The key is the tenant, so none of them name one.
 function flags(args) {
@@ -149,7 +187,7 @@ async function batchCommand(args) {
   const policy = compile(await jsonFile(policyPath));
   const rows = await readRows(rowsPath);
   const text = name => typeof options[name] === 'string' ? options[name] : null;
-  const selection = { provider: text('provider'), model: text('model'), effort: text('effort') };
+  const selection = { ...await cliRequestOptions(options), provider: text('provider'), model: text('model'), effort: text('effort') };
   const workers = Number(options.workers ?? 8), rpm = Number(options.rpm ?? 1200);
   const config = loadProviderConfig({ defaults: policyConfigDefaults, role: 'policy' });
   const registry = sharedPolicyRegistry(config);
@@ -227,8 +265,10 @@ async function main(args) {
   }
   const [command, path, input, extra] = args;
   if (!command || ['help', '--help', '-h'].includes(command)) {
-    console.log('jev validate POLICY.json\njev decide POLICY.json ANSWERS.json [FACTS.json]\njev state POLICY.json INPUT.json\njev schema POLICY.json\njev stats POLICY.json FIXTURE_DIR\njev calibrate POLICY.json FIXTURE_DIR\njev cost POLICY.json [INPUT.json] [FIXTURE_DIR]\njev evaluate POLICY.json INPUT.json   (calls the selected provider)\njev record POLICY.json INPUT.json     (calls it, and writes a fixture)\njev batch POLICY.json ROWS.ndjson [--workers 8] [--rpm 1200] [--provider ID] [--model M] [--effort E]   (one input per line, - for stdin)\njev providers\njev gate hook POLICY.json [OPTIONS.json] < event.json   (calls the provider)\njev gate approve-once FINGERPRINT\njev replay POLICY.json FIXTURE_DIR\njev diff BEFORE.json AFTER.json FIXTURE_DIR\njev tune POLICY.json FIXTURE_DIR GRID.json\njev deploy PROJECT POLICY.json [--note "what changed"]   (JevLang Cloud)\njev promote PROJECT DEPLOYMENT [--expect N] [--gate 0.05]\njev logs PROJECT [--limit 20]\njev open PROJECT                    (prints the playground link)\njev runner POOL HANDLERS.json [--concurrency N] [--name NAME]   (runs runner targets here)\njev rpc'); return;
+    console.log('jev models\njev evaluate POLICY.json INPUT.json [--assets MANIFEST.json] [--experimental-images] [--experimental-long-context] [--compression auto|zstd|gzip|false]\njev validate POLICY.json\njev decide POLICY.json ANSWERS.json [FACTS.json]\njev state POLICY.json INPUT.json\njev schema POLICY.json\njev stats POLICY.json FIXTURE_DIR\njev calibrate POLICY.json FIXTURE_DIR\njev cost POLICY.json [INPUT.json] [FIXTURE_DIR]\njev evaluate POLICY.json INPUT.json   (calls the selected provider)\njev record POLICY.json INPUT.json     (calls it, and writes a fixture)\njev batch POLICY.json ROWS.ndjson [--workers 8] [--rpm 1200] [--provider ID] [--model M] [--effort E]   (one input per line, - for stdin)\njev providers\njev gate hook POLICY.json [OPTIONS.json] < event.json   (calls the provider)\njev gate approve-once FINGERPRINT\njev replay POLICY.json FIXTURE_DIR\njev diff BEFORE.json AFTER.json FIXTURE_DIR\njev tune POLICY.json FIXTURE_DIR GRID.json\njev deploy PROJECT POLICY.json [--note "what changed"]   (JevLang Cloud)\njev promote PROJECT DEPLOYMENT [--expect N] [--gate 0.05]\njev logs PROJECT [--limit 20]\njev open PROJECT                    (prints the playground link)\njev runner POOL HANDLERS.json [--concurrency N] [--name NAME]   (runs runner targets here)\njev rpc'); return;
   }
+  if (command === 'models') { console.log(JSON.stringify(await listModels(), null, 2)); return; }
+  if (command === 'evaluate' || command === 'record') { console.log(JSON.stringify(await evaluateCommand(command, args.slice(1)), null, 2)); return; }
   if (command === 'runner') { await runnerCommand(args.slice(1)); return; }
   if (command === 'batch') { await batchCommand(args.slice(1)); return; }
   if (['deploy', 'promote', 'logs', 'open'].includes(command)) {
