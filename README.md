@@ -557,6 +557,28 @@ once, and `openai`, `gateway` and `anthropic` take 8. Raise a limit in
 { "providers": { "gateway": { "max_parallel": 16 } } }
 ```
 
+### Load CSV files into SQLite
+
+[`examples/csv-to-sqlite.js`](examples/csv-to-sqlite.js) loads CSV files whose
+headers don't match your column names into tables that already exist. The
+model picks one of the database's tables for each file and one of that
+table's columns, or `skip`, for each header. It can't name a table or column
+that isn't in the schema. Your code does the parsing and the inserts:
+
+```sh
+$ node examples/csv-to-sqlite.js shop.sqlite examples/csv/*.csv --schema examples/csv/schema.sql  # live: asks the configured provider
+{"file":"examples/csv/crm-export.csv","status":"inserted","table":"customers","mapping":{"Full Name":"name","E-mail Address":"email","Nation":"country","Fax":null},"rows":2}
+{"file":"examples/csv/shop-orders.csv","status":"inserted","table":"orders","mapping":{"Buyer":"customer_email","Amount (cents)":"total_cents","Order Date":"placed_at"},"rows":2}
+```
+
+Each file is inserted in its own transaction, and only when every choice is
+above 0.7 confidence and no two headers map to the same column. Otherwise
+the line says `"status":"review"`, lists the `reasons`, and nothing from that
+file is written. The exit code is 1 if any file was held for review.
+`--schema` runs a SQL file before loading. Answers are cached in the same
+database (`jev_answers`), so re-running the same files doesn't call the model.
+To use it from your own code, call `ingestFile(db, { name, csv }, { cache })`.
+
 ## Self-hosted decisions with Laya
 
 [Laya](https://huggingface.co/convaiinnovations/laya) is an open-weights
